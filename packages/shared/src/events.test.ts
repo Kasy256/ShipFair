@@ -58,6 +58,11 @@ describe('createBus', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
+  it('emit takes a fixed (type, payload) parameter list, so calls allocate no rest array', () => {
+    // `(type, ...args)` would have length 1.
+    expect(createBus<EngineEvents>().emit.length).toBe(2);
+  });
+
   it('subscribing the same handler twice delivers once', () => {
     const bus = createBus<EngineEvents>();
     const handler = vi.fn();

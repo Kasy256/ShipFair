@@ -161,14 +161,25 @@ export interface DecodeError {
 let packr: Packr | undefined;
 
 // Plain msgpack maps and arrays: no record extension, so every frame decodes on its own.
+// variableMapSize uses the 1-byte fixmap header for small maps instead of map16.
 const getPackr = (): Packr => {
-  packr ??= new Packr({ useRecords: false, moreTypes: false, mapsAsObjects: true });
+  packr ??= new Packr({
+    useRecords: false,
+    moreTypes: false,
+    mapsAsObjects: true,
+    variableMapSize: true,
+  });
   return packr;
 };
 
+// msgpackr returns a view into its shared 8 KB pool, which the next pack() overwrites, and whose
+// .buffer holds other recent messages. Copy, so the result owns exactly its own bytes.
+const pack = (msg: ClientMessage | ServerMessage): Uint8Array =>
+  new Uint8Array(getPackr().pack(msg));
+
 // Messages are typed at compile time, so encoding skips validation. Receivers always validate.
-export const encodeClient = (msg: ClientMessage): Uint8Array => getPackr().pack(msg);
-export const encodeServer = (msg: ServerMessage): Uint8Array => getPackr().pack(msg);
+export const encodeClient = (msg: ClientMessage): Uint8Array => pack(msg);
+export const encodeServer = (msg: ServerMessage): Uint8Array => pack(msg);
 
 export const decodeClient = (buf: Uint8Array | ArrayBuffer): Result<ClientMessage, DecodeError> =>
   decode(buf, ClientMessage, MAX_CLIENT_MSG_BYTES);

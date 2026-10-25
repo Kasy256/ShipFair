@@ -40,7 +40,7 @@ export interface Bus<Events extends object> {
   off<K extends keyof Events>(type: K, handler: Handler<Events[K]>): void;
   /**
    * Calls every handler, even if one throws, then rethrows the first error so it is never lost.
-   * Allocation-free, so it is safe on per-frame paths.
+   * Allocates nothing, so it is safe on per-frame paths.
    */
   emit<K extends keyof Events>(type: K, ...args: EmitArgs<Events[K]>): void;
   clear(): void;
@@ -66,15 +66,15 @@ export function createBus<Events extends object>(): Bus<Events> {
       return () => off(type, handler);
     },
     off,
-    emit(type, ...args) {
+    // A fixed (type, payload) parameter list, not `...args`, so a call allocates no array.
+    emit(type: keyof Events, payload?: unknown) {
       const set = handlers.get(type);
       if (!set) return;
-      const payload = args[0] as never;
       let failure: unknown;
       let hasFailed = false;
       for (const handler of set) {
         try {
-          handler(payload);
+          handler(payload as never);
         } catch (error) {
           if (!hasFailed) failure = error;
           hasFailed = true;

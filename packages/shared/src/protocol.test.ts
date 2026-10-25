@@ -71,6 +71,16 @@ describe('protocol round trips', () => {
     expect(decodeServer(encodeServer(msg))).toEqual({ ok: true, value: msg });
   });
 
+  it('returns bytes that own their buffer and survive later encodes', () => {
+    const first = encodeClient({ type: 'chat', text: 'secret one' });
+    const copy = Uint8Array.from(first);
+    const second = encodeClient({ type: 'chat', text: 'another message' });
+    expect(first.buffer).not.toBe(second.buffer);
+    expect(first.byteOffset).toBe(0);
+    expect(first.buffer.byteLength).toBe(first.byteLength);
+    expect(first).toEqual(copy);
+  });
+
   it('accepts an ArrayBuffer', () => {
     const bytes = encodeClient({ type: 'ping', t: 1 });
     const copy = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
