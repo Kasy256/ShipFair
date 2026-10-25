@@ -1,0 +1,28 @@
+# Local-only planning material (kept on disk, not committed)
+docs/
+prompts/
+reference/
+
+# Secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+
+# Dependencies and build output
+node_modules/
+dist/
+.turbo/
+.wrangler/
+coverage/
+playwright-report/
+test-results/
+e2e/artifacts/
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
