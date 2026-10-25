@@ -6,9 +6,11 @@ minimumReleaseAgeExclude:
   - "@cloudflare/workers-types@5.20261025.1"
   - hono@4.13.14
 
-# Packages allowed to run install scripts (both fetch a native binary).
+# Packages allowed to run install scripts (each fetches a native binary).
 allowBuilds:
   esbuild: true
   workerd: true
+  # Supabase CLI: the npm package downloads the Go binary for this platform.
+  supabase: true
   # Optional native msgpack accelerator for Node only; browsers and Workers use the JS path.
   msgpackr-extract: false
