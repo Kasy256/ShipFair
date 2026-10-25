@@ -2,21 +2,21 @@ import {
   DataSet,
   englishDataset,
   englishRecommendedTransformers,
-  fixedCharCensorStrategy,
   parseRawPattern,
   RegExpMatcher,
-  TextCensor,
 } from 'obscenity';
 import { ALLOWLIST_TERMS, BLOCKLIST_PATTERNS } from './blocklist.ts';
 
 const CENSOR_CHAR = '★';
 const SLUG_MAX_CHARS = 40;
 
-// Zero-width characters, bidi controls and the BOM: invisible, and used to dodge filters or spoof names.
-const INVISIBLE = /[​-‏‪-‮⁠-⁩﻿]/g;
-// C0/C1 control characters. Whitespace controls are folded to spaces before this runs.
+// Invisible characters used to dodge filters or spoof names: every format character (\p{Cf}:
+// soft hyphen, zero-width, bidi controls, BOM, Mongolian vowel separator…), plus the combining
+// grapheme joiner and the Hangul fillers, which render blank but aren't Cf.
+const INVISIBLE = /\p{Cf}|\u034F|\u115F|\u1160|\u3164|\uFFA0/gu;
+// C0/C1 controls except the whitespace ones (\t \n \v \f \r), which the whitespace pass turns into spaces.
 // biome-ignore lint/suspicious/noControlCharactersInRegex: matching control characters is the point.
-const CONTROL = /[\u0000-\u001F\u007F-\u009F]/g;
+const CONTROL = /[\u0000-\u0008\u000E-\u001F\u007F-\u009F]/g;
 const WHITESPACE_RUN = /\s+/g;
 
 /** NFKC, strip invisible and control characters, collapse whitespace, trim. For any user text. */
@@ -24,15 +24,20 @@ export function normaliseText(input: string): string {
   return input
     .normalize('NFKC')
     .replace(INVISIBLE, '')
-    .replace(WHITESPACE_RUN, ' ')
     .replace(CONTROL, '')
+    .replace(WHITESPACE_RUN, ' ')
     .trim();
 }
 
 /** True for absolute `https:` URLs with a host and no embedded credentials. */
 export function isHttpsUrl(input: string): boolean {
-  if (!URL.canParse(input)) return false;
-  const url = new URL(input);
+  let url: URL;
+  try {
+    // Not URL.canParse: it's missing before Safari 17 / Chrome 120.
+    url = new URL(input);
+  } catch {
+    return false;
+  }
   return (
     url.protocol === 'https:' && url.hostname !== '' && url.username === '' && url.password === ''
   );
@@ -58,16 +63,11 @@ export interface ProfanityResult {
   readonly matchCount: number;
 }
 
-interface Filter {
-  readonly matcher: RegExpMatcher;
-  readonly censor: TextCensor;
-}
-
-let filter: Filter | undefined;
+let matcher: RegExpMatcher | undefined;
 
 // Built on first use: compiling the dataset costs a few ms and shouldn't run at import time.
-function getFilter(): Filter {
-  if (filter) return filter;
+function getMatcher(): RegExpMatcher {
+  if (matcher) return matcher;
   const custom = new DataSet<{ originalWord?: string }>().addAll(englishDataset);
   for (const raw of BLOCKLIST_PATTERNS) {
     custom.addPhrase((phrase) => {
@@ -76,26 +76,25 @@ function getFilter(): Filter {
       return phrase;
     });
   }
-  filter = {
-    matcher: new RegExpMatcher({ ...custom.build(), ...englishRecommendedTransformers }),
-    censor: new TextCensor().setStrategy(fixedCharCensorStrategy(CENSOR_CHAR)),
-  };
-  return filter;
+  matcher = new RegExpMatcher({ ...custom.build(), ...englishRecommendedTransformers });
+  return matcher;
 }
 
 /** Censors profanity and slurs for chat, guestbook entries, handles and display names. */
 export function filterProfanity(input: string): ProfanityResult {
-  const { matcher, censor } = getFilter();
-  const matches = matcher.getAllMatches(input, true); // sorted by position
+  // Several dataset patterns can match the same word, so merge overlapping matches into spans and
+  // censor those. obscenity's TextCensor doesn't merge them and can emit too many ★.
+  const matches = getMatcher().getAllMatches(input, true); // sorted by start
+  let text = '';
   let spans = 0;
-  let spanEnd = -1;
-  for (const match of matches) {
-    if (match.startIndex > spanEnd) spans++;
-    spanEnd = Math.max(spanEnd, match.endIndex);
+  let cursor = 0; // first index not yet copied or censored
+  for (const { startIndex, endIndex } of matches) {
+    if (endIndex < cursor) continue;
+    const start = Math.max(startIndex, cursor);
+    if (startIndex >= cursor) spans++;
+    text += input.slice(cursor, start) + CENSOR_CHAR.repeat(endIndex - start + 1);
+    cursor = endIndex + 1;
   }
-  return {
-    text: spans === 0 ? input : censor.applyTo(input, matches),
-    hasProfanity: spans > 0,
-    matchCount: spans,
-  };
+  text += input.slice(cursor);
+  return { text, hasProfanity: spans > 0, matchCount: spans };
 }

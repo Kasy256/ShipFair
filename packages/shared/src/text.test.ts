@@ -8,12 +8,23 @@ describe('filterProfanity', () => {
     expect(result.text).toContain('★');
   });
 
-  it.each(['f*ck', 'f**k', 'sh1t', 'sh!t', 'b1tch', 'fuuuuck', 'a$$'])(
-    'censors obfuscated: %s',
-    (input) => {
-      expect(filterProfanity(input).hasProfanity).toBe(true);
-    },
-  );
+  it.each([
+    'f*ck',
+    'f**k',
+    'f***',
+    'what the f***',
+    'sh**',
+    'you sh** head',
+    'b**ch',
+    'c**t',
+    'sh1t',
+    'sh!t',
+    'b1tch',
+    'fuuuuck',
+    'a$$',
+  ])('censors obfuscated: %s', (input) => {
+    expect(filterProfanity(input).hasProfanity).toBe(true);
+  });
 
   it.each([
     'Scunthorpe',
@@ -35,6 +46,20 @@ describe('filterProfanity', () => {
     });
   });
 
+  it('keeps the censored text the same length as the input', () => {
+    for (const input of ['f*ck', 'f**k you', 'what the f***', 'well shit, ok', 'b**ch please']) {
+      expect(filterProfanity(input).text).toHaveLength(input.length);
+    }
+  });
+
+  it('catches words hidden with invisible characters once normalised', () => {
+    for (const hidden of ['­', '͏', '᠎', '​', 'ㅤ', 'ﾠ']) {
+      const input = `f${hidden}uck`;
+      expect(normaliseText(input)).toBe('fuck');
+      expect(filterProfanity(normaliseText(input)).hasProfanity).toBe(true);
+    }
+  });
+
   it('counts every match', () => {
     expect(filterProfanity('shit fuck shit').matchCount).toBe(3);
   });
@@ -50,12 +75,28 @@ describe('normaliseText', () => {
     expect(normaliseText('﻿hi⁦')).toBe('hi');
   });
 
+  it('leaves one space where a control character sat between spaces', () => {
+    expect(normaliseText('a  b')).toBe('a b');
+    expect(normaliseText('ab')).toBe('ab');
+  });
+
   it('applies NFKC so look-alike forms fold to plain text', () => {
     expect(normaliseText('Ｓｈｉｐ ﬁle')).toBe('Ship file');
   });
 });
 
 describe('isHttpsUrl', () => {
+  it('works without URL.canParse (Safari < 17)', () => {
+    const canParse = Object.getOwnPropertyDescriptor(URL, 'canParse');
+    Reflect.deleteProperty(URL, 'canParse');
+    try {
+      expect(isHttpsUrl('https://example.com')).toBe(true);
+      expect(isHttpsUrl('not a url')).toBe(false);
+    } finally {
+      if (canParse) Object.defineProperty(URL, 'canParse', canParse);
+    }
+  });
+
   it.each(['https://example.com', 'https://a.b/c?d=e#f', 'https://xn--bcher-kva.example/'])(
     'accepts %s',
     (url) => {

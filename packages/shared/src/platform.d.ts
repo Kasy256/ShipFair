@@ -12,5 +12,4 @@ interface URL {
 declare var URL: {
   prototype: URL;
   new (url: string, base?: string): URL;
-  canParse(url: string, base?: string): boolean;
 };
