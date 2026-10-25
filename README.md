@@ -29,17 +29,39 @@ Three.js + Rapier (engine) · React 19 + Tailwind (UI) · Vite 8 · TypeScript �
 
 Details and reasoning are in [`docs/TECH_STACK.md`](docs/TECH_STACK.md).
 
-## Getting started (once prompt 01 has run)
+## Getting started
 
-**Prerequisites:** Node 24 LTS, pnpm 12, Docker (for local Supabase), the Supabase CLI, and a Cloudflare account with wrangler logged in.
+**Prerequisites:** Node 24 LTS (`.nvmrc`) and pnpm 12 (`corepack enable` picks up the pinned version). Local dev needs no Cloudflare login. Docker and the Supabase CLI are needed once prompt 03 adds the database.
 
 ```bash
 pnpm install
-cp .env.example .env.local          # fill in values (see docs/INFRASTRUCTURE.md §4)
-supabase start                      # local DB + auth
-supabase db reset                   # apply migrations + seed
-pnpm dev                            # http://localhost:5173
+pnpm dev                            # web on http://localhost:5173, realtime on http://localhost:1999
 ```
+
+Check that both Workers are up and can reach each other over their service bindings:
+
+```bash
+curl localhost:5173/api/health            # {"ok":true,"version":"0.0.0"}
+curl localhost:1999/health                # {"ok":true}
+curl localhost:5173/api/dev/ping-realtime # web → realtime RPC
+curl localhost:1999/dev/ping-web          # realtime → web RPC
+```
+
+Other commands:
+
+```bash
+pnpm lint          # biome ci
+pnpm format        # biome check --write
+pnpm typecheck
+pnpm test          # vitest (Worker tests run inside workerd)
+pnpm build
+pnpm --filter @shipfair/e2e exec playwright install chromium   # once
+pnpm e2e           # playwright; needs `pnpm dev` running
+```
+
+From prompt 03 on, also run `supabase start` and `supabase db reset` before `pnpm dev`, and copy `.env.example` to `.env.local` (see `docs/INFRASTRUCTURE.md` §4).
+
+If a ping returns `Network connection lost` after a dev server was killed hard, delete the stale entries in wrangler's dev registry (`~/.wrangler/registry`, or `%APPDATA%\xdg.config\.wrangler\registry` on Windows) and restart `pnpm dev`.
 
 ## How we build it
 1. Open the repo in Claude Code.
