@@ -1,0 +1,4 @@
+{
+  "extends": "@shipfair/config/tsconfig/browser.json",
+  "include": ["src", "vitest.config.ts"]
+}
