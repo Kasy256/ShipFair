@@ -10,3 +10,5 @@ minimumReleaseAgeExclude:
 allowBuilds:
   esbuild: true
   workerd: true
+  # Optional native msgpack accelerator for Node only; browsers and Workers use the JS path.
+  msgpackr-extract: false

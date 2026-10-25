@@ -3,5 +3,5 @@
   "compilerOptions": {
     "lib": ["ES2024"]
   },
-  "include": ["src", "vitest.config.ts"]
+  "include": ["src", "test", "vitest.config.ts"]
 }

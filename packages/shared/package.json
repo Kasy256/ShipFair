@@ -3,16 +3,23 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "devDependencies": {
     "@shipfair/config": "workspace:*",
+    "@vitest/coverage-v8": "4.1.12",
     "typescript": "7.0.2",
     "vitest": "4.1.12"
+  },
+  "dependencies": {
+    "msgpackr": "2.1.2",
+    "obscenity": "0.4.6",
+    "zod": "4.6.7"
   }
 }
