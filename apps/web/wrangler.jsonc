@@ -1,0 +1,42 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "shipfair-web",
+  "main": "./worker/index.ts",
+  // Held back for @cloudflare/vitest-pool-workers 0.23 (TECH_STACK.md "Known version constraints").
+  "compatibility_date": "2026-08-15",
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+  // RPC to the realtime Worker. Locally this resolves through wrangler's dev registry.
+  "services": [
+    { "binding": "REALTIME", "service": "shipfair-realtime", "entrypoint": "RealtimeRpc" }
+  ],
+  // Names only for now. Routes, KV, R2 and secrets arrive with prompt 15.
+  "env": {
+    "staging": {
+      "vars": { "ENVIRONMENT": "staging" },
+      "services": [
+        {
+          "binding": "REALTIME",
+          "service": "shipfair-realtime-staging",
+          "entrypoint": "RealtimeRpc"
+        }
+      ]
+    },
+    "production": {
+      "vars": { "ENVIRONMENT": "production" },
+      "services": [
+        {
+          "binding": "REALTIME",
+          "service": "shipfair-realtime-production",
+          "entrypoint": "RealtimeRpc"
+        }
+      ]
+    }
+  }
+}
