@@ -90,6 +90,26 @@ describe('nearestBooth', () => {
     expect(nearestBooth(layout, 0, 0, 1)).toBeNull();
   });
 
+  it('handles an infinite radius by scanning only occupied cells', () => {
+    const started = performance.now();
+    const nearest = nearestBooth(layout, 0, 0, Number.POSITIVE_INFINITY);
+    expect(performance.now() - started).toBeLessThan(250);
+    // Same rule as nearestBooth: smallest squared distance, then lowest booth id.
+    const sq = (a: (typeof anchors)[number]) => (a?.x ?? 0) ** 2 + (a?.z ?? 0) ** 2;
+    const closest = [...anchors].sort(
+      (a, b) => sq(a) - sq(b) || ((a?.boothId ?? '') < (b?.boothId ?? '') ? -1 : 1),
+    )[0];
+    expect(nearest?.boothId).toBe(closest?.boothId);
+  });
+
+  it('returns null for NaN or negative input instead of looping', () => {
+    expect(nearestBooth(layout, Number.NaN, 0, 5)).toBeNull();
+    expect(nearestBooth(layout, 0, Number.POSITIVE_INFINITY, 5)).toBeNull();
+    expect(nearestBooth(layout, 0, 0, Number.NaN)).toBeNull();
+    expect(nearestBooth(layout, 0, 0, -1)).toBeNull();
+    expect(nearestBooth(layoutCity(DISTRICTS, []), 0, 0, 1e6)).toBeNull();
+  });
+
   it('breaks distance ties by booth id', () => {
     // Two booths across the street from each other; the midpoint is equidistant from both anchors.
     const small = layoutCity(

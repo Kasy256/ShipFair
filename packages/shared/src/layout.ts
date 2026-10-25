@@ -23,47 +23,54 @@ import type { District } from './schemas/district.ts';
 export type Facing = 0 | 1 | 2 | 3;
 
 export interface Rect {
-  minX: number;
-  minZ: number;
-  maxX: number;
-  maxZ: number;
+  readonly minX: number;
+  readonly minZ: number;
+  readonly maxX: number;
+  readonly maxZ: number;
 }
 
 export interface Lot {
-  boothId: string | null;
-  tier: BoothTier | null;
+  readonly boothId: string | null;
+  readonly tier: BoothTier | null;
   /** Centre of the footprint. */
-  x: number;
-  z: number;
+  readonly x: number;
+  readonly z: number;
   /** Direction the booth's front (and its street) faces. */
-  facing: Facing;
+  readonly facing: Facing;
   /** Lots covered along the street: 2 for pavilions, else 1. */
-  span: 1 | 2;
+  readonly span: 1 | 2;
 }
 
 export interface DistrictLayout {
-  id: number;
-  slug: string;
-  theme: string;
+  readonly id: number;
+  readonly slug: string;
+  readonly theme: string;
   /** Direction from the plaza toward the district's far end. */
-  outward: Facing;
+  readonly outward: Facing;
   /** World position of the district's local origin (plaza end of the spine street). */
-  origin: { x: number; z: number };
+  readonly origin: { readonly x: number; readonly z: number };
   /** Local extents: `w` along the plaza, `d` away from it. */
-  size: { w: number; d: number };
-  rect: Rect;
-  streetCount: number;
+  readonly size: { readonly w: number; readonly d: number };
+  readonly rect: Rect;
+  readonly streetCount: number;
   /** The spine first, then cross streets from the plaza outward. */
-  streets: Rect[];
-  lots: Lot[];
+  readonly streets: readonly Rect[];
+  readonly lots: readonly Lot[];
 }
 
+/**
+ * Immutable (deep-frozen): the spatial index in layout-query.ts is cached per layout object, so a
+ * layout must never change after it's built. For new data, call `layoutCity` again.
+ */
 export interface CityLayout {
-  plaza: { rect: Rect; spawn: { x: number; z: number; yaw: number } };
-  districts: DistrictLayout[];
-  bounds: Rect;
+  readonly plaza: {
+    readonly rect: Rect;
+    readonly spawn: { readonly x: number; readonly z: number; readonly yaw: number };
+  };
+  readonly districts: readonly DistrictLayout[];
+  readonly bounds: Rect;
   /** Booths whose district isn't in the snapshot. */
-  unplaced: string[];
+  readonly unplaced: readonly string[];
 }
 
 export type LayoutBooth = Pick<BoothPublic, 'id' | 'districtId' | 'approvedAt' | 'tier'>;
@@ -252,18 +259,25 @@ export function layoutCity(
     maxZ: m(PLAZA_HALF),
   };
   const laidOut = ring.map((d, i) => layoutDistrict(d, i, byDistrict.get(d.id) ?? []));
-  const bounds = { ...plazaRect };
-  for (const { rect } of laidOut) {
-    bounds.minX = Math.min(bounds.minX, rect.minX);
-    bounds.minZ = Math.min(bounds.minZ, rect.minZ);
-    bounds.maxX = Math.max(bounds.maxX, rect.maxX);
-    bounds.maxZ = Math.max(bounds.maxZ, rect.maxZ);
-  }
+  const bounds: Rect = {
+    minX: Math.min(plazaRect.minX, ...laidOut.map((d) => d.rect.minX)),
+    minZ: Math.min(plazaRect.minZ, ...laidOut.map((d) => d.rect.minZ)),
+    maxX: Math.max(plazaRect.maxX, ...laidOut.map((d) => d.rect.maxX)),
+    maxZ: Math.max(plazaRect.maxZ, ...laidOut.map((d) => d.rect.maxZ)),
+  };
 
-  return {
+  return deepFreeze({
     plaza: { rect: plazaRect, spawn: { x: 0, z: 0, yaw: 0 } },
     districts: laidOut,
     bounds,
     unplaced: unplaced.sort(compareStrings),
-  };
+  });
+}
+
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
 }

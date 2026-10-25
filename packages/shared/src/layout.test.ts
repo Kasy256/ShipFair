@@ -118,6 +118,18 @@ describe('layoutCity', () => {
     expect(stallLots.every((l) => l.z < (pavilion as Lot).z)).toBe(true);
   });
 
+  it('returns a deep-frozen layout, so the cached spatial index can never go stale', () => {
+    const layout = layoutCity(ONE, [booth('a', 1, 0)]);
+    const lot = layout.districts[0]?.lots[0] as Lot;
+    expect(Object.isFrozen(layout)).toBe(true);
+    expect(Object.isFrozen(layout.districts)).toBe(true);
+    expect(Object.isFrozen(lot)).toBe(true);
+    expect(Object.isFrozen(layout.bounds)).toBe(true);
+    expect(() => {
+      (lot as { boothId: string | null }).boothId = 'b';
+    }).toThrow(TypeError);
+  });
+
   it('skips booths whose district is missing, and duplicate ids', () => {
     const layout = layoutCity(ONE, [booth('x', 99, 0), booth('a', 1, 1), booth('a', 1, 2)]);
     expect(layout.unplaced).toEqual(['x']);

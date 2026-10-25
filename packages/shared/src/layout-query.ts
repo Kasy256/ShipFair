@@ -13,6 +13,11 @@ export interface BoothAnchor {
 interface LayoutIndex {
   readonly anchors: Map<string, BoothAnchor>;
   readonly grid: Map<number, BoothAnchor[]>;
+  /** Occupied cell range, so a query never walks cells outside the city. */
+  readonly minCx: number;
+  readonly maxCx: number;
+  readonly minCz: number;
+  readonly maxCz: number;
 }
 
 const CM = 100;
@@ -47,19 +52,29 @@ function getIndex(layout: CityLayout): LayoutIndex {
   if (cached) return cached;
   const anchors = new Map<string, BoothAnchor>();
   const grid = new Map<number, BoothAnchor[]>();
+  let minCx = Number.POSITIVE_INFINITY;
+  let maxCx = Number.NEGATIVE_INFINITY;
+  let minCz = Number.POSITIVE_INFINITY;
+  let maxCz = Number.NEGATIVE_INFINITY;
   for (const district of layout.districts) {
     for (const lot of district.lots) {
       if (lot.boothId === null) continue;
       const { x, z } = inFront(lot, 0);
       const anchor: BoothAnchor = { boothId: lot.boothId, districtId: district.id, lot, x, z };
       anchors.set(lot.boothId, anchor);
-      const key = cellKey(cellOf(x), cellOf(z));
+      const cx = cellOf(x);
+      const cz = cellOf(z);
+      minCx = Math.min(minCx, cx);
+      maxCx = Math.max(maxCx, cx);
+      minCz = Math.min(minCz, cz);
+      maxCz = Math.max(maxCz, cz);
+      const key = cellKey(cx, cz);
       const cell = grid.get(key);
       if (cell) cell.push(anchor);
       else grid.set(key, [anchor]);
     }
   }
-  const index = { anchors, grid };
+  const index = { anchors, grid, minCx, maxCx, minCz, maxCz };
   indexes.set(layout, index);
   return index;
 }
@@ -98,14 +113,17 @@ export function nearestBooth(
   z: number,
   radius: number,
 ): BoothAnchor | null {
-  const { grid } = getIndex(layout);
+  if (!(radius >= 0) || !Number.isFinite(x) || !Number.isFinite(z)) return null;
+  const { grid, minCx, maxCx, minCz, maxCz } = getIndex(layout);
   const maxSq = radius * radius;
   let best: BoothAnchor | null = null;
   let bestSq = Number.POSITIVE_INFINITY;
-  const cx1 = cellOf(x + radius);
-  const cz0 = cellOf(z - radius);
-  const cz1 = cellOf(z + radius);
-  for (let cx = cellOf(x - radius); cx <= cx1; cx++) {
+  // Clamp to occupied cells: a huge (or infinite) radius costs at most one pass over the grid.
+  const cx0 = Math.max(cellOf(x - radius), minCx);
+  const cx1 = Math.min(cellOf(x + radius), maxCx);
+  const cz0 = Math.max(cellOf(z - radius), minCz);
+  const cz1 = Math.min(cellOf(z + radius), maxCz);
+  for (let cx = cx0; cx <= cx1; cx++) {
     for (let cz = cz0; cz <= cz1; cz++) {
       const cell = grid.get(cellKey(cx, cz));
       if (!cell) continue;
