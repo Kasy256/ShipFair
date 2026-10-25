@@ -55,9 +55,29 @@ describe('createBucket', () => {
     expect(createBucket(2, 1, { tokens: 99, lastMs: null }).peek(0)).toBe(2);
   });
 
+  it('refuses NaN and infinite inputs without poisoning the state', () => {
+    const bucket = createBucket(3, 1);
+    expect(bucket.take(1, Number.NaN)).toBe(false);
+    expect(bucket.take(Number.NaN)).toBe(false);
+    expect(bucket.take(Number.POSITIVE_INFINITY)).toBe(false);
+    expect(bucket.take(1, -1)).toBe(false);
+    expect(bucket.peek(Number.NaN)).toBe(3);
+    // Still limiting: 3 tokens, then refused.
+    expect([1, 2, 3, 4].map(() => bucket.take(1))).toEqual([true, true, true, false]);
+    expect(Number.isFinite(bucket.state().tokens)).toBe(true);
+  });
+
+  it('falls back to a full bucket when restored state is malformed', () => {
+    expect(createBucket(2, 1, { tokens: Number.NaN, lastMs: 0 }).peek(0)).toBe(2);
+    expect(createBucket(2, 1, { tokens: 1, lastMs: Number.NaN }).peek(0)).toBe(2);
+    expect(createBucket(2, 1, { tokens: -5, lastMs: 0 }).peek(0)).toBe(0);
+  });
+
   it('rejects nonsense parameters', () => {
     expect(() => createBucket(0, 1)).toThrow(RangeError);
     expect(() => createBucket(1, -1)).toThrow(RangeError);
     expect(() => createBucket(Number.NaN, 1)).toThrow(RangeError);
+    expect(() => createBucket(Number.POSITIVE_INFINITY, 1)).toThrow(RangeError);
+    expect(() => createBucket(1, Number.POSITIVE_INFINITY)).toThrow(RangeError);
   });
 });

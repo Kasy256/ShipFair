@@ -17,18 +17,31 @@ const MS_PER_S = 1000;
 
 /**
  * Token bucket, full at creation. Time is passed in, so it is pure and testable.
- * A clock that goes backwards refills nothing rather than throwing.
+ * A clock that goes backwards refills nothing rather than throwing. Non-finite times or costs are
+ * refused, so a NaN can never poison the state and switch the limit off.
  */
 export function createBucket(
   capacity: number,
   refillPerSec: number,
   initial?: BucketState,
 ): TokenBucket {
-  if (!(capacity > 0) || !(refillPerSec >= 0)) {
-    throw new RangeError('createBucket needs capacity > 0 and refillPerSec >= 0');
+  if (
+    !(
+      capacity > 0 &&
+      Number.isFinite(capacity) &&
+      refillPerSec >= 0 &&
+      Number.isFinite(refillPerSec)
+    )
+  ) {
+    throw new RangeError('createBucket needs finite capacity > 0 and refillPerSec >= 0');
   }
-  let tokens = initial ? Math.min(initial.tokens, capacity) : capacity;
-  let lastMs = initial ? initial.lastMs : null;
+  // Restored state comes from storage; anything malformed falls back to a fresh, full bucket.
+  const isValidState =
+    initial !== undefined &&
+    Number.isFinite(initial.tokens) &&
+    (initial.lastMs === null || Number.isFinite(initial.lastMs));
+  let tokens = isValidState ? Math.min(Math.max(initial.tokens, 0), capacity) : capacity;
+  let lastMs = isValidState ? initial.lastMs : null;
 
   const refill = (nowMs: number): void => {
     if (lastMs === null) {
@@ -43,13 +56,14 @@ export function createBucket(
 
   return {
     take(nowMs, cost = 1) {
+      if (!Number.isFinite(nowMs) || !Number.isFinite(cost) || cost < 0) return false;
       refill(nowMs);
       if (tokens < cost) return false;
       tokens -= cost;
       return true;
     },
     peek(nowMs) {
-      refill(nowMs);
+      if (Number.isFinite(nowMs)) refill(nowMs);
       return tokens;
     },
     state: () => ({ tokens, lastMs }),

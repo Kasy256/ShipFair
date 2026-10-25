@@ -8,8 +8,13 @@ export const Environment = z.enum(['development', 'staging', 'production']);
 export type Environment = z.infer<typeof Environment>;
 
 const Secret = z.string().min(1);
-// Locally Supabase and the realtime Worker run on http://localhost, so these accept http too.
-const ServiceUrl = z.url({ protocol: /^https?$/ });
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+// https everywhere. Plain http only to loopback, where local Supabase and wrangler dev run, so a
+// production http URL (a JWKS anyone on the path could swap, a service key sent in clear) fails.
+const ServiceUrl = z.url({ protocol: /^https?$/ }).refine((value) => {
+  const url = new URL(value);
+  return url.protocol === 'https:' || LOOPBACK_HOSTS.has(url.hostname);
+}, 'Use https (http is only allowed for localhost)');
 const Host = z
   .string()
   .regex(/^[a-z0-9.-]+(:\d{1,5})?$/i, 'Use a host name, optionally with :port');
@@ -44,7 +49,11 @@ export const WebWorkerEnv = z.object({
 });
 export type WebWorkerEnv = z.infer<typeof WebWorkerEnv>;
 
-const OptionalInt = z.coerce.number().int().positive().optional();
+// Unset and empty (`AOI_RADIUS_M=`) both mean "no override".
+const OptionalInt = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.coerce.number().int().positive().optional(),
+);
 
 /** Vars and secrets of the realtime Worker. Limit overrides exist for load tests only. */
 export const RealtimeEnv = z.object({

@@ -195,6 +195,28 @@ describe('env schemas', () => {
     expect(WebWorkerEnv.safeParse({ ...base, ENVIRONMENT: 'prod' }).success).toBe(false);
   });
 
+  it('requires https for service URLs except on loopback', () => {
+    const base = { ENVIRONMENT: 'production', STATS_INGEST_SECRET: 'stats' };
+    const jwks = (url: string) =>
+      RealtimeEnv.safeParse({ ...base, SUPABASE_JWKS_URL: url }).success;
+    expect(jwks('https://x.supabase.co/auth/v1/.well-known/jwks.json')).toBe(true);
+    expect(jwks('http://x.supabase.co/auth/v1/.well-known/jwks.json')).toBe(false);
+    expect(jwks('http://127.0.0.1:54321/auth/v1/.well-known/jwks.json')).toBe(true);
+    expect(jwks('http://localhost:54321/jwks')).toBe(true);
+    expect(jwks('http://[::1]:54321/jwks')).toBe(true);
+    expect(jwks('http://localhost.evil.com/jwks')).toBe(false);
+  });
+
+  it('treats an empty override as unset', () => {
+    const env = RealtimeEnv.parse({
+      ENVIRONMENT: 'development',
+      SUPABASE_JWKS_URL: 'http://127.0.0.1:54321/auth/v1/.well-known/jwks.json',
+      STATS_INGEST_SECRET: 'stats',
+      AOI_RADIUS_M: '',
+    });
+    expect(env.AOI_RADIUS_M).toBeUndefined();
+  });
+
   it('coerces realtime limit overrides from strings', () => {
     const env = RealtimeEnv.parse({
       ENVIRONMENT: 'staging',
