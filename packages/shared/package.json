@@ -12,7 +12,13 @@
   },
   "devDependencies": {
     "@shipfair/config": "workspace:*",
+    "@vitest/coverage-v8": "4.1.12",
     "typescript": "7.0.2",
     "vitest": "4.1.12"
+  },
+  "dependencies": {
+    "msgpackr": "2.1.2",
+    "obscenity": "0.4.6",
+    "zod": "4.6.7"
   }
 }
