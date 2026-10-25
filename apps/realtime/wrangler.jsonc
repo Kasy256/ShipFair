@@ -1,0 +1,45 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "shipfair-realtime",
+  "main": "./src/index.ts",
+  // Held back for @cloudflare/vitest-pool-workers 0.23 (TECH_STACK.md "Known version constraints").
+  "compatibility_date": "2026-08-15",
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+  // Binding names map to PartyServer paths: /parties/coordinator/:id and /parties/world-shard/:id.
+  "durable_objects": {
+    "bindings": [
+      { "name": "Coordinator", "class_name": "Coordinator" },
+      { "name": "WorldShard", "class_name": "WorldShard" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Coordinator", "WorldShard"] }],
+  // RPC to the web Worker. Locally this resolves through wrangler's dev registry.
+  "services": [{ "binding": "WEB", "service": "shipfair-web", "entrypoint": "WebRpc" }],
+  // Names only for now. Routes and secrets arrive with prompt 15.
+  "env": {
+    "staging": {
+      "vars": { "ENVIRONMENT": "staging" },
+      "durable_objects": {
+        "bindings": [
+          { "name": "Coordinator", "class_name": "Coordinator" },
+          { "name": "WorldShard", "class_name": "WorldShard" }
+        ]
+      },
+      "services": [{ "binding": "WEB", "service": "shipfair-web-staging", "entrypoint": "WebRpc" }]
+    },
+    "production": {
+      "vars": { "ENVIRONMENT": "production" },
+      "durable_objects": {
+        "bindings": [
+          { "name": "Coordinator", "class_name": "Coordinator" },
+          { "name": "WorldShard", "class_name": "WorldShard" }
+        ]
+      },
+      "services": [
+        { "binding": "WEB", "service": "shipfair-web-production", "entrypoint": "WebRpc" }
+      ]
+    }
+  }
+}

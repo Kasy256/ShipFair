@@ -1,0 +1,17 @@
+{
+  "name": "@shipfair/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@shipfair/config": "workspace:*",
+    "@shipfair/shared": "workspace:*",
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
+}

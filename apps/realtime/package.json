@@ -1,0 +1,23 @@
+{
+  "name": "@shipfair/realtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 1999 --inspector-port 9230",
+    "build": "wrangler deploy --dry-run --env=\"\" --outdir dist",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "partyserver": "0.5.10"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.23.0",
+    "@cloudflare/workers-types": "5.20261025.1",
+    "@shipfair/config": "workspace:*",
+    "typescript": "7.0.2",
+    "vitest": "4.1.12",
+    "wrangler": "4.152.0"
+  }
+}

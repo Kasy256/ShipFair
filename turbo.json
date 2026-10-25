@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {},
+    "test": {},
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "e2e": {
+      "cache": false
+    },
+    "//#lint:biome": {
+      "cache": false
+    }
+  }
+}
