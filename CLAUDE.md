@@ -37,7 +37,8 @@ pnpm build
 4. No per-frame allocations in the engine. Dispose GPU resources. Instancing first.
 5. No secrets in client code. Only `VITE_*` values reach the browser.
 6. Engine tests use deterministic stepping (`engine.step(dt, n)`), not real-time waits.
-7. Keep PRs focused on the current prompt (one prompt = one PR, in reviewable commits). If you find work outside scope, list it under "Follow-ups" instead of doing it.
+7. Keep PRs focused on the current prompt (one prompt = one PR, in reviewable commits).
+8. Branch from `Development` and open PRs into `Development`. Never commit or push to `main`; it only receives reviewed `Development` → `main` PRs. If you find work outside scope, list it under "Follow-ups" instead of doing it.
 
 ## When you finish a task
 Report:
