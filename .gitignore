@@ -36,4 +36,8 @@ blob-report/
 art/packs/
 art/previews/*.png
 art/reports/
+
+# pnpm assets:build output (content-hashed, regenerated from art/export)
+apps/web/public/assets/
+apps/web/public/basis/
 __pycache__/
