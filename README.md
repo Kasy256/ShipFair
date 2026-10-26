@@ -20,7 +20,7 @@ docs/
 prompts/
   README.md                   How to run the prompts with Claude Code
   TEMPLATE.md                 Template for writing new prompts
-  00-kickoff.md … 16-launch-prep.md   (04a art automation runs before 04b art pipeline)
+  00-kickoff.md … 16-launch-prep.md   (04a art automation, then 04c avatar wardrobe, run before 04b art pipeline)
 .env.example                  Every config value the apps need
 ```
 
