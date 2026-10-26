@@ -21,7 +21,15 @@
     "db:test": "supabase test db",
     "db:lint": "supabase db lint --level warning --fail-on warning && pnpm db:check-rls",
     "db:types": "supabase gen types typescript --local > packages/shared/src/db.types.ts && biome check --write packages/shared/src/db.types.ts",
-    "db:check-rls": "docker exec -i supabase_db_shipfair psql -U postgres -q -v ON_ERROR_STOP=1 < supabase/checks/rls.sql"
+    "db:check-rls": "docker exec -i supabase_db_shipfair psql -U postgres -q -v ON_ERROR_STOP=1 < supabase/checks/rls.sql",
+    "art:inspect": "node tools/blender/run.ts inspect",
+    "art:characters": "node tools/blender/run.ts characters",
+    "art:animations": "node tools/blender/run.ts animations",
+    "art:booth-kit": "node tools/blender/run.ts booth-kit",
+    "art:props": "node tools/blender/run.ts props",
+    "art:previews": "node tools/blender/run.ts previews",
+    "art:build-all": "node tools/blender/run.ts build-all",
+    "art:test": "node tools/blender/run.ts test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",

@@ -1,0 +1,15 @@
+{
+  "note": "Knobs for pnpm art:characters. Names are regexes matched against file stems found by art:inspect.",
+  "bodyFile": "FullBody$",
+  "hairFile": "^Hair_",
+  "hairPathPrefer": "rigged to head bone",
+  "hairExclude": [],
+  "eyebrowsMaxTris": 300,
+  "hairFallbackOffsetM": [0, 0, 0.05],
+  "hairFit": {
+    "maxCentreOffsetM": 0.12,
+    "minBelowHeadM": 0.2,
+    "maxAboveHeadM": 0.35,
+    "maxWidthM": 0.5
+  }
+}

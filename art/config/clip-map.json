@@ -1,0 +1,32 @@
+{
+  "note": "Contract clip -> candidate action-name regexes (case-insensitive), best first. Names are matched without the importer's '_Armature' suffix. See art/reports/animations.json for every action in the pack.",
+  "sourceFile": "^UAL",
+  "avoidFile": "_RM$",
+  "rootBones": ["root", "pelvis"],
+  "clips": {
+    "idle": ["^Idle_Loop$", "^Idle"],
+    "walk": ["^Walk_Loop$", "^Walk"],
+    "run": ["^Jog_Fwd_Loop$", "^Sprint_Loop$", "^Run"],
+    "jump_start": ["^Jump_Start$"],
+    "jump_air": ["^Jump_Loop$", "^Jump_Air", "^Fall"],
+    "jump_land": ["^Jump_Land$"],
+    "sit_idle": ["^Sitting_Idle_Loop$", "^Sit.*Idle"],
+    "emote_wave": ["Wave", "Waving"],
+    "emote_clap": ["Clap"],
+    "emote_dance": ["^Dance_Loop$", "Dance"],
+    "emote_cheer": ["Cheer", "Victory", "Celebrat"],
+    "emote_point": ["Point"],
+    "emote_sit": ["Sit_?Floor", "Sit_?Ground", "Ground_?Sit"],
+    "talk": ["^Idle_Talking_Loop$", "Talk"]
+  },
+  "mixamo": {
+    "emote_wave": "Waving",
+    "emote_clap": "Clapping",
+    "emote_cheer": "Cheering",
+    "emote_point": "Pointing",
+    "emote_sit": "Sitting Idle (on floor) / Sit To Ground",
+    "emote_dance": "Hip Hop Dancing",
+    "talk": "Talking",
+    "sit_idle": "Sitting Idle"
+  }
+}

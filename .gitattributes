@@ -1,3 +1,5 @@
 * text=auto eol=lf
 *.png binary
 *.glb binary
+art/export/**/*.glb filter=lfs diff=lfs merge=lfs -text
+art/source/**/*.blend filter=lfs diff=lfs merge=lfs -text

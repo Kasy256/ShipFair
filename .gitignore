@@ -31,3 +31,9 @@ Thumbs.db
 *.tsbuildinfo
 blob-report/
 .vite/
+
+# Art pipeline (tools/blender): downloaded packs, rendered previews and step reports are regenerated
+art/packs/
+art/previews/*.png
+art/reports/
+__pycache__/
