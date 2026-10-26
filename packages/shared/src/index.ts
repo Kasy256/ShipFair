@@ -3,6 +3,7 @@ export { APP_NAME, APP_TAGLINE, APP_URL_DEFAULT } from './brand.ts';
 export * from './constants.ts';
 export type { Database, Enums, Json, Tables, TablesInsert, TablesUpdate } from './db.types.ts';
 export * from './events.ts';
+export { HAIR_HEX, PALETTE_HEX, SKIN_HEX } from './generated/wardrobe-ids.ts';
 export * from './layout.ts';
 export * from './layout-query.ts';
 export * from './protocol.ts';
