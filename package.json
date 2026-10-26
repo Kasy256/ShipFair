@@ -32,7 +32,9 @@
     "art:props": "node tools/blender/run.ts props",
     "art:previews": "node tools/blender/run.ts previews",
     "art:build-all": "node tools/blender/run.ts build-all",
-    "art:test": "node tools/blender/run.ts test"
+    "art:test": "node tools/blender/run.ts test",
+    "assets:build": "node tools/assets/build.ts",
+    "assets:palette": "node tools/assets/palette.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
