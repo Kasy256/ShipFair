@@ -31,7 +31,7 @@ Details and reasoning are in [`docs/TECH_STACK.md`](docs/TECH_STACK.md).
 
 ## Getting started
 
-**Prerequisites:** Node 24 LTS (`.nvmrc`) and pnpm 12 (`corepack enable` picks up the pinned version). Local dev needs no Cloudflare login. Docker and the Supabase CLI are needed once prompt 03 adds the database.
+**Prerequisites:** Node 24 LTS (`.nvmrc`) and pnpm 12 (`corepack enable` picks up the pinned version). Local dev needs no Cloudflare login. Docker is needed for the local database. The Supabase CLI comes in as a dev dependency (`pnpm exec supabase`).
 
 ```bash
 pnpm install
@@ -59,7 +59,18 @@ pnpm --filter @shipfair/e2e exec playwright install chromium   # once
 pnpm e2e           # playwright; needs `pnpm dev` running
 ```
 
-From prompt 03 on, also run `supabase start` and `supabase db reset` before `pnpm dev`, and copy `.env.example` to `.env.local` (see `docs/INFRASTRUCTURE.md` §4).
+### Database (local Supabase in Docker)
+
+```bash
+pnpm db:start      # first run pulls the images; prints the local URLs and keys
+pnpm db:reset      # re-apply every migration from zero, then supabase/seed.sql
+pnpm db:test       # pgTAP policy tests in supabase/tests
+pnpm db:lint       # supabase db lint + the "every table has RLS" check
+pnpm db:types      # regenerate packages/shared/src/db.types.ts
+pnpm db:stop
+```
+
+Copy `.env.example` to `.env.local` and fill the Supabase keys from `pnpm exec supabase status` (see `docs/INFRASTRUCTURE.md` §4). The seed adds 40 fictional example booths and three email + password users for e2e: `maker1@example.com`, `maker2@example.com` and `admin@example.com` (role `admin`), all with password `password123`. Email sign-in exists locally only. GitHub and Google sign-in stay off until you export the `SUPABASE_AUTH_EXTERNAL_*` values from `.env.example` and restart.
 
 If a ping returns `Network connection lost` after a dev server was killed hard, delete the stale entries in wrangler's dev registry (`~/.wrangler/registry`, or `%APPDATA%\xdg.config\.wrangler\registry` on Windows) and restart `pnpm dev`.
 

@@ -14,10 +14,18 @@
     "lint": "turbo run lint:biome",
     "format": "biome check --write",
     "e2e": "turbo run e2e",
-    "lint:biome": "biome ci"
+    "lint:biome": "biome ci",
+    "db:start": "node tools/db/ensure-signing-key.mjs && supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "db:lint": "supabase db lint --level warning --fail-on warning && pnpm db:check-rls",
+    "db:types": "supabase gen types typescript --local > packages/shared/src/db.types.ts && biome check --write packages/shared/src/db.types.ts",
+    "db:check-rls": "docker exec -i supabase_db_shipfair psql -U postgres -q -v ON_ERROR_STOP=1 < supabase/checks/rls.sql"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
+    "supabase": "2.122.0",
     "turbo": "2.11.10",
     "typescript": "7.0.2"
   }

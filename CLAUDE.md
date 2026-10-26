@@ -22,7 +22,10 @@ ShipFair (working name) is a free, walkable, multiplayer 3D city in the browser 
 ```
 pnpm install
 pnpm dev              # web (Vite + Worker) + realtime (wrangler dev)
-supabase start        # local Postgres/Auth in Docker
+pnpm db:start         # local Supabase (Postgres/Auth) in Docker
+pnpm db:reset && pnpm db:test   # migrations + seed from zero, then pgTAP policy tests
+pnpm db:lint          # supabase db lint + every-table-has-RLS check
+pnpm db:types         # regenerate packages/shared/src/db.types.ts
 pnpm biome check --write
 pnpm typecheck
 pnpm test             # vitest across workspace

@@ -1,6 +1,7 @@
 export { ALLOWLIST_TERMS, BLOCKLIST_PATTERNS } from './blocklist.ts';
 export { APP_NAME, APP_TAGLINE, APP_URL_DEFAULT } from './brand.ts';
 export * from './constants.ts';
+export type { Database, Enums, Json, Tables, TablesInsert, TablesUpdate } from './db.types.ts';
 export * from './events.ts';
 export * from './layout.ts';
 export * from './layout-query.ts';

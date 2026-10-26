@@ -74,3 +74,37 @@ jobs:
             e2e/artifacts
             dev.log
           retention-days: 7
+
+  db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Only Postgres, Auth and the REST API; the rest isn't used by these checks.
+      - name: Start Supabase
+        run: pnpm db:start -x studio,mailpit,realtime,storage-api,imgproxy,edge-runtime,logflare,vector,supavisor
+
+      - name: Reset (migrations from zero + seed)
+        run: pnpm db:reset
+
+      - name: Policy tests (pgTAP)
+        run: pnpm db:test
+
+      - name: Lint and RLS check
+        run: pnpm db:lint
+
+      - name: Generated types are up to date
+        run: |
+          pnpm db:types
+          git diff --exit-code packages/shared/src/db.types.ts
