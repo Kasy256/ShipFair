@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - e2e
+  - tools/blender
 minimumReleaseAgeExclude:
   - "@cloudflare/workers-types@5.20261025.1"
   - hono@4.13.14

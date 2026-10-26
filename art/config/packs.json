@@ -1,0 +1,61 @@
+{
+  "note": "Packs expected under ART_PACKS_DIR (one folder per id). Optional packs only produce warnings when missing.",
+  "packs": [
+    {
+      "id": "universal-base-characters",
+      "title": "Universal Base Characters (Standard)",
+      "author": "Quaternius",
+      "license": "CC0",
+      "url": "https://quaternius.com/packs/universalbasecharacters.html",
+      "required": true
+    },
+    {
+      "id": "universal-animation-library",
+      "title": "Universal Animation Library (Standard)",
+      "author": "Quaternius",
+      "license": "CC0",
+      "url": "https://quaternius.itch.io/",
+      "required": true
+    },
+    {
+      "id": "kenney-city-commercial",
+      "title": "City Kit (Commercial)",
+      "author": "Kenney",
+      "license": "CC0",
+      "url": "https://kenney.nl/assets/city-kit-commercial",
+      "required": false
+    },
+    {
+      "id": "kenney-city-roads",
+      "title": "City Kit (Roads)",
+      "author": "Kenney",
+      "license": "CC0",
+      "url": "https://kenney.nl/assets/city-kit-roads",
+      "required": false
+    },
+    {
+      "id": "kenney-city-suburban",
+      "title": "City Kit (Suburban)",
+      "author": "Kenney",
+      "license": "CC0",
+      "url": "https://kenney.nl/assets/city-kit-suburban",
+      "required": false
+    },
+    {
+      "id": "kenney-furniture",
+      "title": "Furniture Kit",
+      "author": "Kenney",
+      "license": "CC0",
+      "url": "https://kenney.nl/assets/furniture-kit",
+      "required": false
+    },
+    {
+      "id": "kenney-food",
+      "title": "Food Kit",
+      "author": "Kenney",
+      "license": "CC0",
+      "url": "https://kenney.nl/assets/food-kit",
+      "required": false
+    }
+  ]
+}

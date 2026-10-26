@@ -1,0 +1,85 @@
+{
+  "note": "16 colours, 4x4 squares left-to-right, top-to-bottom. Edit hex values here only; palette.png is generated.",
+  "colors": [
+    {
+      "name": "ground",
+      "hex": "#d9d6cf",
+      "group": "neutral"
+    },
+    {
+      "name": "wall",
+      "hex": "#f2f0eb",
+      "group": "neutral"
+    },
+    {
+      "name": "frame",
+      "hex": "#5b6170",
+      "group": "neutral"
+    },
+    {
+      "name": "charcoal",
+      "hex": "#2d3039",
+      "group": "neutral"
+    },
+    {
+      "name": "skin_1",
+      "hex": "#f3d2b8",
+      "group": "skin"
+    },
+    {
+      "name": "skin_2",
+      "hex": "#d9a37e",
+      "group": "skin"
+    },
+    {
+      "name": "skin_3",
+      "hex": "#a86f4c",
+      "group": "skin"
+    },
+    {
+      "name": "skin_4",
+      "hex": "#6b432c",
+      "group": "skin"
+    },
+    {
+      "name": "violet",
+      "hex": "#7c5cff",
+      "group": "accent"
+    },
+    {
+      "name": "sky",
+      "hex": "#3fa7f5",
+      "group": "accent"
+    },
+    {
+      "name": "mint",
+      "hex": "#3ccf9a",
+      "group": "accent"
+    },
+    {
+      "name": "leaf",
+      "hex": "#7bbf4a",
+      "group": "accent"
+    },
+    {
+      "name": "sun",
+      "hex": "#ffb23f",
+      "group": "accent"
+    },
+    {
+      "name": "coral",
+      "hex": "#ff6b6b",
+      "group": "accent"
+    },
+    {
+      "name": "glow_warm",
+      "hex": "#fff1c9",
+      "group": "glow"
+    },
+    {
+      "name": "glow_cool",
+      "hex": "#c9f2ff",
+      "group": "glow"
+    }
+  ]
+}

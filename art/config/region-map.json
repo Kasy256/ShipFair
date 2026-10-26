@@ -1,0 +1,30 @@
+{
+  "note": "Body faces take the region of their dominant deform bone. Patterns are case-insensitive regexes over the UE mannequin bone names listed in art/reports/inspect.json; the first match wins.",
+  "default": "TOP",
+  "rules": [
+    {
+      "region": "SKIN",
+      "patterns": ["^head$", "^neck_\\d+$"]
+    },
+    {
+      "region": "SKIN",
+      "patterns": [
+        "^lowerarm_[lr]$",
+        "^hand_[lr]$",
+        "^(thumb|index|middle|ring|pinky)_\\d+(_leaf)?_[lr]$"
+      ]
+    },
+    {
+      "region": "TOP",
+      "patterns": ["^spine_\\d+$", "^clavicle_[lr]$", "^upperarm_[lr]$"]
+    },
+    {
+      "region": "BOTTOM",
+      "patterns": ["^root$", "^pelvis$", "^thigh_[lr]$", "^calf_[lr]$"]
+    },
+    {
+      "region": "SHOES",
+      "patterns": ["^foot_[lr]$", "^ball(_leaf)?_[lr]$"]
+    }
+  ]
+}

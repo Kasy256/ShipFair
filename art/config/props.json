@@ -1,0 +1,227 @@
+{
+  "note": "Props to export. `match` is a regex over model file stems in `pack`. Each kit is scaled uniformly from its reference model; `heightM` or `heightRangeM` on a prop overrides that. `collider` overrides the shape-based guess.",
+  "kits": {
+    "kenney-city-roads": {
+      "reference": "^road-straight$",
+      "axis": "x",
+      "sizeM": 6.0,
+      "why": "road tile width = STREET_W_M"
+    },
+    "kenney-city-suburban": {
+      "sameAs": "kenney-city-roads"
+    },
+    "kenney-city-commercial": {
+      "sameAs": "kenney-city-roads"
+    },
+    "kenney-furniture": {
+      "reference": "^chair$",
+      "axis": "z",
+      "sizeM": 0.9,
+      "why": "chair height 0.9 m; bench seat lands near 0.45 m"
+    },
+    "kenney-food": {
+      "reference": "^barrel$",
+      "axis": "z",
+      "sizeM": 0.9
+    }
+  },
+  "props": [
+    {
+      "id": "bench_01",
+      "pack": "kenney-furniture",
+      "match": "^bench$",
+      "category": "bench"
+    },
+    {
+      "id": "bench_02",
+      "pack": "kenney-furniture",
+      "match": "^benchCushion$",
+      "category": "bench"
+    },
+    {
+      "id": "chair_01",
+      "pack": "kenney-furniture",
+      "match": "^chair$",
+      "category": "chair"
+    },
+    {
+      "id": "chair_02",
+      "pack": "kenney-furniture",
+      "match": "^chairModernCushion$",
+      "category": "chair"
+    },
+    {
+      "id": "chair_03",
+      "pack": "kenney-furniture",
+      "match": "^chairRounded$",
+      "category": "chair"
+    },
+    {
+      "id": "table_01",
+      "pack": "kenney-furniture",
+      "match": "^tableRound$",
+      "category": "table"
+    },
+    {
+      "id": "table_02",
+      "pack": "kenney-furniture",
+      "match": "^table$",
+      "category": "table"
+    },
+    {
+      "id": "table_03",
+      "pack": "kenney-furniture",
+      "match": "^tableCoffee$",
+      "category": "table"
+    },
+    {
+      "id": "lounge_01",
+      "pack": "kenney-furniture",
+      "match": "^loungeChair$",
+      "category": "chair"
+    },
+    {
+      "id": "sofa_01",
+      "pack": "kenney-furniture",
+      "match": "^loungeSofa$",
+      "category": "bench"
+    },
+    {
+      "id": "plant_01",
+      "pack": "kenney-furniture",
+      "match": "^pottedPlant$",
+      "category": "planter"
+    },
+    {
+      "id": "plant_02",
+      "pack": "kenney-furniture",
+      "match": "^plantSmall1$",
+      "category": "planter"
+    },
+    {
+      "id": "bin_01",
+      "pack": "kenney-furniture",
+      "match": "^trashcan$",
+      "category": "bin"
+    },
+    {
+      "id": "lamp_floor_01",
+      "pack": "kenney-furniture",
+      "match": "^lampRoundFloor$",
+      "category": "lamp"
+    },
+    {
+      "id": "laptop_01",
+      "pack": "kenney-furniture",
+      "match": "^laptop$",
+      "category": "decor",
+      "heightM": 0.23
+    },
+    {
+      "id": "tree_01",
+      "pack": "kenney-city-suburban",
+      "match": "^tree-large$",
+      "category": "tree",
+      "heightRangeM": [4, 6],
+      "collider": "cylinder"
+    },
+    {
+      "id": "tree_02",
+      "pack": "kenney-city-suburban",
+      "match": "^tree-small$",
+      "category": "tree",
+      "heightRangeM": [4, 6],
+      "collider": "cylinder"
+    },
+    {
+      "id": "planter_01",
+      "pack": "kenney-city-suburban",
+      "match": "^planter$",
+      "category": "planter"
+    },
+    {
+      "id": "fence_01",
+      "pack": "kenney-city-suburban",
+      "match": "^fence-low$",
+      "category": "fence"
+    },
+    {
+      "id": "lamp_01",
+      "pack": "kenney-city-roads",
+      "match": "^light-curved$",
+      "category": "lamp",
+      "heightM": 4.5,
+      "collider": "cylinder"
+    },
+    {
+      "id": "lamp_02",
+      "pack": "kenney-city-roads",
+      "match": "^light-square$",
+      "category": "lamp",
+      "heightM": 4.5,
+      "collider": "cylinder"
+    },
+    {
+      "id": "cone_01",
+      "pack": "kenney-city-roads",
+      "match": "^construction-cone$",
+      "category": "bollard",
+      "collider": "cylinder"
+    },
+    {
+      "id": "barrier_01",
+      "pack": "kenney-city-roads",
+      "match": "^construction-barrier$",
+      "category": "bollard"
+    },
+    {
+      "id": "dumpster_01",
+      "pack": "kenney-city-roads",
+      "match": "^dumpster$",
+      "category": "bin"
+    },
+    {
+      "id": "road_straight",
+      "pack": "kenney-city-roads",
+      "match": "^road-straight$",
+      "category": "road"
+    },
+    {
+      "id": "road_crossroad",
+      "pack": "kenney-city-roads",
+      "match": "^road-crossroad$",
+      "category": "road"
+    },
+    {
+      "id": "road_intersection",
+      "pack": "kenney-city-roads",
+      "match": "^road-intersection$",
+      "category": "road"
+    },
+    {
+      "id": "road_crossing",
+      "pack": "kenney-city-roads",
+      "match": "^road-crossing$",
+      "category": "road"
+    },
+    {
+      "id": "road_end",
+      "pack": "kenney-city-roads",
+      "match": "^road-end$",
+      "category": "road"
+    },
+    {
+      "id": "parasol_01",
+      "pack": "kenney-city-commercial",
+      "match": "^detail-parasol-a$",
+      "category": "parasol",
+      "collider": "cylinder"
+    }
+  ],
+  "wanted": {
+    "fountain": "fountain",
+    "foodCart": "cart|stall",
+    "bollard": "bollard"
+  },
+  "excludePaletteGroups": ["glow"]
+}
