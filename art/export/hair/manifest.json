@@ -1,0 +1,887 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "bald",
+      "name": "Bald",
+      "family": "none",
+      "length": "bald",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": null,
+        "body_superhero_m": null
+      },
+      "tris": {
+        "body_superhero_f": 0,
+        "body_superhero_m": 0
+      },
+      "thumb": "hair/thumbs/bald.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "buzz",
+      "name": "Buzz cut",
+      "family": "none",
+      "length": "buzz",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/buzz_f.glb",
+        "body_superhero_m": "hair/buzz_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 636,
+        "body_superhero_m": 666
+      },
+      "thumb": "hair/thumbs/buzz.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "fade_low",
+      "name": "Low fade",
+      "family": "none",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/fade_low_f.glb",
+        "body_superhero_m": "hair/fade_low_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 636,
+        "body_superhero_m": 666
+      },
+      "thumb": "hair/thumbs/fade_low.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "fade_high_top",
+      "name": "High-top fade",
+      "family": "none",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/fade_high_top_f.glb",
+        "body_superhero_m": "hair/fade_high_top_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 992,
+        "body_superhero_m": 1018
+      },
+      "thumb": "hair/thumbs/fade_high_top.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "crew_cut",
+      "name": "Crew cut",
+      "family": "none",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/crew_cut_f.glb",
+        "body_superhero_m": "hair/crew_cut_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 636,
+        "body_superhero_m": 666
+      },
+      "thumb": "hair/thumbs/crew_cut.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "side_part_short",
+      "name": "Short side part",
+      "family": "straight",
+      "length": "short",
+      "method": "quaternius:Hair_SimpleParted",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/side_part_short_f.glb",
+        "body_superhero_m": "hair/side_part_short_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1301,
+        "body_superhero_m": 1301
+      },
+      "thumb": "hair/thumbs/side_part_short.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "quiff",
+      "name": "Quiff",
+      "family": "straight",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/quiff_f.glb",
+        "body_superhero_m": "hair/quiff_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 636,
+        "body_superhero_m": 666
+      },
+      "thumb": "hair/thumbs/quiff.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "slick_back",
+      "name": "Slicked back",
+      "family": "straight",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/slick_back_f.glb",
+        "body_superhero_m": "hair/slick_back_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 696,
+        "body_superhero_m": 742
+      },
+      "thumb": "hair/thumbs/slick_back.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "bob_straight",
+      "name": "Straight bob",
+      "family": "straight",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/bob_straight_f.glb",
+        "body_superhero_m": "hair/bob_straight_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 890,
+        "body_superhero_m": 974
+      },
+      "thumb": "hair/thumbs/bob_straight.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "long_straight",
+      "name": "Long straight",
+      "family": "straight",
+      "length": "long",
+      "method": "quaternius:Hair_Long",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/long_straight_f.glb",
+        "body_superhero_m": "hair/long_straight_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2500,
+        "body_superhero_m": 2500
+      },
+      "thumb": "hair/thumbs/long_straight.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "ponytail_high",
+      "name": "High ponytail",
+      "family": "straight",
+      "length": "long",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/ponytail_high_f.glb",
+        "body_superhero_m": "hair/ponytail_high_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1096,
+        "body_superhero_m": 1126
+      },
+      "thumb": "hair/thumbs/ponytail_high.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "bun_top",
+      "name": "Top knot",
+      "family": "straight",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/bun_top_f.glb",
+        "body_superhero_m": "hair/bun_top_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 716,
+        "body_superhero_m": 746
+      },
+      "thumb": "hair/thumbs/bun_top.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "man_bun",
+      "name": "Low bun",
+      "family": "straight",
+      "length": "medium",
+      "method": "quaternius:Hair_Buns",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/man_bun_f.glb",
+        "body_superhero_m": "hair/man_bun_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2500,
+        "body_superhero_m": 2500
+      },
+      "thumb": "hair/thumbs/man_bun.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "pixie",
+      "name": "Pixie",
+      "family": "straight",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/pixie_f.glb",
+        "body_superhero_m": "hair/pixie_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 692,
+        "body_superhero_m": 718
+      },
+      "thumb": "hair/thumbs/pixie.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "wavy_short",
+      "name": "Short waves",
+      "family": "wavy",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/wavy_short_f.glb",
+        "body_superhero_m": "hair/wavy_short_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 636,
+        "body_superhero_m": 666
+      },
+      "thumb": "hair/thumbs/wavy_short.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "wavy_undercut",
+      "name": "Wavy undercut",
+      "family": "wavy",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/wavy_undercut_f.glb",
+        "body_superhero_m": "hair/wavy_undercut_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 968,
+        "body_superhero_m": 974
+      },
+      "thumb": "hair/thumbs/wavy_undercut.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "wavy_bob",
+      "name": "Wavy bob",
+      "family": "wavy",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/wavy_bob_f.glb",
+        "body_superhero_m": "hair/wavy_bob_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 882,
+        "body_superhero_m": 966
+      },
+      "thumb": "hair/thumbs/wavy_bob.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "wavy_medium",
+      "name": "Shoulder-length waves",
+      "family": "wavy",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/wavy_medium_f.glb",
+        "body_superhero_m": "hair/wavy_medium_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1362,
+        "body_superhero_m": 1444
+      },
+      "thumb": "hair/thumbs/wavy_medium.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "wavy_long",
+      "name": "Long waves",
+      "family": "wavy",
+      "length": "long",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/wavy_long_f.glb",
+        "body_superhero_m": "hair/wavy_long_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1666,
+        "body_superhero_m": 1756
+      },
+      "thumb": "hair/thumbs/wavy_long.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "beach_waves_pony",
+      "name": "Low wavy ponytail",
+      "family": "wavy",
+      "length": "long",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/beach_waves_pony_f.glb",
+        "body_superhero_m": "hair/beach_waves_pony_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1184,
+        "body_superhero_m": 1214
+      },
+      "thumb": "hair/thumbs/beach_waves_pony.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "curly_short_top",
+      "name": "Curly top, short sides",
+      "family": "curly",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/curly_short_top_f.glb",
+        "body_superhero_m": "hair/curly_short_top_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2500,
+        "body_superhero_m": 2500
+      },
+      "thumb": "hair/thumbs/curly_short_top.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "curly_mop",
+      "name": "Curly mop",
+      "family": "curly",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/curly_mop_f.glb",
+        "body_superhero_m": "hair/curly_mop_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2500,
+        "body_superhero_m": 2500
+      },
+      "thumb": "hair/thumbs/curly_mop.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "curly_shoulder",
+      "name": "Shoulder-length curls",
+      "family": "curly",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/curly_shoulder_f.glb",
+        "body_superhero_m": "hair/curly_shoulder_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2500,
+        "body_superhero_m": 2500
+      },
+      "thumb": "hair/thumbs/curly_shoulder.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "curly_pony_puff",
+      "name": "Curly puff",
+      "family": "curly",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/curly_pony_puff_f.glb",
+        "body_superhero_m": "hair/curly_pony_puff_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 956,
+        "body_superhero_m": 986
+      },
+      "thumb": "hair/thumbs/curly_pony_puff.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "ringlets_long",
+      "name": "Long ringlets",
+      "family": "curly",
+      "length": "long",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/ringlets_long_f.glb",
+        "body_superhero_m": "hair/ringlets_long_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2500,
+        "body_superhero_m": 2500
+      },
+      "thumb": "hair/thumbs/ringlets_long.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "twa_coils",
+      "name": "Short coils",
+      "family": "coily",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/twa_coils_f.glb",
+        "body_superhero_m": "hair/twa_coils_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2136,
+        "body_superhero_m": 2166
+      },
+      "thumb": "hair/thumbs/twa_coils.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "afro_round",
+      "name": "Rounded afro",
+      "family": "coily",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/afro_round_f.glb",
+        "body_superhero_m": "hair/afro_round_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2499,
+        "body_superhero_m": 2499
+      },
+      "thumb": "hair/thumbs/afro_round.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "afro_large",
+      "name": "Large afro",
+      "family": "coily",
+      "length": "long",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/afro_large_f.glb",
+        "body_superhero_m": "hair/afro_large_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2499,
+        "body_superhero_m": 2499
+      },
+      "thumb": "hair/thumbs/afro_large.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "afro_puff",
+      "name": "High puff",
+      "family": "coily",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/afro_puff_f.glb",
+        "body_superhero_m": "hair/afro_puff_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 956,
+        "body_superhero_m": 986
+      },
+      "thumb": "hair/thumbs/afro_puff.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "afro_puffs_double",
+      "name": "Two puffs",
+      "family": "coily",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/afro_puffs_double_f.glb",
+        "body_superhero_m": "hair/afro_puffs_double_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1276,
+        "body_superhero_m": 1306
+      },
+      "thumb": "hair/thumbs/afro_puffs_double.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "coily_tapered",
+      "name": "Tapered coils",
+      "family": "coily",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/coily_tapered_f.glb",
+        "body_superhero_m": "hair/coily_tapered_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1884,
+        "body_superhero_m": 1888
+      },
+      "thumb": "hair/thumbs/coily_tapered.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "twists_short",
+      "name": "Short twists",
+      "family": "protective",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/twists_short_f.glb",
+        "body_superhero_m": "hair/twists_short_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2500,
+        "body_superhero_m": 2500
+      },
+      "thumb": "hair/thumbs/twists_short.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "twists_long",
+      "name": "Long twists",
+      "family": "protective",
+      "length": "long",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/twists_long_f.glb",
+        "body_superhero_m": "hair/twists_long_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 3000,
+        "body_superhero_m": 3000
+      },
+      "thumb": "hair/thumbs/twists_long.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "locs_short",
+      "name": "Short locs",
+      "family": "protective",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/locs_short_f.glb",
+        "body_superhero_m": "hair/locs_short_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2270,
+        "body_superhero_m": 2300
+      },
+      "thumb": "hair/thumbs/locs_short.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "locs_shoulder",
+      "name": "Shoulder-length locs",
+      "family": "protective",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/locs_shoulder_f.glb",
+        "body_superhero_m": "hair/locs_shoulder_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2972,
+        "body_superhero_m": 3000
+      },
+      "thumb": "hair/thumbs/locs_shoulder.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "locs_updo",
+      "name": "Locs updo",
+      "family": "protective",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/locs_updo_f.glb",
+        "body_superhero_m": "hair/locs_updo_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2342,
+        "body_superhero_m": 2372
+      },
+      "thumb": "hair/thumbs/locs_updo.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "box_braids_long",
+      "name": "Long box braids",
+      "family": "protective",
+      "length": "long",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/box_braids_long_f.glb",
+        "body_superhero_m": "hair/box_braids_long_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2856,
+        "body_superhero_m": 2886
+      },
+      "thumb": "hair/thumbs/box_braids_long.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "box_braids_up",
+      "name": "Box braids, high bun",
+      "family": "protective",
+      "length": "medium",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/box_braids_up_f.glb",
+        "body_superhero_m": "hair/box_braids_up_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2156,
+        "body_superhero_m": 2186
+      },
+      "thumb": "hair/thumbs/box_braids_up.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "cornrows_straight_back",
+      "name": "Straight-back cornrows",
+      "family": "protective",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/cornrows_straight_back_f.glb",
+        "body_superhero_m": "hair/cornrows_straight_back_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1923,
+        "body_superhero_m": 1953
+      },
+      "thumb": "hair/thumbs/cornrows_straight_back.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "cornrows_side_part",
+      "name": "Side-part cornrows",
+      "family": "protective",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/cornrows_side_part_f.glb",
+        "body_superhero_m": "hair/cornrows_side_part_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1923,
+        "body_superhero_m": 1953
+      },
+      "thumb": "hair/thumbs/cornrows_side_part.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "bantu_knots",
+      "name": "Bantu knots",
+      "family": "protective",
+      "length": "short",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/bantu_knots_f.glb",
+        "body_superhero_m": "hair/bantu_knots_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1950,
+        "body_superhero_m": 1980
+      },
+      "thumb": "hair/thumbs/bantu_knots.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "fulani_braids",
+      "name": "Cornrows with side braids",
+      "family": "protective",
+      "length": "long",
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "hair/fulani_braids_f.glb",
+        "body_superhero_m": "hair/fulani_braids_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2013,
+        "body_superhero_m": 2043
+      },
+      "thumb": "hair/thumbs/fulani_braids.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    }
+  ]
+}

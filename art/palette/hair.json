@@ -1,0 +1,65 @@
+{
+  "note": "Hair, brow and facial hair colours. AvatarStyle.hair.color, brows.color and facial.color index this list.",
+  "colors": [
+    {
+      "id": "black",
+      "name": "Black",
+      "hex": "#141110"
+    },
+    {
+      "id": "dark_brown",
+      "name": "Dark brown",
+      "hex": "#2B1D16"
+    },
+    {
+      "id": "brown",
+      "name": "Brown",
+      "hex": "#4A3022"
+    },
+    {
+      "id": "auburn",
+      "name": "Auburn",
+      "hex": "#7A3B22"
+    },
+    {
+      "id": "blonde",
+      "name": "Blonde",
+      "hex": "#C9A46A"
+    },
+    {
+      "id": "platinum",
+      "name": "Platinum",
+      "hex": "#E6DCC8"
+    },
+    {
+      "id": "grey",
+      "name": "Grey",
+      "hex": "#8C8C8C"
+    },
+    {
+      "id": "white",
+      "name": "White",
+      "hex": "#EDEDED"
+    },
+    {
+      "id": "violet",
+      "name": "Violet",
+      "hex": "#7C5CFF"
+    },
+    {
+      "id": "teal",
+      "name": "Teal",
+      "hex": "#00BFA6"
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "hex": "#FF5FA2"
+    },
+    {
+      "id": "blue",
+      "name": "Blue",
+      "hex": "#3D7BFF"
+    }
+  ]
+}

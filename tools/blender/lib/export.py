@@ -21,11 +21,13 @@ def export_glb(
     animations: bool,
     colors: bool = False,
     animation_mode: str = "ACTIONS",
+    attributes: bool = False,
 ) -> None:
     """Export the given objects to a GLB.
 
-    GLB, +Y up, modifiers applied, no compression, deform bones only, extras on. Parameter names are
-    checked against the running Blender's `export_scene.gltf` so a renamed option fails loudly.
+    GLB, +Y up, modifiers applied, no compression, deform bones only, extras on. `attributes` exports
+    custom attributes whose names start with `_` (`_REGION`, `_MASK`, `_UV_PRINT`). Parameter names
+    are checked against the running Blender's `export_scene.gltf` so a renamed option fails loudly.
     """
     params: dict[str, Any] = {
         "filepath": str(path),
@@ -47,6 +49,8 @@ def export_glb(
     }
     if animations:
         params["export_animation_mode"] = animation_mode
+    if attributes:
+        params["export_attributes"] = True
     known = _operator_params()
     unknown = sorted(k for k in params if k not in known)
     if unknown:

@@ -16,7 +16,9 @@ sys.path.append(str(Path(__file__).resolve().parent))
 import bpy  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
+from lib.attributes import label_mesh, vertex_weights, write_body_mask  # noqa: E402
 from lib.contract import load_contract  # noqa: E402
+from lib.hairfit import fit_hair, set_single_material, strip_extras  # noqa: E402
 from lib.discovery import Inventory  # noqa: E402
 from lib.export import export_glb  # noqa: E402
 from lib.jsonfile import load_or_create  # noqa: E402
@@ -64,6 +66,7 @@ CHARACTERS_DEFAULT: dict[str, Any] = {
     "eyebrowsMaxTris": 300,
     "hairFallbackOffsetM": [0, 0, 0.05],
     "hairFit": {"maxCentreOffsetM": 0.12, "minBelowHeadM": 0.2, "maxAboveHeadM": 0.35, "maxWidthM": 0.5},
+    "bodyMaxTris": None,
 }
 
 
@@ -87,35 +90,6 @@ def decimate_to(obj: bpy.types.Object, max_tris: int) -> float:
     bpy.ops.object.modifier_move_to_index(modifier=mod.name, index=0)
     bpy.ops.object.modifier_apply(modifier=mod.name)
     return round(ratio, 3)
-
-
-def strip_extras(obj: bpy.types.Object) -> None:
-    """Drop extra UV maps and colour attributes the tint-only materials never read."""
-    me = obj.data
-    while len(me.uv_layers) > 1:
-        me.uv_layers.remove(me.uv_layers[-1])
-    while len(me.color_attributes):  # 3.6 invalidates references after each remove; refetch
-        me.color_attributes.remove(me.color_attributes[0])
-
-
-def set_single_material(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
-    obj.data.materials.clear()
-    obj.data.materials.append(mat)
-    for p in obj.data.polygons:
-        p.material_index = 0
-
-
-def vertex_weights(obj: bpy.types.Object, deform: set[str]) -> list[dict[str, float]]:
-    names = {g.index: g.name for g in obj.vertex_groups}
-    out: list[dict[str, float]] = []
-    for v in obj.data.vertices:
-        w: dict[str, float] = {}
-        for g in v.groups:
-            n = names.get(g.group)
-            if n in deform and g.weight > 0:
-                w[n] = g.weight
-        out.append(w)
-    return out
 
 
 def normalise_body(arm: bpy.types.Object, body: bpy.types.Object, eyes: bpy.types.Object | None,
@@ -170,67 +144,6 @@ def assign_regions(body: bpy.types.Object, arm: bpy.types.Object, region_cfg: di
     return counts
 
 
-def fit_hair(path: Path, arm: bpy.types.Object, head_pos: Vector, cfg: dict[str, Any],
-             hair_mat: bpy.types.Material) -> tuple[bpy.types.Object | None, dict[str, Any]]:
-    """Import one hairstyle, move it onto this body's head and skin it to the head bone."""
-    objs = import_model(path)
-    hair_arms = armatures(objs)
-    hair_meshes = meshes(objs)
-    if not hair_meshes:
-        delete_objects(objs)
-        return None, {"file": path.name, "rejected": "no mesh"}
-    hair = max(hair_meshes, key=triangle_count)
-    delete_objects([m for m in hair_meshes if m is not hair])
-    info: dict[str, Any] = {"file": path.name}
-    if hair_arms:
-        src_head = find_bone(hair_arms[0], "head")
-        src = hair_arms[0].matrix_world @ src_head.head_local if src_head else head_pos
-        offset = head_pos - src
-        info["fit"] = "authored offset" if offset.length < 0.01 else f"moved {tuple(round(c, 3) for c in offset)} m to this head"
-        hair.data.transform(hair.matrix_world)
-        hair.matrix_world = Matrix.Identity(4)
-        hair.data.transform(Matrix.Translation(offset))
-        delete_objects(hair_arms)
-    else:
-        hair.data.transform(hair.matrix_world)
-        hair.matrix_world = Matrix.Identity(4)
-        lo, hi = world_bounds([hair])
-        bottom = Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z))
-        target = head_pos + Vector(cfg["hairFallbackOffsetM"])
-        hair.data.transform(Matrix.Translation(target - bottom))
-        info["fit"] = "bottom centre aligned to head bone"
-        hair.vertex_groups.clear()
-    head_bone = find_bone(arm, "head")
-    head_name = head_bone.name if head_bone else "Head"
-    if head_name not in hair.vertex_groups:
-        for g in list(hair.vertex_groups):
-            hair.vertex_groups.remove(g)
-        vg = hair.vertex_groups.new(name=head_name)
-        vg.add(list(range(len(hair.data.vertices))), 1.0, "REPLACE")
-    hair.parent = arm
-    hair.matrix_parent_inverse = Matrix.Identity(4)
-    mods = [m for m in hair.modifiers if m.type == "ARMATURE"]
-    mod = mods[0] if mods else hair.modifiers.new("Armature", "ARMATURE")
-    mod.object = arm
-    set_single_material(hair, hair_mat)
-    strip_extras(hair)
-    lo, hi = world_bounds([hair])
-    fit = cfg["hairFit"]
-    centre = Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2))
-    problems = []
-    if (centre - head_pos.xy).length > fit["maxCentreOffsetM"]:
-        problems.append("off-centre")
-    if lo.z < head_pos.z - fit["minBelowHeadM"] or hi.z > head_pos.z + fit["maxAboveHeadM"]:
-        problems.append("wrong height")
-    if max(hi.x - lo.x, hi.y - lo.y) > fit["maxWidthM"]:
-        problems.append("too wide")
-    if problems:
-        delete_objects([hair])
-        return None, {**info, "rejected": ", ".join(problems)}
-    info["triangles"] = triangle_count(hair)
-    return hair, info
-
-
 def build_body(path: Path, inv: Inventory, contract: dict[str, Any], region_cfg: dict[str, Any],
                cfg: dict[str, Any], hair_files: list[Path], canonical: dict[str, list[float]] | None,
                ctx: Ctx, report: Report) -> dict[str, Any]:
@@ -255,7 +168,17 @@ def build_body(path: Path, inv: Inventory, contract: dict[str, Any], region_cfg:
         if left > 0.05:
             report.error(f"{bid}: rest frames still {left}° off the clip skeleton after re-orienting")
 
+    body_tris_before = triangle_count(body)
+    body_ratio = 1.0
+    if cfg.get("bodyMaxTris"):
+        body_ratio = decimate_to(body, int(cfg["bodyMaxTris"]))
+        report.info(f"{bid}: body decimated {body_tris_before} -> {triangle_count(body)} tris (bodyMaxTris)")
     regions = assign_regions(body, arm, region_cfg, contract)
+    avatar = contract["avatar"]
+    mask_faces = write_body_mask(body, arm, avatar)
+    for zone, n in mask_faces.items():
+        if n == 0:
+            report.error(f"{bid}: mask zone {zone} has no faces; check avatar.maskRules/maskSplits in contract.json")
     for name, n in regions.items():
         if n == 0:
             report.error(f"{bid}: region {name} has no faces; adjust art/config/region-map.json")
@@ -265,6 +188,7 @@ def build_body(path: Path, inv: Inventory, contract: dict[str, Any], region_cfg:
     if eyes is not None:
         set_single_material(eyes, flat_material("EYES"))
         strip_extras(eyes)
+        label_mesh(eyes, avatar, "EYES")
         eyes.name = "eyes"
     else:
         report.warn(f"{bid}: no Eyes mesh found")
@@ -273,6 +197,7 @@ def build_body(path: Path, inv: Inventory, contract: dict[str, Any], region_cfg:
         set_single_material(brows, hair_mat)
         strip_extras(brows)
         brow_ratio = decimate_to(brows, cfg["eyebrowsMaxTris"])
+        label_mesh(brows, avatar, "BROWS")
         brows.name = "eyebrows"
 
     head = find_bone(arm, "head")
@@ -300,6 +225,7 @@ def build_body(path: Path, inv: Inventory, contract: dict[str, Any], region_cfg:
         if ratio < 1.0:
             report.warn(f"{bid}: {info['file']} decimated to {ratio:.0%} to fit the {budget['triangles']} tri budget")
         hair.name = contract["character"]["hairNames"].format(n=n)
+        label_mesh(hair, avatar, "HAIR")
         hair["defaultVisible"] = n == 1
         hair_list.append({"name": hair.name, **info, "triangles": triangle_count(hair), "decimateRatio": ratio})
     purge_orphans()
@@ -318,7 +244,7 @@ def build_body(path: Path, inv: Inventory, contract: dict[str, Any], region_cfg:
     export_objs = [arm, body] + [o for o in (eyes, brows) if o is not None] + [h for h, _ in keep]
     for o in export_objs:
         o.data.name = o.name  # glTF mesh names follow the data block, not the object
-    export_glb(out, export_objs, animations=False)
+    export_glb(out, export_objs, animations=False, attributes=True)
     report.info(f"{bid}: {total} tris, {bones} bones, regions {regions} -> {out.name}")
     return {
         "id": bid,
@@ -333,6 +259,8 @@ def build_body(path: Path, inv: Inventory, contract: dict[str, Any], region_cfg:
         "boneNames": bone_names(arm),
         "jointFramesToClipSkeleton": reoriented,
         "regionFaces": {**regions, "EYES": len(eyes.data.polygons) if eyes else 0},
+        "maskFaces": mask_faces,
+        "bodyDecimation": {"before": body_tris_before, "after": triangle_count(body), "ratio": body_ratio},
         "hairs": hair_list,
         "hairsRejected": rejected,
         "materials": sorted({m.name for o in export_objs if o.type == "MESH" for m in o.data.materials}),

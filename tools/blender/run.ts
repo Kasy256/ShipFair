@@ -1,7 +1,7 @@
 // `pnpm art:<step>`: runs one headless Blender step (or all of them with `build-all`).
-// Usage: node tools/blender/run.ts <inspect|characters|animations|booth-kit|props|previews|build-all|test>
+// Usage: node tools/blender/run.ts <inspect|characters|animations|wardrobe|hair|booth-kit|props|previews|build-all|test|ids>
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -19,6 +19,7 @@ import {
   type StepResult,
   stepResultSchema,
 } from './runner.ts';
+import { manifestSchema, paletteSchema, renderWardrobeIds } from './wardrobe-ids.ts';
 
 const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(TOOLS_DIR, '..', '..');
@@ -107,7 +108,75 @@ async function runStep(blender: string, paths: ArtPaths, name: StepName): Promis
     `[art] ${name}: ${status} in ${result.seconds} s (${result.warnings.length} warnings, ${result.errors.length} errors)`,
   );
   for (const e of result.errors) console.log(`  error: ${e}`);
+  formatArtJson();
   return { ...result, ok };
+}
+
+/** Steps write JSON with Python's json.dumps; Biome owns the committed formatting. */
+function formatArtJson(): void {
+  const biome = join(
+    REPO_ROOT,
+    'node_modules',
+    '.bin',
+    process.platform === 'win32' ? 'biome.cmd' : 'biome',
+  );
+  const art = join(REPO_ROOT, 'art');
+  const res = spawnSync(biome, ['format', '--write', art], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    shell: process.platform === 'win32', // .cmd shims need a shell; args are fixed paths, not user input
+  });
+  if (res.status !== 0)
+    console.log(`[art] biome format art/ failed: ${res.stderr || res.error?.message}`);
+}
+
+const IDS_OUT = join(REPO_ROOT, 'packages', 'shared', 'src', 'generated', 'wardrobe-ids.ts');
+
+/** `art:ids`: manifests + palettes -> the shared package's generated id unions. */
+function writeIds(paths: ArtPaths): StepResult {
+  const started = Date.now();
+  const read = (...p: string[]) => JSON.parse(readFileSync(join(...p), 'utf8')) as unknown;
+  const art = join(REPO_ROOT, 'art');
+  try {
+    const bodies = readdirSync(join(paths.exportDir, 'characters'))
+      .filter((f) => /^body_.+\.glb$/.test(f))
+      .map((f) => f.slice('body_'.length, -'.glb'.length))
+      .sort();
+    const source = renderWardrobeIds({
+      bodies,
+      wardrobe: manifestSchema.parse(read(paths.exportDir, 'wardrobe', 'manifest.json')),
+      hair: manifestSchema.parse(read(paths.exportDir, 'hair', 'manifest.json')),
+      facial: manifestSchema.parse(read(paths.exportDir, 'facial', 'manifest.json')),
+      headwear: manifestSchema.parse(read(paths.exportDir, 'headwear', 'manifest.json')),
+      skin: paletteSchema.parse(read(art, 'palette', 'skin.json')),
+      hairColors: paletteSchema.parse(read(art, 'palette', 'hair.json')),
+      palette: paletteSchema.parse(read(art, 'palette', 'palette.json')),
+    });
+    mkdirSync(dirname(IDS_OUT), { recursive: true });
+    writeFileSync(IDS_OUT, source);
+    console.log(`[art] ids -> ${IDS_OUT}`);
+    return {
+      step: 'ids',
+      ok: true,
+      skipped: false,
+      seconds: (Date.now() - started) / 1000,
+      warnings: [],
+      errors: [],
+      stats: {},
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[art] ids FAILED: ${message}`);
+    return {
+      step: 'ids',
+      ok: false,
+      skipped: false,
+      seconds: 0,
+      warnings: [],
+      errors: [message],
+      stats: {},
+    };
+  }
 }
 
 async function buildAll(blender: string, paths: ArtPaths): Promise<boolean> {
@@ -116,6 +185,7 @@ async function buildAll(blender: string, paths: ArtPaths): Promise<boolean> {
     const result = await runStep(blender, paths, step.name);
     results.push(result);
     if (!result.ok && step.name === 'inspect') break;
+    if (step.name === 'hair') results.push(writeIds(paths));
   }
   console.log('\n[art] build-all summary');
   for (const r of results) {
@@ -138,10 +208,14 @@ async function buildAll(blender: string, paths: ArtPaths): Promise<boolean> {
 
 async function main(): Promise<void> {
   const arg = process.argv[2];
-  const valid = [...STEPS.map((s) => s.name), 'build-all', 'test'];
+  const valid = [...STEPS.map((s) => s.name), 'build-all', 'test', 'ids'];
   if (!arg || !valid.includes(arg)) {
     console.error(`usage: node tools/blender/run.ts <${valid.join('|')}>`);
     process.exit(2);
+  }
+  if (arg === 'ids') {
+    const paths = artPaths(REPO_ROOT, envSchema.parse(process.env).ART_PACKS_DIR);
+    process.exit(writeIds(paths).ok ? 0 : 1);
   }
   const blender = resolveBlender();
   if (arg === 'test') {

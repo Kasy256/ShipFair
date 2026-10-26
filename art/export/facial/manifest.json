@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "stubble",
+      "name": "Stubble",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "facial/stubble_f.glb",
+        "body_superhero_m": "facial/stubble_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 794,
+        "body_superhero_m": 740
+      },
+      "thumb": "facial/thumbs/stubble.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "moustache",
+      "name": "Moustache",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "facial/moustache_f.glb",
+        "body_superhero_m": "facial/moustache_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 242,
+        "body_superhero_m": 248
+      },
+      "thumb": "facial/thumbs/moustache.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "goatee",
+      "name": "Goatee",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "facial/goatee_f.glb",
+        "body_superhero_m": "facial/goatee_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 240,
+        "body_superhero_m": 248
+      },
+      "thumb": "facial/thumbs/goatee.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "beard_short",
+      "name": "Short beard",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "facial/beard_short_f.glb",
+        "body_superhero_m": "facial/beard_short_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 800,
+        "body_superhero_m": 800
+      },
+      "thumb": "facial/thumbs/beard_short.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "beard_full",
+      "name": "Full beard",
+      "family": null,
+      "length": null,
+      "method": "quaternius:Hair_Beard",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "facial/beard_full_f.glb",
+        "body_superhero_m": "facial/beard_full_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 800,
+        "body_superhero_m": 800
+      },
+      "thumb": "facial/thumbs/beard_full.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "beard_long",
+      "name": "Long beard",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "facial/beard_long_f.glb",
+        "body_superhero_m": "facial/beard_long_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 800,
+        "body_superhero_m": 800
+      },
+      "thumb": "facial/thumbs/beard_long.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "chin_strap",
+      "name": "Chin strap",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "facial/chin_strap_f.glb",
+        "body_superhero_m": "facial/chin_strap_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 386,
+        "body_superhero_m": 314
+      },
+      "thumb": "facial/thumbs/chin_strap.png",
+      "hidesHair": false,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    }
+  ]
+}

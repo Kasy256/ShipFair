@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "hijab_wrap",
+      "name": "Hijab, draped",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/hijab_wrap_f.glb",
+        "body_superhero_m": "headwear/hijab_wrap_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1500,
+        "body_superhero_m": 1500
+      },
+      "thumb": "headwear/thumbs/hijab_wrap.png",
+      "hidesHair": true,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "hijab_sport",
+      "name": "Hijab, sport",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/hijab_sport_f.glb",
+        "body_superhero_m": "headwear/hijab_sport_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1500,
+        "body_superhero_m": 1500
+      },
+      "thumb": "headwear/thumbs/hijab_sport.png",
+      "hidesHair": true,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "headwrap_gele",
+      "name": "Gele",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/headwrap_gele_f.glb",
+        "body_superhero_m": "headwear/headwrap_gele_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1330,
+        "body_superhero_m": 1298
+      },
+      "thumb": "headwear/thumbs/headwrap_gele.png",
+      "hidesHair": true,
+      "hidesHairMask": 0,
+      "capIncompatible": true,
+      "unlock": null
+    },
+    {
+      "id": "headwrap_simple",
+      "name": "Knotted wrap",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/headwrap_simple_f.glb",
+        "body_superhero_m": "headwear/headwrap_simple_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 882,
+        "body_superhero_m": 876
+      },
+      "thumb": "headwear/thumbs/headwrap_simple.png",
+      "hidesHair": true,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "turban",
+      "name": "Turban",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/turban_f.glb",
+        "body_superhero_m": "headwear/turban_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1480,
+        "body_superhero_m": 1444
+      },
+      "thumb": "headwear/thumbs/turban.png",
+      "hidesHair": true,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "durag",
+      "name": "Durag",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/durag_f.glb",
+        "body_superhero_m": "headwear/durag_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 736,
+        "body_superhero_m": 766
+      },
+      "thumb": "headwear/thumbs/durag.png",
+      "hidesHair": true,
+      "hidesHairMask": 0,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "kufi",
+      "name": "Kufi",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/kufi_f.glb",
+        "body_superhero_m": "headwear/kufi_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 462,
+        "body_superhero_m": 458
+      },
+      "thumb": "headwear/thumbs/kufi.png",
+      "hidesHair": false,
+      "hidesHairMask": 1,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "cap",
+      "name": "Cap",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/cap_f.glb",
+        "body_superhero_m": "headwear/cap_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 578,
+        "body_superhero_m": 568
+      },
+      "thumb": "headwear/thumbs/cap.png",
+      "hidesHair": false,
+      "hidesHairMask": 1,
+      "capIncompatible": false,
+      "unlock": null
+    },
+    {
+      "id": "beanie",
+      "name": "Beanie",
+      "family": null,
+      "length": null,
+      "method": "generated",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "headwear/beanie_f.glb",
+        "body_superhero_m": "headwear/beanie_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 518,
+        "body_superhero_m": 502
+      },
+      "thumb": "headwear/thumbs/beanie.png",
+      "hidesHair": false,
+      "hidesHairMask": 7,
+      "capIncompatible": false,
+      "unlock": null
+    }
+  ]
+}

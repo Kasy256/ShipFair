@@ -81,5 +81,63 @@
       "hex": "#c9f2ff",
       "group": "glow"
     }
+  ],
+  "harmonyGroups": [
+    {
+      "id": "classic",
+      "colors": [1, 3, 1]
+    },
+    {
+      "id": "slate_sky",
+      "colors": [9, 2, 1]
+    },
+    {
+      "id": "violet_night",
+      "colors": [8, 3, 1]
+    },
+    {
+      "id": "mint_slate",
+      "colors": [10, 2, 1]
+    },
+    {
+      "id": "sun_charcoal",
+      "colors": [12, 3, 3]
+    },
+    {
+      "id": "coral_sand",
+      "colors": [13, 5, 1]
+    },
+    {
+      "id": "forest",
+      "colors": [11, 7, 3]
+    },
+    {
+      "id": "khaki",
+      "colors": [1, 6, 7]
+    },
+    {
+      "id": "mono",
+      "colors": [3, 3, 1]
+    },
+    {
+      "id": "sky_white",
+      "colors": [1, 9]
+    },
+    {
+      "id": "earth",
+      "colors": [6, 7, 1]
+    },
+    {
+      "id": "violet_mint",
+      "colors": [8, 2, 10]
+    },
+    {
+      "id": "charcoal_sun",
+      "colors": [3, 0, 12]
+    },
+    {
+      "id": "coral_slate",
+      "colors": [13, 2]
+    }
   ]
 }

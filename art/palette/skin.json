@@ -1,0 +1,65 @@
+{
+  "note": "12 skin tones, lightest to deepest, evenly spaced. AvatarStyle.skin is an index into this list. Neutral ids and names only.",
+  "colors": [
+    {
+      "id": "tone_01",
+      "name": "Tone 1",
+      "hex": "#F6D9C6"
+    },
+    {
+      "id": "tone_02",
+      "name": "Tone 2",
+      "hex": "#EFC6A8"
+    },
+    {
+      "id": "tone_03",
+      "name": "Tone 3",
+      "hex": "#E3AE88"
+    },
+    {
+      "id": "tone_04",
+      "name": "Tone 4",
+      "hex": "#D4976C"
+    },
+    {
+      "id": "tone_05",
+      "name": "Tone 5",
+      "hex": "#C38158"
+    },
+    {
+      "id": "tone_06",
+      "name": "Tone 6",
+      "hex": "#AE6C45"
+    },
+    {
+      "id": "tone_07",
+      "name": "Tone 7",
+      "hex": "#965A38"
+    },
+    {
+      "id": "tone_08",
+      "name": "Tone 8",
+      "hex": "#80492D"
+    },
+    {
+      "id": "tone_09",
+      "name": "Tone 9",
+      "hex": "#6A3B25"
+    },
+    {
+      "id": "tone_10",
+      "name": "Tone 10",
+      "hex": "#55301E"
+    },
+    {
+      "id": "tone_11",
+      "name": "Tone 11",
+      "hex": "#422517"
+    },
+    {
+      "id": "tone_12",
+      "name": "Tone 12",
+      "hex": "#301B11"
+    }
+  ]
+}
