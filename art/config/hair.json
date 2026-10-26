@@ -1,0 +1,1616 @@
+{
+  "note": "Hair, facial hair and headwear catalogue for pnpm art:hair. Each style is a list of parts built by lib/hairgen blocks: scalp (shell over the hair-bearing scalp; fade/crown/noise shape it, curtain/fringe extend it; area picks hair|top|crown|wrap|beard|moustache|goatee|chinstrap), volume (ellipsoid around an anchor), bun (free knot/puff), strands (roots sampled on all|back|sides|crown|front|lower; hang|point|rows|surface|gather paths with round|square|twist|ribbon profiles), clumps (ico|coil|knot), brim, pleats, wraps, quaternius (a re-fitted pack hair, by file stem). weights: head (short) or long (head -> neck_01 -> spine_03). Families: straight|wavy|curly|coily|protective|none. No ethnic labels: names describe the style only.",
+  "hair": [
+    {
+      "id": "bald",
+      "name": "Bald",
+      "family": "none",
+      "length": "bald",
+      "parts": []
+    },
+    {
+      "id": "buzz",
+      "name": "Buzz cut",
+      "family": "none",
+      "length": "buzz",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.004,
+          "fade": {
+            "sidesM": 0.0025,
+            "toAboveEarM": 0.04
+          },
+          "noise": {
+            "ampM": 0.0008,
+            "freq": 45
+          }
+        }
+      ]
+    },
+    {
+      "id": "fade_low",
+      "name": "Low fade",
+      "family": "none",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.008,
+          "fade": {
+            "sidesM": 0.0015,
+            "fromAboveEarM": -0.01,
+            "toAboveEarM": 0.035
+          },
+          "noise": {
+            "ampM": 0.001,
+            "freq": 40
+          }
+        }
+      ]
+    },
+    {
+      "id": "fade_high_top",
+      "name": "High-top fade",
+      "family": "none",
+      "length": "short",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.003,
+          "fade": {
+            "sidesM": 0.0012,
+            "fromAboveEarM": 0.0,
+            "toAboveEarM": 0.03
+          }
+        },
+        {
+          "block": "scalp",
+          "area": "top",
+          "topAboveEarM": 0.045,
+          "offsetM": 0.012,
+          "crown": {
+            "extraM": 0.05,
+            "depthM": 0.07
+          },
+          "flattenTopM": 0.045,
+          "noise": {
+            "ampM": 0.002,
+            "freq": 35
+          }
+        }
+      ]
+    },
+    {
+      "id": "crew_cut",
+      "name": "Crew cut",
+      "family": "none",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.007,
+          "fade": {
+            "sidesM": 0.003,
+            "toAboveEarM": 0.04
+          },
+          "crown": {
+            "extraM": 0.006,
+            "depthM": 0.05,
+            "frontBias": 0.6
+          }
+        }
+      ]
+    },
+    {
+      "id": "side_part_short",
+      "name": "Short side part",
+      "family": "straight",
+      "length": "short",
+      "method": "quaternius:Hair_SimpleParted",
+      "parts": [
+        {
+          "block": "quaternius",
+          "name": "Hair_SimpleParted"
+        }
+      ]
+    },
+    {
+      "id": "quiff",
+      "name": "Quiff",
+      "family": "straight",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.007,
+          "fade": {
+            "sidesM": 0.002,
+            "toAboveEarM": 0.035
+          },
+          "crown": {
+            "extraM": 0.028,
+            "depthM": 0.06,
+            "frontBias": 1.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "slick_back",
+      "name": "Slicked back",
+      "family": "straight",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.008,
+          "smooth": 3,
+          "crown": {
+            "extraM": 0.008,
+            "depthM": 0.06
+          },
+          "curtain": {
+            "lengthM": 0.025,
+            "rows": 1,
+            "fromU": 0.6,
+            "flareM": 0.006
+          }
+        }
+      ]
+    },
+    {
+      "id": "bob_straight",
+      "name": "Straight bob",
+      "family": "straight",
+      "length": "medium",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.011,
+          "crown": {
+            "extraM": 0.01,
+            "depthM": 0.06
+          },
+          "fringe": {
+            "lengthM": 0.06,
+            "aboveEyesM": 0.032
+          },
+          "curtain": {
+            "lengthM": 0.1,
+            "rows": 3,
+            "flareM": 0.022,
+            "fromU": 0.3,
+            "jagM": 0.006
+          }
+        }
+      ]
+    },
+    {
+      "id": "long_straight",
+      "name": "Long straight",
+      "family": "straight",
+      "length": "long",
+      "method": "quaternius:Hair_Long",
+      "weights": "long",
+      "parts": [
+        {
+          "block": "quaternius",
+          "name": "Hair_Long"
+        }
+      ]
+    },
+    {
+      "id": "ponytail_high",
+      "name": "High ponytail",
+      "family": "straight",
+      "length": "long",
+      "weights": "long",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.006,
+          "smooth": 3
+        },
+        {
+          "block": "bun",
+          "anchor": "crown",
+          "offsetM": [0, 0.06, -0.025],
+          "radiiM": [0.022, 0.022, 0.022],
+          "subdiv": 1
+        },
+        {
+          "block": "strands",
+          "mode": "point",
+          "anchor": "crown",
+          "anchorOffsetM": [0, 0.07, -0.03],
+          "count": 5,
+          "spreadM": 0.01,
+          "flow": [0, 1, 0.4],
+          "lengthM": 0.26,
+          "gravity": 0.22,
+          "segments": 7,
+          "radiusM": 0.014,
+          "sides": 6,
+          "taper": 0.25,
+          "clearanceM": 0.02
+        }
+      ]
+    },
+    {
+      "id": "bun_top",
+      "name": "Top knot",
+      "family": "straight",
+      "length": "medium",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.006,
+          "smooth": 3
+        },
+        {
+          "block": "bun",
+          "anchor": "top",
+          "offsetM": [0, 0.01, 0.03],
+          "radiiM": [0.045, 0.045, 0.034],
+          "twistM": 0.004
+        }
+      ]
+    },
+    {
+      "id": "man_bun",
+      "name": "Low bun",
+      "family": "straight",
+      "length": "medium",
+      "method": "quaternius:Hair_Buns",
+      "parts": [
+        {
+          "block": "quaternius",
+          "name": "Hair_Buns"
+        }
+      ]
+    },
+    {
+      "id": "pixie",
+      "name": "Pixie",
+      "family": "straight",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.009,
+          "fade": {
+            "sidesM": 0.004,
+            "toAboveEarM": 0.03
+          },
+          "crown": {
+            "extraM": 0.012,
+            "depthM": 0.05
+          },
+          "fringe": {
+            "lengthM": 0.035,
+            "aboveEyesM": 0.04,
+            "sweep": 0.25
+          }
+        }
+      ]
+    },
+    {
+      "id": "wavy_short",
+      "name": "Short waves",
+      "family": "wavy",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.011,
+          "fade": {
+            "sidesM": 0.005,
+            "toAboveEarM": 0.03
+          },
+          "crown": {
+            "extraM": 0.012,
+            "depthM": 0.06
+          },
+          "noise": {
+            "ampM": 0.006,
+            "freq": 24,
+            "seed": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "wavy_undercut",
+      "name": "Wavy undercut",
+      "family": "wavy",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.002,
+          "fade": {
+            "sidesM": 0.0015,
+            "toAboveEarM": 0.02
+          }
+        },
+        {
+          "block": "scalp",
+          "area": "top",
+          "topAboveEarM": 0.035,
+          "offsetM": 0.014,
+          "crown": {
+            "extraM": 0.02,
+            "depthM": 0.06,
+            "frontBias": 0.8
+          },
+          "noise": {
+            "ampM": 0.008,
+            "freq": 22,
+            "seed": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "wavy_bob",
+      "name": "Wavy bob",
+      "family": "wavy",
+      "length": "medium",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.013,
+          "crown": {
+            "extraM": 0.012,
+            "depthM": 0.06
+          },
+          "noise": {
+            "ampM": 0.005,
+            "freq": 20,
+            "seed": 4
+          },
+          "fringe": {
+            "lengthM": 0.05,
+            "aboveEyesM": 0.035,
+            "sweep": 0.2
+          },
+          "curtain": {
+            "lengthM": 0.1,
+            "rows": 3,
+            "flareM": 0.03,
+            "fromU": 0.3,
+            "waveM": 0.012,
+            "waveFreq": 10,
+            "jagM": 0.008
+          }
+        }
+      ]
+    },
+    {
+      "id": "wavy_medium",
+      "name": "Shoulder-length waves",
+      "family": "wavy",
+      "length": "medium",
+      "weights": "long",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.013,
+          "crown": {
+            "extraM": 0.012,
+            "depthM": 0.06
+          },
+          "noise": {
+            "ampM": 0.005,
+            "freq": 20,
+            "seed": 5
+          },
+          "curtain": {
+            "lengthM": 0.17,
+            "rows": 4,
+            "flareM": 0.035,
+            "fromU": 0.3,
+            "waveM": 0.014,
+            "waveFreq": 9,
+            "jagM": 0.01
+          }
+        },
+        {
+          "block": "strands",
+          "on": "lower",
+          "count": 10,
+          "lengthM": 0.16,
+          "profile": "ribbon",
+          "widthM": 0.032,
+          "radiusM": 0.005,
+          "gravity": 0.5,
+          "segments": 6,
+          "offsetM": 0.015,
+          "wave": {
+            "ampM": 0.012,
+            "freq": 1.6
+          },
+          "taper": 0.5,
+          "seed": 5
+        }
+      ]
+    },
+    {
+      "id": "wavy_long",
+      "name": "Long waves",
+      "family": "wavy",
+      "length": "long",
+      "weights": "long",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.013,
+          "crown": {
+            "extraM": 0.012,
+            "depthM": 0.06
+          },
+          "noise": {
+            "ampM": 0.005,
+            "freq": 20,
+            "seed": 6
+          },
+          "curtain": {
+            "lengthM": 0.3,
+            "rows": 6,
+            "flareM": 0.04,
+            "fromU": 0.3,
+            "waveM": 0.016,
+            "waveFreq": 8,
+            "jagM": 0.012
+          }
+        },
+        {
+          "block": "strands",
+          "on": "lower",
+          "count": 10,
+          "lengthM": 0.3,
+          "profile": "ribbon",
+          "widthM": 0.034,
+          "radiusM": 0.005,
+          "gravity": 0.5,
+          "segments": 8,
+          "offsetM": 0.015,
+          "wave": {
+            "ampM": 0.016,
+            "freq": 2.4
+          },
+          "taper": 0.45,
+          "seed": 6
+        }
+      ]
+    },
+    {
+      "id": "beach_waves_pony",
+      "name": "Low wavy ponytail",
+      "family": "wavy",
+      "length": "long",
+      "weights": "long",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.008,
+          "smooth": 3,
+          "noise": {
+            "ampM": 0.003,
+            "freq": 20,
+            "seed": 7
+          }
+        },
+        {
+          "block": "bun",
+          "anchor": "nape",
+          "offsetM": [0, 0.02, 0.0],
+          "radiiM": [0.022, 0.02, 0.02],
+          "subdiv": 1
+        },
+        {
+          "block": "strands",
+          "mode": "point",
+          "anchor": "nape",
+          "anchorOffsetM": [0, 0.03, -0.005],
+          "count": 6,
+          "spreadM": 0.014,
+          "flow": [0, 0.6, -1],
+          "lengthM": 0.24,
+          "gravity": 0.4,
+          "segments": 7,
+          "radiusM": 0.012,
+          "sides": 6,
+          "taper": 0.35,
+          "wave": {
+            "ampM": 0.012,
+            "freq": 2.2
+          },
+          "clearanceM": 0.025
+        }
+      ]
+    },
+    {
+      "id": "curly_short_top",
+      "name": "Curly top, short sides",
+      "family": "curly",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.003,
+          "fade": {
+            "sidesM": 0.0015,
+            "toAboveEarM": 0.025
+          }
+        },
+        {
+          "block": "clumps",
+          "on": "crown",
+          "shape": "coil",
+          "count": 34,
+          "sizeM": [0.016, 0.022],
+          "offsetM": 0.006,
+          "turns": 1.4,
+          "seed": 21
+        }
+      ]
+    },
+    {
+      "id": "curly_mop",
+      "name": "Curly mop",
+      "family": "curly",
+      "length": "medium",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.006
+        },
+        {
+          "block": "volume",
+          "anchor": "centre",
+          "offsetM": [0, 0.008, 0.03],
+          "radiiM": [0.12, 0.125, 0.105],
+          "subdiv": 5,
+          "lumps": {
+            "ampM": 0.016,
+            "freq": 17,
+            "seed": 3
+          },
+          "cutBelow": "ear",
+          "cutShiftM": -0.015
+        }
+      ]
+    },
+    {
+      "id": "curly_shoulder",
+      "name": "Shoulder-length curls",
+      "family": "curly",
+      "length": "medium",
+      "weights": "long",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.006
+        },
+        {
+          "block": "volume",
+          "anchor": "centre",
+          "offsetM": [0, 0.01, 0.03],
+          "radiiM": [0.125, 0.13, 0.11],
+          "subdiv": 5,
+          "lumps": {
+            "ampM": 0.016,
+            "freq": 17,
+            "seed": 4
+          },
+          "cutBelow": "ear",
+          "cutShiftM": -0.02
+        },
+        {
+          "block": "strands",
+          "on": "lower",
+          "count": 12,
+          "lengthM": 0.15,
+          "gravity": 0.6,
+          "segments": 4,
+          "radiusM": 0.012,
+          "sides": 6,
+          "taper": 0.7,
+          "curl": {
+            "radiusM": 0.011,
+            "turns": 2.5
+          },
+          "offsetM": 0.02,
+          "clearanceM": 0.02,
+          "seed": 9
+        }
+      ]
+    },
+    {
+      "id": "curly_pony_puff",
+      "name": "Curly puff",
+      "family": "curly",
+      "length": "medium",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.006,
+          "noise": {
+            "ampM": 0.002,
+            "freq": 30
+          }
+        },
+        {
+          "block": "bun",
+          "anchor": "crown",
+          "offsetM": [0, 0.04, 0.02],
+          "radiiM": [0.07, 0.07, 0.06],
+          "subdiv": 3,
+          "lumps": {
+            "ampM": 0.01,
+            "freq": 26,
+            "seed": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "ringlets_long",
+      "name": "Long ringlets",
+      "family": "curly",
+      "length": "long",
+      "weights": "long",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.009,
+          "noise": {
+            "ampM": 0.004,
+            "freq": 26,
+            "seed": 8
+          }
+        },
+        {
+          "block": "strands",
+          "on": "lower",
+          "count": 14,
+          "lengthM": 0.28,
+          "gravity": 0.6,
+          "segments": 5,
+          "radiusM": 0.007,
+          "sides": 5,
+          "taper": 0.6,
+          "curl": {
+            "radiusM": 0.013,
+            "turns": 5
+          },
+          "offsetM": 0.01,
+          "clearanceM": 0.02,
+          "seed": 8
+        }
+      ]
+    },
+    {
+      "id": "twa_coils",
+      "name": "Short coils",
+      "family": "coily",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.006
+        },
+        {
+          "block": "clumps",
+          "on": "all",
+          "shape": "ico",
+          "subdiv": 1,
+          "count": 75,
+          "sizeM": [0.008, 0.012],
+          "offsetM": 0.004,
+          "seed": 31
+        }
+      ]
+    },
+    {
+      "id": "afro_round",
+      "name": "Rounded afro",
+      "family": "coily",
+      "length": "medium",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.006
+        },
+        {
+          "block": "volume",
+          "anchor": "centre",
+          "offsetM": [0, 0.01, 0.03],
+          "radiiM": [0.15, 0.15, 0.135],
+          "subdiv": 5,
+          "lumps": {
+            "ampM": 0.016,
+            "freq": 17,
+            "seed": 9
+          },
+          "cutBelow": "ear",
+          "cutShiftM": -0.03
+        }
+      ]
+    },
+    {
+      "id": "afro_large",
+      "name": "Large afro",
+      "family": "coily",
+      "length": "long",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.006
+        },
+        {
+          "block": "volume",
+          "anchor": "centre",
+          "offsetM": [0, 0.015, 0.045],
+          "radiiM": [0.2, 0.19, 0.17],
+          "subdiv": 5,
+          "lumps": {
+            "ampM": 0.016,
+            "freq": 17,
+            "seed": 10
+          },
+          "cutBelow": "chin",
+          "cutShiftM": 0.01
+        }
+      ]
+    },
+    {
+      "id": "afro_puff",
+      "name": "High puff",
+      "family": "coily",
+      "length": "medium",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.005,
+          "smooth": 3
+        },
+        {
+          "block": "bun",
+          "anchor": "crown",
+          "offsetM": [0, 0.02, 0.035],
+          "radiiM": [0.09, 0.09, 0.075],
+          "subdiv": 3,
+          "lumps": {
+            "ampM": 0.008,
+            "freq": 20,
+            "seed": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": "afro_puffs_double",
+      "name": "Two puffs",
+      "family": "coily",
+      "length": "medium",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.005,
+          "smooth": 3
+        },
+        {
+          "block": "bun",
+          "anchor": "crown",
+          "offsetM": [0.075, 0.0, 0.0],
+          "radiiM": [0.06, 0.06, 0.055],
+          "subdiv": 3,
+          "lumps": {
+            "ampM": 0.006,
+            "freq": 24,
+            "seed": 12
+          }
+        },
+        {
+          "block": "bun",
+          "anchor": "crown",
+          "offsetM": [-0.075, 0.0, 0.0],
+          "radiiM": [0.06, 0.06, 0.055],
+          "subdiv": 3,
+          "lumps": {
+            "ampM": 0.006,
+            "freq": 24,
+            "seed": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": "coily_tapered",
+      "name": "Tapered coils",
+      "family": "coily",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.003,
+          "fade": {
+            "sidesM": 0.0015,
+            "toAboveEarM": 0.03
+          }
+        },
+        {
+          "block": "scalp",
+          "area": "top",
+          "topAboveEarM": 0.03,
+          "offsetM": 0.014,
+          "crown": {
+            "extraM": 0.012,
+            "depthM": 0.06
+          },
+          "noise": {
+            "ampM": 0.004,
+            "freq": 30,
+            "seed": 14
+          }
+        },
+        {
+          "block": "clumps",
+          "on": "crown",
+          "shape": "ico",
+          "subdiv": 1,
+          "count": 45,
+          "sizeM": [0.009, 0.013],
+          "offsetM": 0.014,
+          "seed": 32
+        }
+      ]
+    },
+    {
+      "id": "twists_short",
+      "name": "Short twists",
+      "family": "protective",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.005
+        },
+        {
+          "block": "strands",
+          "on": "all",
+          "count": 32,
+          "lengthM": 0.055,
+          "profile": "twist",
+          "radiusM": 0.009,
+          "twistTurns": 2.5,
+          "gravity": 0.25,
+          "segments": 4,
+          "taper": 0.7,
+          "offsetM": 0.002,
+          "seed": 41,
+          "lift": 0.6
+        }
+      ]
+    },
+    {
+      "id": "twists_long",
+      "name": "Long twists",
+      "family": "protective",
+      "length": "long",
+      "weights": "long",
+      "longBudget": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.005
+        },
+        {
+          "block": "strands",
+          "on": "all",
+          "count": 30,
+          "lengthM": 0.3,
+          "profile": "twist",
+          "radiusM": 0.0068,
+          "twistTurns": 7,
+          "gravity": 0.45,
+          "segments": 8,
+          "taper": 0.65,
+          "offsetM": 0.002,
+          "clearanceM": 0.016,
+          "lengthVar": 0.15,
+          "seed": 42,
+          "minU": 0.22
+        }
+      ]
+    },
+    {
+      "id": "locs_short",
+      "name": "Short locs",
+      "family": "protective",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.005
+        },
+        {
+          "block": "strands",
+          "on": "all",
+          "count": 38,
+          "lengthM": 0.08,
+          "radiusM": 0.0075,
+          "sides": 5,
+          "gravity": 0.25,
+          "segments": 4,
+          "taper": 0.8,
+          "offsetM": 0.002,
+          "seed": 43,
+          "lift": 0.5
+        }
+      ]
+    },
+    {
+      "id": "locs_shoulder",
+      "name": "Shoulder-length locs",
+      "family": "protective",
+      "length": "medium",
+      "weights": "long",
+      "longBudget": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.005
+        },
+        {
+          "block": "strands",
+          "on": "all",
+          "count": 32,
+          "lengthM": 0.2,
+          "radiusM": 0.0085,
+          "sides": 5,
+          "gravity": 0.4,
+          "segments": 7,
+          "taper": 0.8,
+          "offsetM": 0.002,
+          "clearanceM": 0.018,
+          "lengthVar": 0.12,
+          "seed": 44,
+          "minU": 0.22
+        }
+      ]
+    },
+    {
+      "id": "locs_updo",
+      "name": "Locs updo",
+      "family": "protective",
+      "length": "medium",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.005
+        },
+        {
+          "block": "strands",
+          "mode": "gather",
+          "gather": {
+            "anchor": "crown",
+            "offsetM": [0, 0.0, 0.02]
+          },
+          "on": "all",
+          "count": 22,
+          "radiusM": 0.008,
+          "sides": 5,
+          "segments": 6,
+          "lengthM": 0.2,
+          "taper": 0.9,
+          "bulgeM": 0.006,
+          "seed": 45
+        },
+        {
+          "block": "bun",
+          "anchor": "crown",
+          "offsetM": [0, 0.0, 0.045],
+          "radiiM": [0.07, 0.07, 0.05],
+          "subdiv": 3,
+          "twistM": 0.008,
+          "lumps": {
+            "ampM": 0.006,
+            "freq": 30,
+            "seed": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": "box_braids_long",
+      "name": "Long box braids",
+      "family": "protective",
+      "length": "long",
+      "weights": "long",
+      "longBudget": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.004
+        },
+        {
+          "block": "strands",
+          "on": "all",
+          "count": 30,
+          "lengthM": 0.42,
+          "profile": "square",
+          "radiusM": 0.0072,
+          "braidBumps": 10,
+          "twistTurns": 0,
+          "gravity": 0.5,
+          "segments": 9,
+          "taper": 0.75,
+          "offsetM": 0.002,
+          "clearanceM": 0.016,
+          "lengthVar": 0.1,
+          "seed": 46,
+          "minU": 0.22
+        }
+      ]
+    },
+    {
+      "id": "box_braids_up",
+      "name": "Box braids, high bun",
+      "family": "protective",
+      "length": "medium",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.004
+        },
+        {
+          "block": "strands",
+          "mode": "gather",
+          "gather": {
+            "anchor": "crown",
+            "offsetM": [0, 0.01, 0.02]
+          },
+          "on": "all",
+          "count": 24,
+          "profile": "square",
+          "radiusM": 0.0065,
+          "braidBumps": 6,
+          "twistTurns": 0,
+          "segments": 6,
+          "lengthM": 0.2,
+          "taper": 0.9,
+          "bulgeM": 0.005,
+          "seed": 47
+        },
+        {
+          "block": "bun",
+          "anchor": "crown",
+          "offsetM": [0, 0.01, 0.05],
+          "radiiM": [0.065, 0.065, 0.06],
+          "subdiv": 3,
+          "twistM": 0.01
+        }
+      ]
+    },
+    {
+      "id": "cornrows_straight_back",
+      "name": "Straight-back cornrows",
+      "family": "protective",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.002
+        },
+        {
+          "block": "strands",
+          "mode": "rows",
+          "count": 9,
+          "flow": [0, 1, 0],
+          "lengthM": 0.3,
+          "segments": 14,
+          "radiusM": 0.0065,
+          "squash": 0.7,
+          "sides": 5,
+          "braidBumps": 16,
+          "taper": 0.8,
+          "offsetM": 0.003
+        }
+      ]
+    },
+    {
+      "id": "cornrows_side_part",
+      "name": "Side-part cornrows",
+      "family": "protective",
+      "length": "short",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.002
+        },
+        {
+          "block": "strands",
+          "mode": "rows",
+          "count": 9,
+          "flow": [0.45, 1, 0],
+          "lengthM": 0.3,
+          "segments": 14,
+          "radiusM": 0.0065,
+          "squash": 0.7,
+          "sides": 5,
+          "braidBumps": 16,
+          "taper": 0.8,
+          "offsetM": 0.003
+        }
+      ]
+    },
+    {
+      "id": "bantu_knots",
+      "name": "Bantu knots",
+      "family": "protective",
+      "length": "short",
+      "capIncompatible": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.003
+        },
+        {
+          "block": "clumps",
+          "on": "all",
+          "shape": "knot",
+          "count": 9,
+          "sizeM": [0.034, 0.04],
+          "offsetM": 0.002,
+          "seed": 51
+        }
+      ]
+    },
+    {
+      "id": "fulani_braids",
+      "name": "Cornrows with side braids",
+      "family": "protective",
+      "length": "long",
+      "weights": "long",
+      "longBudget": true,
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.002
+        },
+        {
+          "block": "strands",
+          "mode": "rows",
+          "count": 7,
+          "flow": [0, 1, 0],
+          "lengthM": 0.3,
+          "segments": 12,
+          "radiusM": 0.0065,
+          "squash": 0.7,
+          "sides": 5,
+          "braidBumps": 14,
+          "taper": 0.8,
+          "offsetM": 0.003
+        },
+        {
+          "block": "strands",
+          "on": "sides",
+          "count": 6,
+          "lengthM": 0.3,
+          "profile": "square",
+          "radiusM": 0.006,
+          "braidBumps": 10,
+          "twistTurns": 0,
+          "gravity": 0.6,
+          "segments": 8,
+          "taper": 0.8,
+          "offsetM": 0.003,
+          "clearanceM": 0.016,
+          "bead": {
+            "radiusM": 0.008,
+            "region": "ACCENT"
+          },
+          "seed": 52
+        }
+      ]
+    }
+  ],
+  "facial": [
+    {
+      "id": "stubble",
+      "name": "Stubble",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "beard",
+          "offsetM": 0.0012,
+          "smooth": 1,
+          "close": false
+        }
+      ]
+    },
+    {
+      "id": "moustache",
+      "name": "Moustache",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "moustache",
+          "offsetM": 0.006,
+          "smooth": 1
+        }
+      ]
+    },
+    {
+      "id": "goatee",
+      "name": "Goatee",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "goatee",
+          "offsetM": 0.007,
+          "smooth": 1
+        }
+      ]
+    },
+    {
+      "id": "beard_short",
+      "name": "Short beard",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "beard",
+          "offsetM": 0.006,
+          "smooth": 1,
+          "noise": {
+            "ampM": 0.0015,
+            "freq": 40
+          }
+        }
+      ]
+    },
+    {
+      "id": "beard_full",
+      "name": "Full beard",
+      "method": "quaternius:Hair_Beard",
+      "parts": [
+        {
+          "block": "quaternius",
+          "name": "Hair_Beard"
+        }
+      ]
+    },
+    {
+      "id": "beard_long",
+      "name": "Long beard",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "beard",
+          "offsetM": 0.012,
+          "smooth": 1,
+          "noise": {
+            "ampM": 0.002,
+            "freq": 30
+          },
+          "curtain": {
+            "lengthM": 0.07,
+            "rows": 2,
+            "flareM": -0.01,
+            "fromU": 0.0,
+            "belowChinM": 0.01,
+            "clearanceM": 0.012,
+            "jagM": 0.01
+          }
+        }
+      ]
+    },
+    {
+      "id": "chin_strap",
+      "name": "Chin strap",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "chinstrap",
+          "offsetM": 0.004,
+          "smooth": 1
+        }
+      ]
+    }
+  ],
+  "headwear": [
+    {
+      "id": "hijab_wrap",
+      "name": "Hijab, draped",
+      "hidesHair": true,
+      "weights": "long",
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "wrap",
+          "offsetM": 0.014,
+          "smooth": 3,
+          "crown": {
+            "extraM": 0.012,
+            "depthM": 0.06
+          },
+          "curtain": {
+            "lengthM": 0.13,
+            "rows": 4,
+            "flareM": 0.035,
+            "fromU": 0.0,
+            "belowChinM": -0.02,
+            "clearanceM": 0.035
+          }
+        }
+      ]
+    },
+    {
+      "id": "hijab_sport",
+      "name": "Hijab, sport",
+      "hidesHair": true,
+      "weights": "long",
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "wrap",
+          "offsetM": 0.008,
+          "smooth": 3,
+          "curtain": {
+            "lengthM": 0.06,
+            "rows": 2,
+            "flareM": 0.02,
+            "fromU": 0.0,
+            "belowChinM": -0.02,
+            "clearanceM": 0.03
+          },
+          "band": {
+            "region": "ACCENT2",
+            "heightM": 0.012,
+            "ref": "hairline",
+            "belowM": 0.02
+          }
+        }
+      ]
+    },
+    {
+      "id": "headwrap_gele",
+      "name": "Gele",
+      "hidesHair": true,
+      "capIncompatible": true,
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.014,
+          "hairlineRaiseM": -0.012,
+          "crown": {
+            "extraM": 0.015,
+            "depthM": 0.06
+          },
+          "band": {
+            "region": "ACCENT2",
+            "heightM": 0.022,
+            "belowM": 0.04
+          }
+        },
+        {
+          "block": "pleats",
+          "anchor": "crown",
+          "offsetM": [0, 0.02, -0.02],
+          "count": 7,
+          "lobeM": [0.075, 0.022, 0.11],
+          "spreadDeg": 160,
+          "tiltDeg": 15
+        }
+      ]
+    },
+    {
+      "id": "headwrap_simple",
+      "name": "Knotted wrap",
+      "hidesHair": true,
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.018,
+          "hairlineRaiseM": -0.008,
+          "crown": {
+            "extraM": 0.02,
+            "depthM": 0.07
+          },
+          "noise": {
+            "ampM": 0.004,
+            "freq": 18
+          }
+        },
+        {
+          "block": "bun",
+          "anchor": "top",
+          "offsetM": [-0.022, -0.06, 0.005],
+          "radiiM": [0.03, 0.025, 0.025],
+          "subdiv": 2,
+          "twistM": 0.004
+        },
+        {
+          "block": "bun",
+          "anchor": "top",
+          "offsetM": [0.022, -0.06, 0.005],
+          "radiiM": [0.03, 0.025, 0.025],
+          "subdiv": 2,
+          "twistM": 0.004
+        }
+      ]
+    },
+    {
+      "id": "turban",
+      "name": "Turban",
+      "hidesHair": true,
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.022,
+          "hairlineRaiseM": -0.01,
+          "crown": {
+            "extraM": 0.03,
+            "depthM": 0.07
+          }
+        },
+        {
+          "block": "wraps",
+          "layers": [
+            {
+              "aboveEyesM": 0.045,
+              "tiltDeg": 14,
+              "sectionM": [0.017, 0.03],
+              "clearanceM": 0.028
+            },
+            {
+              "aboveEyesM": 0.07,
+              "tiltDeg": -12,
+              "sectionM": [0.017, 0.03],
+              "clearanceM": 0.032,
+              "region": "ACCENT2"
+            },
+            {
+              "aboveEyesM": 0.095,
+              "tiltDeg": 8,
+              "sectionM": [0.015, 0.026],
+              "clearanceM": 0.036
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "durag",
+      "name": "Durag",
+      "hidesHair": true,
+      "weights": "long",
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "offsetM": 0.005,
+          "smooth": 3,
+          "band": {
+            "region": "ACCENT2",
+            "heightM": 0.01,
+            "belowM": 0.02
+          }
+        },
+        {
+          "block": "strands",
+          "mode": "point",
+          "anchor": "nape",
+          "anchorOffsetM": [0, 0.02, 0.01],
+          "count": 2,
+          "spreadM": 0.025,
+          "flow": [0, 0.5, -1],
+          "lengthM": 0.28,
+          "gravity": 0.6,
+          "segments": 6,
+          "profile": "ribbon",
+          "widthM": 0.05,
+          "radiusM": 0.002,
+          "taper": 0.8,
+          "clearanceM": 0.03,
+          "region": "ACCENT"
+        }
+      ]
+    },
+    {
+      "id": "kufi",
+      "name": "Kufi",
+      "hidesHair": false,
+      "hidesHairMask": 1,
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "crown",
+          "crownLiftM": -0.012,
+          "offsetM": 0.014,
+          "flattenTopM": 0.008,
+          "band": {
+            "region": "ACCENT2",
+            "heightM": 0.012,
+            "ref": "band",
+            "belowM": 0.03
+          }
+        }
+      ]
+    },
+    {
+      "id": "cap",
+      "name": "Cap",
+      "hidesHair": false,
+      "hidesHairMask": 1,
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "crown",
+          "crownLiftM": -0.01,
+          "offsetM": 0.016,
+          "crown": {
+            "extraM": 0.008,
+            "depthM": 0.05
+          }
+        },
+        {
+          "block": "brim",
+          "region": "ACCENT2",
+          "depthM": 0.075,
+          "droopM": 0.012,
+          "offsetM": 0.017,
+          "zShiftM": -0.006
+        }
+      ]
+    },
+    {
+      "id": "beanie",
+      "name": "Beanie",
+      "hidesHair": false,
+      "hidesHairMask": 7,
+      "region": "ACCENT",
+      "parts": [
+        {
+          "block": "scalp",
+          "area": "crown",
+          "crownLiftM": -0.028,
+          "offsetM": 0.016,
+          "crown": {
+            "extraM": 0.018,
+            "depthM": 0.06
+          },
+          "noise": {
+            "ampM": 0.0015,
+            "freq": 50
+          },
+          "band": {
+            "region": "ACCENT2",
+            "heightM": 0.026,
+            "ref": "band",
+            "belowM": 0.06
+          }
+        }
+      ]
+    }
+  ]
+}

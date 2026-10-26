@@ -127,5 +127,171 @@
   },
   "notes": {
     "deformBones": "The Quaternius rig uses UE mannequin naming with ~65 bones including fingers, which emotes need."
+  },
+  "avatar": {
+    "attributes": {
+      "region": "_REGION",
+      "mask": "_MASK",
+      "uvPrint": "_UV_PRINT",
+      "note": "FACE-domain float attributes (corner for _UV_PRINT); the exporter splits vertices where they change, so every triangle has one region and one mask. three.js GLTFLoader names them _region, _mask and _uv_print."
+    },
+    "regions": {
+      "SKIN": 0,
+      "TOP": 1,
+      "TOP2": 2,
+      "BOTTOM": 3,
+      "BOTTOM2": 4,
+      "SHOES": 5,
+      "SHOES2": 6,
+      "HAIR": 7,
+      "BROWS": 8,
+      "EYES": 9,
+      "ACCENT": 10,
+      "ACCENT2": 11,
+      "ACCESSORY": 12
+    },
+    "regionsNote": "13-15 reserved. ACCESSORY (12) keeps the accessory colour separate from headwear (ACCENT/ACCENT2), so a cap and headphones can differ.",
+    "colorSlots": 16,
+    "bodyMask": {
+      "torso": 1,
+      "upperarm": 2,
+      "forearm": 4,
+      "hand": 8,
+      "hips": 16,
+      "thigh": 32,
+      "calf": 64,
+      "foot": 128,
+      "neck": 256,
+      "head": 512,
+      "upperarm_lo": 1024,
+      "knee": 2048,
+      "calf_lo": 4096,
+      "shoulder": 8192
+    },
+    "maskRules": [
+      {
+        "zone": "head",
+        "patterns": ["^head$"]
+      },
+      {
+        "zone": "neck",
+        "patterns": ["^neck_\\d+$"]
+      },
+      {
+        "zone": "hand",
+        "patterns": ["^hand_[lr]$", "^(thumb|index|middle|ring|pinky)_\\d+(_leaf)?_[lr]$"]
+      },
+      {
+        "zone": "forearm",
+        "patterns": ["^lowerarm_[lr]$"]
+      },
+      {
+        "zone": "upperarm",
+        "patterns": ["^upperarm_[lr]$"]
+      },
+      {
+        "zone": "torso",
+        "patterns": ["^spine_\\d+$", "^clavicle_[lr]$"]
+      },
+      {
+        "zone": "hips",
+        "patterns": ["^pelvis$", "^root$"]
+      },
+      {
+        "zone": "thigh",
+        "patterns": ["^thigh_[lr]$"]
+      },
+      {
+        "zone": "calf",
+        "patterns": ["^calf_[lr]$"]
+      },
+      {
+        "zone": "foot",
+        "patterns": ["^foot_[lr]$", "^ball(_leaf)?_[lr]$"]
+      }
+    ],
+    "maskSplits": [
+      {
+        "zone": "upperarm_lo",
+        "from": "upperarm",
+        "plane": {
+          "from": "upperarm_{s}",
+          "to": "lowerarm_{s}",
+          "t": 0.5
+        },
+        "why": "short sleeves end halfway down the upper arm"
+      },
+      {
+        "zone": "knee",
+        "from": "thigh",
+        "plane": {
+          "from": "thigh_{s}",
+          "to": "calf_{s}",
+          "t": 0.55
+        },
+        "why": "shorts end above the knee"
+      },
+      {
+        "zone": "calf_lo",
+        "from": "calf",
+        "plane": {
+          "from": "calf_{s}",
+          "to": "foot_{s}",
+          "fromEndM": 0.12
+        },
+        "why": "boots cover the lowest 12 cm of the calf"
+      },
+      {
+        "zone": "shoulder",
+        "from": "torso",
+        "plane": {
+          "from": "clavicle_{s}",
+          "to": "upperarm_{s}",
+          "t": 0.6,
+          "radiusM": 0.15
+        },
+        "why": "a tank top's arm holes reach under the arm"
+      }
+    ],
+    "hairMask": {
+      "crown": 1,
+      "sides": 2,
+      "back": 4,
+      "length": 8
+    },
+    "budgets": {
+      "garment": 2500,
+      "hair": 2500,
+      "hairLong": 3000,
+      "facial": 800,
+      "headwear": 1500,
+      "accessory": 600,
+      "avatarLod0": 26000,
+      "avatarLod1": 7500,
+      "bodyDecimatedTris": 11000
+    },
+    "poseTest": {
+      "clips": [
+        ["idle", 0.3],
+        ["walk", 0.25],
+        ["run", 0.3],
+        ["jump_air", 0.5],
+        ["emote_wave", 0.5],
+        ["emote_dance", 0.4]
+      ],
+      "substitutes": {
+        "emote_wave": "sit_idle"
+      },
+      "maxPenetrationCm": 1.0
+    },
+    "print": {
+      "bone": "spine_03",
+      "offsetM": [0.0, 0.0, 0.05],
+      "sizeM": 0.26
+    },
+    "families": {
+      "required": ["straight", "wavy", "curly", "coily", "protective"],
+      "minStyles": 5
+    }
   }
 }

@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from .avatar import AVATAR_DEFAULTS
 from .jsonfile import load_or_create, write_json
 
 DEFAULT_CONTRACT: dict[str, Any] = {
@@ -59,6 +60,7 @@ DEFAULT_CONTRACT: dict[str, Any] = {
     "notes": {
         "deformBones": "The Quaternius rig uses UE mannequin naming with ~65 bones including fingers, which emotes need.",
     },
+    "avatar": AVATAR_DEFAULTS,
 }
 
 
@@ -72,6 +74,12 @@ def load_contract(art_dir: Path) -> tuple[dict[str, Any], list[str]]:
     contract, created = load_or_create(path, DEFAULT_CONTRACT)
     if created:
         notes.append(f"created {path.name} from ART_PIPELINE.md defaults")
+    missing = [k for k in DEFAULT_CONTRACT if k not in contract]
+    if missing:
+        for k in missing:
+            contract[k] = DEFAULT_CONTRACT[k]
+        write_json(path, contract)
+        notes.append(f"added missing sections {missing} to {path.name}")
     legacy = art_dir / "budgets.json"
     if legacy.exists():
         loaded, _ = load_or_create(legacy, {})

@@ -1,0 +1,309 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "tshirt",
+      "slot": "top",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/tshirt_f.glb",
+        "body_superhero_m": "wardrobe/tshirt_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2340,
+        "body_superhero_m": 2348
+      },
+      "hides": 8195,
+      "hidesZones": ["torso", "shoulder", "upperarm"],
+      "colorSlots": ["TOP", "TOP2"],
+      "hasPrint": true,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/tshirt.png"
+    },
+    {
+      "id": "longsleeve",
+      "slot": "top",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/longsleeve_f.glb",
+        "body_superhero_m": "wardrobe/longsleeve_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2352,
+        "body_superhero_m": 2332
+      },
+      "hides": 9223,
+      "hidesZones": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm"],
+      "colorSlots": ["TOP", "TOP2"],
+      "hasPrint": true,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/longsleeve.png"
+    },
+    {
+      "id": "hoodie",
+      "slot": "top",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/hoodie_f.glb",
+        "body_superhero_m": "wardrobe/hoodie_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2444,
+        "body_superhero_m": 2476
+      },
+      "hides": 9223,
+      "hidesZones": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm"],
+      "colorSlots": ["TOP", "TOP2"],
+      "hasPrint": true,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/hoodie.png"
+    },
+    {
+      "id": "jacket",
+      "slot": "top",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/jacket_f.glb",
+        "body_superhero_m": "wardrobe/jacket_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2388,
+        "body_superhero_m": 2388
+      },
+      "hides": 9223,
+      "hidesZones": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm"],
+      "colorSlots": ["TOP", "TOP2"],
+      "hasPrint": true,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/jacket.png"
+    },
+    {
+      "id": "tank",
+      "slot": "top",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/tank_f.glb",
+        "body_superhero_m": "wardrobe/tank_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1960,
+        "body_superhero_m": 1948
+      },
+      "hides": 1,
+      "hidesZones": ["torso"],
+      "colorSlots": ["TOP", "TOP2"],
+      "hasPrint": true,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/tank.png"
+    },
+    {
+      "id": "jeans",
+      "slot": "bottom",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/jeans_f.glb",
+        "body_superhero_m": "wardrobe/jeans_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2176,
+        "body_superhero_m": 2192
+      },
+      "hides": 6256,
+      "hidesZones": ["hips", "thigh", "knee", "calf", "calf_lo"],
+      "colorSlots": ["BOTTOM", "BOTTOM2"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/jeans.png"
+    },
+    {
+      "id": "chinos",
+      "slot": "bottom",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/chinos_f.glb",
+        "body_superhero_m": "wardrobe/chinos_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2184,
+        "body_superhero_m": 2196
+      },
+      "hides": 6256,
+      "hidesZones": ["hips", "thigh", "knee", "calf", "calf_lo"],
+      "colorSlots": ["BOTTOM", "BOTTOM2"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/chinos.png"
+    },
+    {
+      "id": "shorts",
+      "slot": "bottom",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/shorts_f.glb",
+        "body_superhero_m": "wardrobe/shorts_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1784,
+        "body_superhero_m": 1792
+      },
+      "hides": 48,
+      "hidesZones": ["hips", "thigh"],
+      "colorSlots": ["BOTTOM", "BOTTOM2"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/shorts.png"
+    },
+    {
+      "id": "joggers",
+      "slot": "bottom",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/joggers_f.glb",
+        "body_superhero_m": "wardrobe/joggers_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 2200,
+        "body_superhero_m": 2136
+      },
+      "hides": 6256,
+      "hidesZones": ["hips", "thigh", "knee", "calf", "calf_lo"],
+      "colorSlots": ["BOTTOM", "BOTTOM2"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/joggers.png"
+    },
+    {
+      "id": "sneakers",
+      "slot": "shoes",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/sneakers_f.glb",
+        "body_superhero_m": "wardrobe/sneakers_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1380,
+        "body_superhero_m": 1356
+      },
+      "hides": 128,
+      "hidesZones": ["foot"],
+      "colorSlots": ["SHOES", "SHOES2"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/sneakers.png"
+    },
+    {
+      "id": "boots",
+      "slot": "shoes",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/boots_f.glb",
+        "body_superhero_m": "wardrobe/boots_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 1572,
+        "body_superhero_m": 1580
+      },
+      "hides": 4224,
+      "hidesZones": ["foot", "calf_lo"],
+      "colorSlots": ["SHOES", "SHOES2"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/boots.png"
+    },
+    {
+      "id": "sandals",
+      "slot": "shoes",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/sandals_f.glb",
+        "body_superhero_m": "wardrobe/sandals_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 358,
+        "body_superhero_m": 310
+      },
+      "hides": 0,
+      "hidesZones": [],
+      "colorSlots": ["SHOES", "SHOES2"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/sandals.png"
+    },
+    {
+      "id": "headphones",
+      "slot": "accessory",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/headphones_f.glb",
+        "body_superhero_m": "wardrobe/headphones_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 220,
+        "body_superhero_m": 220
+      },
+      "hides": 0,
+      "hidesZones": [],
+      "colorSlots": ["ACCESSORY"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/headphones.png"
+    },
+    {
+      "id": "glasses",
+      "slot": "accessory",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/glasses_f.glb",
+        "body_superhero_m": "wardrobe/glasses_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 284,
+        "body_superhero_m": 284
+      },
+      "hides": 0,
+      "hidesZones": [],
+      "colorSlots": ["ACCESSORY"],
+      "hasPrint": false,
+      "unlock": null,
+      "thumb": "wardrobe/thumbs/glasses.png"
+    },
+    {
+      "id": "backpack",
+      "slot": "accessory",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/backpack_f.glb",
+        "body_superhero_m": "wardrobe/backpack_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 436,
+        "body_superhero_m": 436
+      },
+      "hides": 0,
+      "hidesZones": [],
+      "colorSlots": ["ACCESSORY"],
+      "hasPrint": false,
+      "unlock": "stamp:district:all",
+      "thumb": "wardrobe/thumbs/backpack.png"
+    },
+    {
+      "id": "lanyard",
+      "slot": "accessory",
+      "bodies": ["body_superhero_f", "body_superhero_m"],
+      "files": {
+        "body_superhero_f": "wardrobe/lanyard_f.glb",
+        "body_superhero_m": "wardrobe/lanyard_m.glb"
+      },
+      "tris": {
+        "body_superhero_f": 260,
+        "body_superhero_m": 260
+      },
+      "hides": 0,
+      "hidesZones": [],
+      "colorSlots": ["ACCESSORY"],
+      "hasPrint": true,
+      "unlock": "stamp:booths:50",
+      "thumb": "wardrobe/thumbs/lanyard.png"
+    }
+  ]
+}

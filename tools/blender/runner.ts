@@ -11,6 +11,8 @@ export const STEPS = [
   { name: 'inspect', script: 'inspect.py', needsPacks: [] },
   { name: 'characters', script: 'characters.py', needsPacks: ['universal-base-characters'] },
   { name: 'animations', script: 'animations.py', needsPacks: ['universal-animation-library'] },
+  { name: 'wardrobe', script: 'wardrobe.py', needsPacks: [] },
+  { name: 'hair', script: 'hair.py', needsPacks: [] },
   { name: 'booth-kit', script: 'booth_kit.py', needsPacks: [] },
   { name: 'props', script: 'props.py', needsPacks: [] },
   { name: 'previews', script: 'previews.py', needsPacks: [] },

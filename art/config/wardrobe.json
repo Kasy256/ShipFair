@@ -1,0 +1,477 @@
+{
+  "note": "Wardrobe items for pnpm art:wardrobe. source/hides are body mask zones (art/contract.json avatar.bodyMask). cuts are bone planes: {from,to,t|fromEndM,shiftM,keep,radiusM} or {level,shiftM,keep}; {s} means both sides. A cut with zone:true is a hem along the source zone boundary (relaxed) within radiusM of the axisFrom->axisTo bone axis (and spanM along it), its band extruded along that axis: used for collars, so hidden skin can never sit outside the collar. Each cut's hem band takes the colour slot named in band (main, slot2, or false for none). regions maps main/slot2/lining to colour slots (avatar.regions).",
+  "defaults": {
+    "thickness_m": 0.006,
+    "band_m": 0.017,
+    "band_out_m": 0.003,
+    "smooth": 2,
+    "shellShare": 0.42
+  },
+  "items": [
+    {
+      "id": "tshirt",
+      "slot": "top",
+      "source": ["torso", "shoulder", "upperarm", "upperarm_lo", "hips"],
+      "cuts": [
+        {
+          "name": "sleeve",
+          "from": "upperarm_{s}",
+          "to": "lowerarm_{s}",
+          "t": 0.5,
+          "shiftM": 0.012,
+          "band": "slot2"
+        },
+        {
+          "name": "collar",
+          "zone": true,
+          "axisFrom": "neck_01",
+          "axisTo": "Head",
+          "radiusM": 0.14,
+          "spanM": [-0.1, 0.08],
+          "band": "slot2"
+        },
+        {
+          "name": "hem",
+          "level": "pelvis",
+          "shiftM": 0.025,
+          "keep": "above",
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.016,
+      "regions": {
+        "main": "TOP",
+        "slot2": "TOP2"
+      },
+      "hides": ["torso", "shoulder", "upperarm"],
+      "print": true,
+      "budget_tris": 2400
+    },
+    {
+      "id": "longsleeve",
+      "slot": "top",
+      "source": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm", "hips"],
+      "cuts": [
+        {
+          "name": "cuff",
+          "from": "lowerarm_{s}",
+          "to": "hand_{s}",
+          "t": 1.0,
+          "shiftM": 0.0,
+          "band": "slot2"
+        },
+        {
+          "name": "collar",
+          "zone": true,
+          "axisFrom": "neck_01",
+          "axisTo": "Head",
+          "radiusM": 0.14,
+          "spanM": [-0.1, 0.08],
+          "band": "slot2"
+        },
+        {
+          "name": "hem",
+          "level": "pelvis",
+          "shiftM": 0.025,
+          "keep": "above",
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.016,
+      "regions": {
+        "main": "TOP",
+        "slot2": "TOP2"
+      },
+      "hides": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm"],
+      "print": true,
+      "budget_tris": 2400
+    },
+    {
+      "id": "hoodie",
+      "slot": "top",
+      "source": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm", "hips"],
+      "cuts": [
+        {
+          "name": "cuff",
+          "from": "lowerarm_{s}",
+          "to": "hand_{s}",
+          "t": 1.0,
+          "shiftM": 0.0,
+          "band": "slot2"
+        },
+        {
+          "name": "collar",
+          "zone": true,
+          "axisFrom": "neck_01",
+          "axisTo": "Head",
+          "radiusM": 0.14,
+          "spanM": [-0.1, 0.08],
+          "band": "main",
+          "lengthM": 0.01
+        },
+        {
+          "name": "hem",
+          "level": "pelvis",
+          "shiftM": 0.015,
+          "keep": "above",
+          "band": "slot2"
+        }
+      ],
+      "offset_m": 0.022,
+      "regions": {
+        "main": "TOP",
+        "slot2": "TOP2",
+        "lining": "TOP2"
+      },
+      "features": [
+        {
+          "type": "hood",
+          "name": "hood",
+          "radiiM": [0.15, 0.08, 0.11],
+          "offsetM": [0.0, 0.14, -0.05],
+          "tiltDeg": 35,
+          "openZ": 0.25,
+          "region": "TOP"
+        },
+        {
+          "type": "panel",
+          "name": "pouch",
+          "zFrom": ["pelvis", 0.06],
+          "zTo": ["pelvis", 0.2],
+          "halfWidthM": [0.11, 0.085],
+          "region": "TOP2",
+          "pushM": 0.006,
+          "stage": "before_decimate"
+        }
+      ],
+      "hides": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm"],
+      "print": true,
+      "budget_tris": 2500
+    },
+    {
+      "id": "jacket",
+      "slot": "top",
+      "source": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm", "hips"],
+      "cuts": [
+        {
+          "name": "cuff",
+          "from": "lowerarm_{s}",
+          "to": "hand_{s}",
+          "t": 1.0,
+          "shiftM": 0.0,
+          "band": "slot2"
+        },
+        {
+          "name": "collar",
+          "zone": true,
+          "axisFrom": "neck_01",
+          "axisTo": "Head",
+          "radiusM": 0.14,
+          "spanM": [-0.1, 0.08],
+          "band": "main"
+        },
+        {
+          "name": "hem",
+          "level": "pelvis",
+          "shiftM": 0.0,
+          "keep": "above",
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.018,
+      "regions": {
+        "main": "TOP",
+        "slot2": "TOP2"
+      },
+      "features": [
+        {
+          "type": "panel",
+          "name": "lapels",
+          "zFrom": ["spine_03", -0.02],
+          "zTo": ["neck_01", 0.0],
+          "halfWidthM": [0.025, 0.075],
+          "region": "TOP2",
+          "pushM": 0.004,
+          "stage": "before_decimate"
+        },
+        {
+          "type": "panel",
+          "name": "opening",
+          "zFrom": ["pelvis", -0.03],
+          "zTo": ["neck_01", 0.0],
+          "halfWidthM": [0.03, 0.03],
+          "region": "TOP2",
+          "pushM": -0.01,
+          "stage": "before_decimate"
+        }
+      ],
+      "hides": ["torso", "shoulder", "upperarm", "upperarm_lo", "forearm"],
+      "print": true,
+      "budget_tris": 2400
+    },
+    {
+      "id": "tank",
+      "slot": "top",
+      "source": ["torso", "shoulder", "hips"],
+      "cuts": [
+        {
+          "name": "armhole",
+          "from": "clavicle_{s}",
+          "to": "upperarm_{s}",
+          "t": 0.6,
+          "shiftM": 0.012,
+          "radiusM": 0.15,
+          "band": "slot2",
+          "lengthM": 0.008,
+          "outM": 0.001
+        },
+        {
+          "name": "collar",
+          "zone": true,
+          "axisFrom": "neck_01",
+          "axisTo": "Head",
+          "radiusM": 0.14,
+          "spanM": [-0.1, 0.08],
+          "band": "slot2"
+        },
+        {
+          "name": "hem",
+          "level": "pelvis",
+          "shiftM": 0.025,
+          "keep": "above",
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.016,
+      "regions": {
+        "main": "TOP",
+        "slot2": "TOP2"
+      },
+      "hides": ["torso"],
+      "print": true,
+      "budget_tris": 2000
+    },
+    {
+      "id": "jeans",
+      "slot": "bottom",
+      "source": ["hips", "thigh", "knee", "calf", "calf_lo", "torso"],
+      "cuts": [
+        {
+          "name": "waistband",
+          "level": "pelvis",
+          "shiftM": 0.15,
+          "keep": "below",
+          "band": "slot2",
+          "outM": -0.005
+        },
+        {
+          "name": "hem",
+          "from": "calf_{s}",
+          "to": "foot_{s}",
+          "t": 1.0,
+          "shiftM": 0.012,
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.008,
+      "regions": {
+        "main": "BOTTOM",
+        "slot2": "BOTTOM2"
+      },
+      "hides": ["hips", "thigh", "knee", "calf", "calf_lo"],
+      "budget_tris": 2200
+    },
+    {
+      "id": "chinos",
+      "slot": "bottom",
+      "source": ["hips", "thigh", "knee", "calf", "calf_lo", "torso"],
+      "cuts": [
+        {
+          "name": "waistband",
+          "level": "pelvis",
+          "shiftM": 0.15,
+          "keep": "below",
+          "band": "slot2",
+          "outM": -0.005
+        },
+        {
+          "name": "hem",
+          "from": "calf_{s}",
+          "to": "foot_{s}",
+          "t": 1.0,
+          "shiftM": 0.006,
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.011,
+      "regions": {
+        "main": "BOTTOM",
+        "slot2": "BOTTOM2"
+      },
+      "hides": ["hips", "thigh", "knee", "calf", "calf_lo"],
+      "budget_tris": 2200
+    },
+    {
+      "id": "shorts",
+      "slot": "bottom",
+      "source": ["hips", "thigh", "knee", "torso"],
+      "cuts": [
+        {
+          "name": "waistband",
+          "level": "pelvis",
+          "shiftM": 0.15,
+          "keep": "below",
+          "band": "slot2",
+          "outM": -0.005
+        },
+        {
+          "name": "hem",
+          "from": "thigh_{s}",
+          "to": "calf_{s}",
+          "t": 0.55,
+          "shiftM": 0.012,
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.012,
+      "regions": {
+        "main": "BOTTOM",
+        "slot2": "BOTTOM2"
+      },
+      "hides": ["hips", "thigh"],
+      "budget_tris": 1800
+    },
+    {
+      "id": "joggers",
+      "slot": "bottom",
+      "source": ["hips", "thigh", "knee", "calf", "calf_lo", "torso"],
+      "cuts": [
+        {
+          "name": "waistband",
+          "level": "pelvis",
+          "shiftM": 0.15,
+          "keep": "below",
+          "band": "slot2",
+          "outM": -0.005
+        },
+        {
+          "name": "cuff",
+          "from": "calf_{s}",
+          "to": "foot_{s}",
+          "t": 1.0,
+          "shiftM": -0.01,
+          "band": "slot2",
+          "lengthM": 0.028
+        }
+      ],
+      "offset_m": 0.012,
+      "regions": {
+        "main": "BOTTOM",
+        "slot2": "BOTTOM2"
+      },
+      "hides": ["hips", "thigh", "knee", "calf", "calf_lo"],
+      "budget_tris": 2200
+    },
+    {
+      "id": "sneakers",
+      "slot": "shoes",
+      "source": ["foot", "calf_lo"],
+      "cuts": [
+        {
+          "name": "collar",
+          "from": "calf_{s}",
+          "to": "foot_{s}",
+          "t": 1.0,
+          "shiftM": -0.035,
+          "keep": "to",
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.012,
+      "regions": {
+        "main": "SHOES",
+        "slot2": "SHOES2"
+      },
+      "features": [
+        {
+          "type": "sole",
+          "name": "sole",
+          "heightM": 0.022,
+          "groundM": 0.0,
+          "region": "SHOES2",
+          "stage": "after_bands"
+        }
+      ],
+      "hides": ["foot"],
+      "shellShare": 0.4,
+      "budget_tris": 1400
+    },
+    {
+      "id": "boots",
+      "slot": "shoes",
+      "source": ["foot", "calf_lo", "calf"],
+      "cuts": [
+        {
+          "name": "shaft",
+          "from": "calf_{s}",
+          "to": "foot_{s}",
+          "fromEndM": 0.12,
+          "shiftM": -0.015,
+          "keep": "to",
+          "band": "main"
+        }
+      ],
+      "offset_m": 0.015,
+      "regions": {
+        "main": "SHOES",
+        "slot2": "SHOES2"
+      },
+      "features": [
+        {
+          "type": "sole",
+          "name": "sole",
+          "heightM": 0.026,
+          "groundM": 0.0,
+          "region": "SHOES2",
+          "stage": "after_bands"
+        }
+      ],
+      "hides": ["foot", "calf_lo"],
+      "shellShare": 0.4,
+      "budget_tris": 1600
+    },
+    {
+      "id": "sandals",
+      "slot": "shoes",
+      "modelled": "sandals",
+      "hides": [],
+      "budget_tris": 1000
+    },
+    {
+      "id": "headphones",
+      "slot": "accessory",
+      "modelled": "headphones",
+      "hides": []
+    },
+    {
+      "id": "glasses",
+      "slot": "accessory",
+      "modelled": "glasses",
+      "hides": []
+    },
+    {
+      "id": "backpack",
+      "slot": "accessory",
+      "modelled": "backpack",
+      "hides": [],
+      "unlock": "stamp:district:all"
+    },
+    {
+      "id": "lanyard",
+      "slot": "accessory",
+      "modelled": "lanyard",
+      "hides": [],
+      "unlock": "stamp:booths:50"
+    }
+  ]
+}
