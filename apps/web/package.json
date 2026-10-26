@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@shipfair/engine": "workspace:*",
     "@shipfair/shared": "workspace:*",
     "hono": "4.13.14",
     "react": "19.3.1",
