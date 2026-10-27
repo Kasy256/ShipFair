@@ -1,11 +1,28 @@
 import type { Engine } from '@shipfair/engine';
 import { APP_NAME } from '@shipfair/shared';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ControlsPanel } from './ui/ControlsPanel.tsx';
 import { TouchControls } from './ui/TouchControls.tsx';
 import { WorldCanvas } from './ui/WorldCanvas.tsx';
 
+// Vite replaces MODE at build time, so production bundles drop the asset page entirely.
+const DevAssets =
+  import.meta.env.MODE !== 'production'
+    ? lazy(() => import('./dev/DevAssets.tsx').then((m) => ({ default: m.DevAssets })))
+    : null;
+
 export function App() {
+  if (DevAssets && window.location.pathname === '/dev/assets') {
+    return (
+      <Suspense fallback={<p className="p-4">Loading…</p>}>
+        <DevAssets />
+      </Suspense>
+    );
+  }
+  return <World />;
+}
+
+function World() {
   const [engine, setEngine] = useState<Engine>();
   const [isControlsOpen, setIsControlsOpen] = useState(false);
 

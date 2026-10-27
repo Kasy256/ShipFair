@@ -1,0 +1,25 @@
+{
+  "name": "@shipfair/asset-tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "@gltf-transform/extensions": "4.5.1",
+    "@gltf-transform/functions": "4.5.1",
+    "@shipfair/shared": "workspace:*",
+    "gltf-validator": "2.0.0-dev.3.10",
+    "meshoptimizer": "1.3.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@shipfair/config": "workspace:*",
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2",
+    "vitest": "4.1.12"
+  }
+}

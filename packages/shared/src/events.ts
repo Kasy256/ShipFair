@@ -23,6 +23,8 @@ export interface EngineEvents {
     renderScale: number;
   };
   'ui:open-submit': undefined;
+  /** An art asset failed to load; the engine uses its placeholder. Sent once per asset id. */
+  'asset:missing': { id: string; url: string | null; reason: string };
   // UI → Engine
   emote: { e: number };
   'chat:send': { text: string };

@@ -1,4 +1,5 @@
 export * from './api.ts';
+export * from './assets.ts';
 export * from './avatar.ts';
 export * from './booth.ts';
 export * from './common.ts';

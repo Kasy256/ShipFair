@@ -1,7 +1,15 @@
-import { DEFAULT_AVATAR_STYLE, type EngineEvents, type Handler } from '@shipfair/shared';
+import {
+  type AvatarStyleV2,
+  DEFAULT_AVATAR_STYLE,
+  type EngineEvents,
+  type Handler,
+} from '@shipfair/shared';
+import { Art } from './art.ts';
+import { GltfAvatar } from './avatars/gltf-avatar.ts';
 import { Loop } from './core/loop.ts';
 import { PerfOverlay } from './debug/perf-overlay.ts';
 import { PhysicsWireframe } from './debug/physics-wireframe.ts';
+import { StressScene } from './debug/stress.ts';
 import { type InputAction, InputManager } from './input/manager.ts';
 import type { JoystickView } from './input/touch.ts';
 import { initPhysics, PhysicsWorld } from './physics/world.ts';
@@ -13,8 +21,17 @@ import { Environment } from './world/environment.ts';
 import { type BuiltLevel, buildTestLevel } from './world/test-level.ts';
 import { type TestLevelLayout, testLevelLayout } from './world/test-level-layout.ts';
 
+/** Art arrives after `start()`; until then (or without it) placeholders are used. */
+export interface ArtHost {
+  art: Art | null;
+  stress: StressScene | null;
+  /** Resolves once art has loaded and the local avatar is swapped (null if art failed). */
+  ready: Promise<Art | null>;
+}
+
 /** Everything that exists between `start()` and `dispose()`. */
 interface Runtime {
+  art: ArtHost;
   loop: Loop;
   input: InputManager;
   physics: PhysicsWorld;
@@ -83,6 +100,8 @@ export class Engine {
       new PerfSystem(loop, renderer, options.bus, this.#quality, onBenchmarkTier),
     );
     loop.add({ update: () => environment.follow(player.renderPosition), dispose() {} });
+    const art: ArtHost = { art: null, stress: null, ready: Promise.resolve(null) };
+    loop.add({ update: (dt) => art.stress?.update(dt), dispose() {} });
     if (debug.has('physics')) loop.add(new PhysicsWireframe(physics, renderer.scene));
     if (debug.has('perf')) {
       const parent = options.canvas.parentElement ?? document.body;
@@ -95,7 +114,19 @@ export class Engine {
     physics.world.step();
     renderer.isAutoRendering = options.isTestMode !== true;
 
-    this.#runtime = { loop, input, physics, renderer, environment, level, layout, player, perf };
+    this.#runtime = {
+      art,
+      loop,
+      input,
+      physics,
+      renderer,
+      environment,
+      level,
+      layout,
+      player,
+      perf,
+    };
+    art.ready = this.#loadArt(art, renderer, physics, player, style);
     input.setEnabled(this.#isInputEnabled);
     this.#listen();
     loop.advance(0);
@@ -157,11 +188,52 @@ export class Engine {
     // the loop doesn't own, and the WebGL renderer last.
     try {
       runtime.loop.dispose();
+      runtime.art.stress?.dispose();
+      runtime.art.art?.dispose();
     } finally {
       runtime.level.dispose();
       runtime.environment.dispose();
       runtime.renderer.scene.clear();
       runtime.renderer.dispose();
+    }
+  }
+
+  /**
+   * Loads built art in the background. The procedural avatar stays until a real body and its
+   * clips are ready; any failure keeps the placeholders (each piece reports `asset:missing`).
+   */
+  async #loadArt(
+    host: ArtHost,
+    renderer: Renderer,
+    physics: PhysicsWorld,
+    player: PlayerSystem,
+    style: AvatarStyleV2,
+  ): Promise<Art | null> {
+    try {
+      const art = await Art.load(this.#options.bus, renderer.renderer);
+      if (this.#isDisposed) {
+        art.dispose();
+        return null;
+      }
+      host.art = art;
+      host.stress = new StressScene(
+        art,
+        renderer.scene,
+        physics,
+        player.camera.camera.position,
+        () => this.#quality,
+      );
+      const factory = art.factory;
+      if (factory && art.canBuildCharacters(`body_${style.body}`)) {
+        const avatar = await GltfAvatar.create(factory, art.animations, style, 0);
+        // After dispose the art (and so this avatar's geometry) is already released.
+        if (this.#isDisposed) avatar.dispose();
+        else player.setAvatar(avatar);
+      }
+      return art;
+    } catch (error) {
+      console.error('Art failed to load; the game keeps its placeholders.', error);
+      return null;
     }
   }
 

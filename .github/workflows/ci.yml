@@ -22,7 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # art/export GLBs live in Git LFS; without them assets:build only checks placeholders.
       - uses: actions/checkout@v5
+        with:
+          lfs: true
 
       - uses: pnpm/action-setup@v6
 
@@ -42,6 +45,14 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      # Validation, naming contract and budgets (art/contract.json). Writes nothing.
+      - name: Assets check
+        run: pnpm assets:build --check --ci
+
+      # The e2e run needs the built assets in apps/web/public (gitignored).
+      - name: Assets build
+        run: pnpm assets:build --ci
 
       - name: Build
         run: pnpm build
