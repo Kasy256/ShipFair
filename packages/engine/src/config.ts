@@ -108,8 +108,6 @@ export const RENDER_SCALES = [1, 0.75, 0.6] as const;
 
 // Art assets (prompt 04b, ARCHITECTURE.md §4)
 export const ASSET_MANIFEST_URL = '/assets/assets-manifest.generated.json';
-/** Self-hosted KTX2 (Basis) transcoder, copied by `pnpm assets:build`. */
-export const BASIS_TRANSCODER_PATH = '/basis/';
 
 // Character LOD policy for remote players (used by prompt 11). Nearest by distance get LOD0, the
 // next ones within LOD1_MAX_DISTANCE_M get LOD1, everyone else the instanced stand-in.

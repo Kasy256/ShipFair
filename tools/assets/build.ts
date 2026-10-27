@@ -4,8 +4,7 @@
 //   --check         build everything in memory, write nothing (CI)
 //   --placeholders  ignore the exports and write the generated placeholder set
 //   --ci            over-budget fails the build (also when the CI env var is set)
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -94,22 +93,11 @@ async function main(argv: readonly string[]): Promise<number> {
       writeFileSync(join(out, name), bytes);
     }
     writeFileSync(join(out, MANIFEST_FILE), json);
-    copyBasisTranscoder();
     mkdirSync(join(ART, 'reports'), { recursive: true });
     writeFileSync(join(ART, 'reports/assets-build.json'), `${JSON.stringify(report, null, 2)}\n`);
   }
   const isFailing = report.errors.length > 0 || (isCi && report.budget.length > 0);
   return isFailing ? 1 : 0;
-}
-
-/** The KTX2 transcoder is self-hosted next to the app, never fetched from a CDN. */
-function copyBasisTranscoder(): void {
-  const require = createRequire(join(ROOT, 'packages/engine/package.json'));
-  const dir = join(PUBLIC, 'basis');
-  mkdirSync(dir, { recursive: true });
-  for (const file of ['basis_transcoder.js', 'basis_transcoder.wasm']) {
-    copyFileSync(require.resolve(`three/examples/jsm/libs/basis/${file}`), join(dir, file));
-  }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
