@@ -14,3 +14,7 @@ Licence texts are copied to `art/licenses/`.
 - **Furniture Kit** by Kenney (CC0), https://kenney.nl/assets/furniture-kit. Licence: `art/licenses/kenney-furniture.txt`
 - **Food Kit** by Kenney (CC0), https://kenney.nl/assets/food-kit. Licence: `art/licenses/kenney-food.txt`
 <!-- packs:end -->
+
+## Animations from Mixamo
+
+- **Mixamo** by Adobe (free for use in games; the downloaded FBX files are not redistributed). Retargeted onto our skeleton by `pnpm art:animations`: `emote_wave` (Waving), `emote_clap` (Clapping), `emote_cheer` (Cheering), `emote_point` (Pointing), `emote_sit` (Sitting Idle). https://www.mixamo.com

@@ -1,5 +1,5 @@
 {
-  "note": "Contract clip -> candidate action-name regexes (case-insensitive), best first. Names are matched without the importer's '_Armature' suffix. See art/reports/animations.json for every action in the pack.",
+  "note": "Contract clip -> candidate action-name regexes (case-insensitive), best first. Names are matched without the importer's '_Armature' suffix. See art/reports/animations.json for every action in the pack. mixamoFiles: contract clip -> FBX file-stem regexes in ART_PACKS_DIR/<mixamoDir>, used only when the library lacks the clip.",
   "sourceFile": "^UAL",
   "avoidFile": "_RM$",
   "rootBones": ["root", "pelvis"],
@@ -18,6 +18,14 @@
     "emote_point": ["Point"],
     "emote_sit": ["Sit_?Floor", "Sit_?Ground", "Ground_?Sit"],
     "talk": ["^Idle_Talking_Loop$", "Talk"]
+  },
+  "mixamoDir": "mixamo",
+  "mixamoFiles": {
+    "emote_wave": ["^Waving", "Wave"],
+    "emote_clap": ["^Clapping", "Clap"],
+    "emote_cheer": ["^Cheering", "Cheer", "Victory"],
+    "emote_point": ["^Pointing", "Point"],
+    "emote_sit": ["Sitting.*(Floor|Ground)", "Sit.*Ground", "^Sitting Idle"]
   },
   "mixamo": {
     "emote_wave": "Waving",
