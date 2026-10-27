@@ -105,3 +105,36 @@ export const ADAPT_WINDOW_S = 3;
 export const ADAPT_UP_S = 10;
 export const PERF_SAMPLE_S = 1;
 export const RENDER_SCALES = [1, 0.75, 0.6] as const;
+
+// Art assets (prompt 04b, ARCHITECTURE.md §4)
+export const ASSET_MANIFEST_URL = '/assets/assets-manifest.generated.json';
+/** Self-hosted KTX2 (Basis) transcoder, copied by `pnpm assets:build`. */
+export const BASIS_TRANSCODER_PATH = '/basis/';
+
+// Character LOD policy for remote players (used by prompt 11). Nearest by distance get LOD0, the
+// next ones within LOD1_MAX_DISTANCE_M get LOD1, everyone else the instanced stand-in.
+export const LOD0_COUNT = { high: 6, low: 3 } as const;
+export const LOD1_COUNT = { high: 12, low: 6 } as const;
+export const LOD1_MAX_DISTANCE_M = 25;
+/** A player already at a LOD keeps it until a rival is this much closer (or it moves this far out). */
+export const LOD_HYSTERESIS_M = 2;
+export const LOD_SWAP_FADE_S = 0.2;
+export const LOD_REEVALUATE_S = 0.25;
+/** Mixers tick every frame at LOD0, every Nth frame at LOD1; stand-ins have none. */
+export const LOD1_ANIMATION_EVERY = 2;
+
+// Character animation (glTF clips)
+export const ANIM_CROSSFADE_S = 0.2;
+/** Seconds of `jump_land` shown before locomotion takes over (the clip itself is longer). */
+export const ANIM_LAND_S = 0.35;
+/** Below this speed the locomotion blend is pure idle. */
+export const ANIM_IDLE_MPS = 0.15;
+/** Seconds of `jump_start` before `jump_air` (the clip is longer than a jump's rise). */
+export const ANIM_JUMP_START_S = 0.2;
+
+/**
+ * Booths and props farther than this from the camera aren't drawn (re-checked every
+ * LOD_REEVALUATE_S). One instanced mesh spans the whole city, so frustum culling alone can't
+ * keep the low tier inside its triangle budget.
+ */
+export const DRAW_DISTANCE_M = { high: Number.POSITIVE_INFINITY, low: 120 } as const;
