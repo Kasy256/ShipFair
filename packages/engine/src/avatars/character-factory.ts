@@ -18,6 +18,9 @@ interface Merged {
   promise: Promise<BufferGeometry>;
   refs: number;
   bodyAssetId: string;
+  /** Set once built, so release can dispose synchronously. */
+  geometry?: BufferGeometry;
+  isFreed: boolean;
 }
 
 const empty = (): LoadedAsset => ({ scene: new Group(), animations: [], isPlaceholder: true });
@@ -122,8 +125,7 @@ export class CharacterFactory {
   dispose(): void {
     for (const [key, entry] of this.#merged) {
       this.#merged.delete(key);
-      void entry.promise.then((g) => g.dispose());
-      this.#assets.release(entry.bodyAssetId);
+      this.#free(entry);
     }
   }
 
@@ -179,8 +181,14 @@ export class CharacterFactory {
       merged.refs++;
       this.#assets.release(body.id); // the cache entry already holds the body
     } else {
-      const promise = body.promise.then(build);
-      merged = { promise, refs: 1, bodyAssetId: body.id };
+      const state: Omit<Merged, 'promise'> = { refs: 1, bodyAssetId: body.id, isFreed: false };
+      const promise = body.promise.then(build).then((geometry) => {
+        // Freed while it was still building: nobody will ever use it.
+        if (state.isFreed) geometry.dispose();
+        else state.geometry = geometry;
+        return geometry;
+      });
+      merged = Object.assign(state, { promise });
       this.#merged.set(key, merged);
     }
     const entry = merged;
@@ -214,10 +222,13 @@ export class CharacterFactory {
     entry.refs--;
     if (entry.refs > 0 || this.#merged.get(key) !== entry) return;
     this.#merged.delete(key);
-    void entry.promise.then(
-      (g) => g.dispose(),
-      () => undefined,
-    );
+    this.#free(entry);
+  }
+
+  /** Frees the merged geometry now if it is built (so renderer.info drops in the same call). */
+  #free(entry: Merged): void {
+    entry.isFreed = true;
+    if (entry.geometry) entry.geometry.dispose();
     this.#assets.release(entry.bodyAssetId);
   }
 }
