@@ -17,6 +17,7 @@ docs/
   CODING_STANDARDS.md         Rules for code, tests, PRs
   TRUST_AND_SAFETY.md         Moderation, chat rules, privacy
   ROADMAP.md                  Phases and milestones, mapped to prompts
+  ART_PIPELINE.md             Free asset stack, Blender automation, naming contract and budgets
 prompts/
   README.md                   How to run the prompts with Claude Code
   TEMPLATE.md                 Template for writing new prompts
@@ -31,7 +32,7 @@ Details and reasoning are in [`docs/TECH_STACK.md`](docs/TECH_STACK.md).
 
 ## Getting started
 
-**Prerequisites:** Node 24 LTS (`.nvmrc`) and pnpm 12 (`corepack enable` picks up the pinned version). Local dev needs no Cloudflare login. Docker is needed for the local database. The Supabase CLI comes in as a dev dependency (`pnpm exec supabase`).
+**Prerequisites:** Node 24 LTS (`.nvmrc`) and pnpm 12 (`corepack enable` picks up the pinned version). Local dev needs no Cloudflare login. Docker is needed for the local database. The Supabase CLI comes in as a dev dependency (`pnpm exec supabase`). **Git LFS** (`git lfs install`) is needed for the art exports in `art/export`; `pnpm assets:build` then builds the game assets from them.
 
 For the art pipeline only (`pnpm art:*`): **Blender 3.6 LTS or newer.** Scripts must run on 3.6 (the owner's GPU can't open 4.5+). Headless mode (`--background`) is used for all automation, so newer versions also work on machines that can't open their UI. Set `BLENDER_PATH` to `blender.exe` and `ART_PACKS_DIR` to the downloaded packs (see `docs/ART_PIPELINE.md`).
 

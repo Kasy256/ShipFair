@@ -9,6 +9,7 @@ ShipFair (working name) is a free, walkable, multiplayer 3D city in the browser 
 - `docs/TECH_STACK.md` has the versions to use. Don't upgrade or add dependencies without saying why.
 - `docs/TRUST_AND_SAFETY.md` covers moderation rules that are part of v1.
 - `docs/INFRASTRUCTURE.md` covers environments, secrets, deploys and costs.
+- `docs/ART_PIPELINE.md` is the contract with the artist: asset names, material names, slots and budgets (values in `art/contract.json`).
 
 ## Layout
 - `apps/web`: React SPA + Hono Worker (`/api`, meta tags, OG images)
@@ -16,6 +17,7 @@ ShipFair (working name) is a free, walkable, multiplayer 3D city in the browser 
 - `packages/engine`: Three.js + Rapier runtime. **No React in here.**
 - `packages/shared`: zod schemas, protocol, layout, constants, brand
 - `supabase/`: migrations, seed, policy tests
+- `art/`: Blender exports (Git LFS), configs, palette and `manifest.json`. `pnpm art:*` (`tools/blender`) makes the exports; `pnpm assets:build` (`tools/assets`) turns `art/export` into `apps/web/public/assets` (gitignored). Never edit generated assets by hand.
 - `reference/agenticon/`: the earlier prototype. **Read-only.** Port ideas and code from it; never import from it. It's excluded from Biome, TypeScript, Vitest and Vite. `docs/KICKOFF_NOTES.md` has the porting map.
 
 ## Commands
