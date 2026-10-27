@@ -23,6 +23,8 @@ from lib.export import export_glb  # noqa: E402
 from lib.glb import keep_animation_channels  # noqa: E402
 from lib.jsonfile import load_or_create  # noqa: E402
 from lib.matching import map_bones, pick_name, strip_suffix  # noqa: E402
+from lib.mixamo import bone_map, pick_file  # noqa: E402
+from lib.retarget import bake  # noqa: E402
 from lib.report import Report  # noqa: E402
 from lib.scene import armatures, bone_names, delete_objects, find_bone, import_model, meshes, reset_scene  # noqa: E402
 from lib.skeleton import max_rest_diff, rest_rotations  # noqa: E402
@@ -51,6 +53,14 @@ CLIP_MAP_DEFAULT: dict[str, Any] = {
         "emote_point": ["Point"],
         "emote_sit": ["Sit_?Floor", "Sit_?Ground", "Ground_?Sit"],
         "talk": ["^Idle_Talking_Loop$", "Talk"],
+    },
+    "mixamoDir": "mixamo",
+    "mixamoFiles": {
+        "emote_wave": ["^Waving", "Wave"],
+        "emote_clap": ["^Clapping", "Clap"],
+        "emote_cheer": ["^Cheering", "Cheer", "Victory"],
+        "emote_point": ["^Pointing", "Point"],
+        "emote_sit": ["Sitting.*(Floor|Ground)", "Sit.*Ground", "^Sitting Idle"],
     },
     "mixamo": {
         "emote_wave": "Waving",
@@ -146,6 +156,30 @@ def prepare_for_skeleton(action: bpy.types.Action, hip: str, scale: float) -> No
             fc.update()
 
 
+def import_mixamo(
+    file: Path, target: bpy.types.Object, clip: str, hip: str, dst_fps: float
+) -> tuple[bpy.types.Action, dict[str, Any]]:
+    """Imports one Mixamo FBX, bakes it onto `target` as `clip`, and removes the FBX rig again."""
+    render = bpy.context.scene.render
+    fps_before = (render.fps, render.fps_base)
+    objs = import_model(file)
+    # The FBX importer switches the scene to the file's frame rate; read it, then put ours back.
+    src_fps = render.fps / render.fps_base
+    render.fps, render.fps_base = fps_before
+    src = armatures(objs)[0]
+    if src.animation_data is None or src.animation_data.action is None:
+        raise RuntimeError(f"{file.name} has no animation")
+    mapping = bone_map(bone_names(src), bone_names(target))
+    hip_src = next((s for s, t in mapping.items() if t == hip), None)
+    if hip_src is None:
+        raise RuntimeError(f"{file.name}: no bone maps to {hip}")
+    source_action = src.animation_data.action
+    action, stats = bake(src, target, mapping, clip, src_fps, dst_fps, hip_src, hip)
+    delete_objects(objs)
+    bpy.data.actions.remove(source_action)
+    return action, stats
+
+
 def main(ctx: Ctx, report: Report) -> None:
     contract, _ = load_contract(ctx.art)
     cfg, _ = load_or_create(ctx.art / "config" / "clip-map.json", CLIP_MAP_DEFAULT)
@@ -224,8 +258,15 @@ def main(ctx: Ctx, report: Report) -> None:
     by_name = {strip_suffix(a.name, suffix): a for a in bpy.data.actions}
     chosen: dict[str, bpy.types.Action] = {}
     clips_report: dict[str, Any] = {}
+    mixamo_dir = inv.packs_dir / cfg.get("mixamoDir", "mixamo")
+    mixamo_files = sorted(mixamo_dir.glob("*.fbx")) if mixamo_dir.is_dir() else []
+    from_mixamo: dict[str, Path] = {}
     for clip in contract["clips"]:
         pick = pick_name(cfg["clips"].get(clip, []), list(by_name))
+        file = pick_file(cfg.get("mixamoFiles", {}).get(clip, []), mixamo_files) if pick.chosen is None else None
+        if file is not None:
+            from_mixamo[clip] = file
+            continue
         if pick.chosen is None:
             hint = cfg["mixamo"].get(clip, clip)
             clips_report[clip] = {"status": "MISSING", "suggestion": f"get '{hint}' from Mixamo; see ART_PIPELINE Step 3"}
@@ -249,6 +290,16 @@ def main(ctx: Ctx, report: Report) -> None:
         prepare_for_skeleton(action, hip_name, k)
     rig["hipHeightScale"] = round(k, 4)
     arm = target or arm
+
+    # Clips the library lacks, from Mixamo FBX files in ART_PACKS_DIR/mixamo (ART_PIPELINE Step 3).
+    if from_mixamo and target is None:
+        report.error("Mixamo clips need the clip skeleton: run art:characters first")
+    elif from_mixamo:
+        for clip, file in from_mixamo.items():
+            action, stats = import_mixamo(file, target, clip, hip_name, rate)
+            chosen[clip] = action
+            clips_report[clip] = {"status": "found", "source": f"mixamo/{file.name}", **stats}
+            report.info(f"{clip} <- mixamo/{file.name} ({stats['mappedBones']} bones, {stats['seconds']} s)")
 
     # Root motion off: pin hips horizontally for locomotion and emotes.
     if arm.animation_data is None:

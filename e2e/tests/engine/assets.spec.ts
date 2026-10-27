@@ -137,12 +137,9 @@ test('/dev/assets lists every manifest entry with 0 console errors', async ({ pa
     'budgetRed',
     await page.locator('[data-testid="budget-status"][data-over="true"]').count(),
   );
-  report(
-    'missingAssets',
-    (await page
-      .getByTestId('missing-assets')
-      .textContent()
-      .catch(() => '')) ?? '',
-  );
+  // allTextContents() doesn't wait: with nothing missing the list isn't rendered at all.
+  report('missingAssets', await page.getByTestId('missing-assets').allTextContents());
   expect(errors).toEqual([]);
+  // The page renders 37 viewports nonstop on a software GPU; leave it so teardown is quick.
+  await page.goto('about:blank');
 });

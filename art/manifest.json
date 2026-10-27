@@ -31,13 +31,7 @@
       "emote_sit",
       "talk"
     ],
-    "substitutes": {
-      "emote_wave": "talk",
-      "emote_clap": "talk",
-      "emote_cheer": "emote_dance",
-      "emote_point": "talk",
-      "emote_sit": "sit_idle"
-    }
+    "substitutes": {}
   },
   "boothKit": {
     "src": "booth-kit/booth_kit.glb",
