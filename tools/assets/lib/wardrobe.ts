@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Document } from '@gltf-transform/core';
 import { weld } from '@gltf-transform/functions';
-import type { BuiltWardrobeItem, WardrobeKind } from '@shipfair/shared';
+import type { Bounds, BuiltWardrobeItem, WardrobeKind } from '@shipfair/shared';
 import * as z from 'zod';
 import { checkWardrobeItem } from './checks.ts';
 import type { Contract } from './contract.ts';
@@ -66,7 +66,15 @@ interface Pending {
 export interface BodyInfo {
   joints: string[];
   baseTriangles: { lod0: number; lod1: number };
+  built: { bounds: Bounds };
 }
+
+/** Largest extent of the body: item LOD errors are reported relative to the wearer, not the item. */
+const bodySize = (info: BodyInfo | undefined): number | undefined => {
+  if (!info) return undefined;
+  const { min, max } = info.built.bounds;
+  return Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]) || undefined;
+};
 
 const SLOTS: readonly WardrobeKind[] = [
   'top',
@@ -159,7 +167,7 @@ export async function processWardrobe(
   const lod1ByBody = new Map<string, { kind: WardrobeKind; triangles: number }[]>();
   for (const p of pending) {
     const base = `wardrobe/${p.body}/${p.kind}_${p.id}`;
-    const lod1 = simplifiedCopy(p.doc, ratios.get(p.body) ?? 1);
+    const lod1 = simplifiedCopy(p.doc, ratios.get(p.body) ?? 1, bodySize(bodies.get(p.body)));
     errors.push(lod1.error);
     const pre1 = measure(lod1.doc, 0);
     const pre0 = measure(p.doc, 0);

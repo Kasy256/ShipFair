@@ -74,9 +74,6 @@ export async function processCharacter(
     (LOD_TARGET_SHARE * lod1Budget) / Math.max(1, countTriangles(source, alternatives)),
   );
   let lod1 = simplifiedCopy(source, ratio);
-  // Locked borders between the body's material regions can stall above budget; then unlock them.
-  if (countTriangles(lod1.doc, alternatives) > lod1Budget)
-    lod1 = simplifiedCopy(source, ratio, false);
   let isHandMade = false;
   const lod1Tris = countTriangles(lod1.doc, alternatives);
   if (lod1Tris > lod1Budget || lod1.error > LOD_MAX_ERROR) {

@@ -73,6 +73,28 @@ describe('LOD1 simplification', () => {
   });
 });
 
+describe('LOD1 across material regions', () => {
+  it('simplifies a mesh split into regions as one surface: no stalled seam, both regions kept', async () => {
+    await getIO();
+    const doc = newDoc();
+    // One column in two materials that meet at y = 1 (a seam: shared positions, split vertices).
+    const ring = (y: number) => [0.3 + 0.03 * Math.sin(y * 7), y] as const;
+    const lower = Array.from({ length: 21 }, (_, i) => ring(i * 0.05));
+    const upper = Array.from({ length: 21 }, (_, i) => ring(1 + i * 0.05));
+    const mesh = doc
+      .createMesh('body')
+      .addPrimitive(primitive(doc, lathe(lower, 32), doc.createMaterial('BOTTOM')))
+      .addPrimitive(primitive(doc, lathe(upper, 32), doc.createMaterial('TOP')));
+    doc.getRoot().listScenes()[0]?.addChild(doc.createNode('body').setMesh(mesh));
+    const before = countTriangles(doc);
+    const lod = simplifiedCopy(doc, 0.25);
+    const prims = lod.doc.getRoot().listMeshes()[0]?.listPrimitives() ?? [];
+    expect(prims).toHaveLength(2);
+    expect(countTriangles(lod.doc)).toBeLessThanOrEqual(Math.ceil(before * 0.25 * 1.25));
+    expect(lod.error).toBeLessThan(0.02);
+  });
+});
+
 describe('palette.png', () => {
   it('lays 16 colours out as 4×4 squares, row-major from the top left', () => {
     const hexes = Array.from(
