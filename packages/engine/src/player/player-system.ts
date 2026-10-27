@@ -21,7 +21,7 @@ const MAX_SMOOTH_STEP_M = 0.6;
 export class PlayerSystem implements System {
   readonly controller: PlayerController;
   readonly camera: FollowCamera;
-  readonly avatar: AvatarView;
+  #avatar: AvatarView;
   /** The interpolated, step-smoothed feet position rendered this frame. */
   readonly renderPosition = new Vector3();
   readonly #input: InputState;
@@ -44,7 +44,24 @@ export class PlayerSystem implements System {
     this.camera = new FollowCamera(physics, input);
     this.camera.yaw = spawn.yaw + Math.PI;
     this.controller = new PlayerController(physics, input, () => this.camera.yaw, spawn);
-    this.avatar = new ProceduralAvatar(style);
+    this.#avatar = new ProceduralAvatar(style);
+  }
+
+  get avatar(): AvatarView {
+    return this.#avatar;
+  }
+
+  /**
+   * Swaps the avatar (the procedural rig for a glTF character once art has loaded). The new one
+   * takes the old one's place in the scene; the old one is disposed.
+   */
+  setAvatar(next: AvatarView): void {
+    const old = this.#avatar;
+    old.object.parent?.add(next.object);
+    next.object.position.copy(old.object.position);
+    next.object.rotation.y = old.object.rotation.y;
+    this.#avatar = next;
+    old.dispose();
   }
 
   teleport(x: number, y: number, z: number, yaw?: number): void {
@@ -90,7 +107,7 @@ export class PlayerSystem implements System {
   }
 
   dispose(): void {
-    this.avatar.dispose();
+    this.#avatar.dispose();
     this.controller.dispose();
   }
 }
