@@ -28,7 +28,11 @@ test('touch: dragging the joystick moves the player forward > 2 m in 1 s', async
     });
   await touch('touchStart', 0);
   for (const dy of [-10, -25, -40, -50]) await touch('touchMove', dy); // under the 56 px rim: walk
-  await expect(page.locator('[data-testid="touch-controls"] > div').first()).toBeVisible();
+  // CDP returns before the page handles the last move; stepping first would walk with a
+  // half-pushed stick. The knob (48 px, centred on the finger) shows when it has landed.
+  await expect
+    .poll(() => page.getByTestId('joystick-knob').getAttribute('style'))
+    .toContain(`translate(${x - 24}px, ${y - 50 - 24}px)`);
 
   const end = await page.evaluate((dt) => {
     window.__shipfair?.step(dt, 60);
