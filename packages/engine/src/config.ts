@@ -136,3 +136,38 @@ export const ANIM_JUMP_START_S = 0.2;
  * keep the low tier inside its triangle budget.
  */
 export const DRAW_DISTANCE_M = { high: Number.POSITIVE_INFINITY, low: 120 } as const;
+
+// City (prompt 05, ARCHITECTURE.md §4 rendering strategy)
+/** Booth logo and screenshot textures kept resident (LRU); monogram placeholders don't count. */
+export const TEXTURE_CACHE_MAX = { high: 48, low: 16 } as const;
+/** How often content streaming re-checks which booths are in range. */
+export const CONTENT_UPDATE_S = 0.25;
+export const SCREEN_CYCLE_S = 5;
+/** Screens cycle screenshots only while the player is this close. */
+export const SCREEN_CYCLE_RADIUS_M = 20;
+/** Decoded size caps for streamed images (createImageBitmap resize), by tier. */
+export const LOGO_MAX_PX = { high: 512, low: 256 } as const;
+export const SCREENSHOT_MAX_PX = { high: 1024, low: 512 } as const;
+export const MONOGRAM_PX = 128;
+/** Estimated GPU bytes of a texture are w × h × 4 × this (the mip chain). */
+export const MIP_FACTOR = 1.33;
+/** A booth added at runtime scales and glows in over this long. */
+export const BUILD_UP_S = 1.2;
+/** Glow multiplier at the start of the build-up (fades to 1). */
+export const BUILD_UP_GLOW = 3;
+// Name sign atlas: SIGN_ATLAS_COLUMNS × SIGN_ATLAS_ROWS cells per page.
+export const SIGN_ATLAS_PX = 2048;
+export const SIGN_ATLAS_COLUMNS = 4;
+export const SIGN_ATLAS_ROWS = 32;
+/** Names are drawn into this share of a cell's width (signs are 6:1, cells 8:1). */
+export const SIGN_TEXT_ASPECT = 6;
+/** The plaza kiosk opens the submit form within this distance. */
+export const KIOSK_RADIUS_M = 3;
+/** Ambient light and fog ease toward a district's tint at this rate. */
+export const THEME_TINT_HZ = 1.5;
+export const SKY_RADIUS_M = 1800;
+export const FOG_RANGE_M = { high: [90, 420], low: [50, 125] } as const;
+/** Grass reaches this far past the city bounds; trees grow in a belt inside it. */
+export const GROUND_MARGIN_M = 240;
+export const TREE_BELT_M = [10, 70] as const;
+export const TREE_COUNT = 220;
