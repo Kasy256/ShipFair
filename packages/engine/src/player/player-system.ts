@@ -31,6 +31,8 @@ export class PlayerSystem implements System {
   /** Footsteps so far; audio hooks in later (prompt 16). */
   footsteps = 0;
   interactions = 0;
+  /** Called on the interact action (E, touch button, gamepad X, click while pointer-locked). */
+  onInteract: (() => void) | undefined;
 
   constructor(
     physics: PhysicsWorld,
@@ -76,8 +78,10 @@ export class PlayerSystem implements System {
     this.controller.fixedUpdate(dt);
     const input = this.#input;
     if (input.wave) this.avatar.playEmote(EMOTE_WAVE);
-    // Nothing to interact with until booths arrive (prompt 05); count presses for tests.
-    if (input.interact) this.interactions++;
+    if (input.interact) {
+      this.interactions++;
+      this.onInteract?.();
+    }
     input.wave = false;
     input.interact = false;
   }

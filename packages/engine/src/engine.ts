@@ -1,5 +1,6 @@
 import {
   type AvatarStyleV2,
+  BoothChange as BoothChangeSchema,
   DEFAULT_AVATAR_STYLE,
   type EngineEvents,
   type Handler,
@@ -17,6 +18,7 @@ import { PlayerSystem } from './player/player-system.ts';
 import { PerfSystem } from './quality/perf-system.ts';
 import { Renderer } from './render/renderer.ts';
 import type { BoothChange, EngineOptions, QualityTier, Teleport, WorldSnapshot } from './types.ts';
+import { City } from './world/city.ts';
 import { Environment } from './world/environment.ts';
 import { type BuiltLevel, buildTestLevel } from './world/test-level.ts';
 import { type TestLevelLayout, testLevelLayout } from './world/test-level-layout.ts';
@@ -37,8 +39,11 @@ interface Runtime {
   physics: PhysicsWorld;
   renderer: Renderer;
   environment: Environment;
-  level: BuiltLevel;
-  layout: TestLevelLayout;
+  /** The city built from the snapshot (null in the prompt-04 test level). */
+  city: City | null;
+  /** The prompt-04 test level, used when `start()` gets no snapshot. */
+  level: BuiltLevel | null;
+  layout: TestLevelLayout | null;
   player: PlayerSystem;
   perf: PerfSystem;
 }
@@ -75,10 +80,11 @@ export class Engine {
   }
 
   /**
-   * Boots physics and rendering and builds the world. Until prompt 05 the world is always the
-   * test level and `world` is ignored.
+   * Boots physics and rendering and builds the city from `world` (`/api/world`, already
+   * validated by the caller). Without a snapshot it builds the prompt-04 test level instead,
+   * which the movement and collision e2e probes measure against.
    */
-  async start(_world?: WorldSnapshot): Promise<void> {
+  async start(world?: WorldSnapshot): Promise<void> {
     if (this.#runtime || this.#isDisposed) return;
     await initPhysics();
     if (this.#isDisposed) return;
@@ -87,19 +93,44 @@ export class Engine {
     const loop = new Loop();
     const input = loop.add(new InputManager(options.canvas));
     const physics = new PhysicsWorld();
-    const layout = testLevelLayout();
-    const level = buildTestLevel(layout, physics);
+    const layout = world ? null : testLevelLayout();
+    const level = layout ? buildTestLevel(layout, physics) : null;
+    const spawn = layout ? layout.spawn : { x: 0, y: 0, z: 0, yaw: 0 };
     const style = options.avatarStyle ?? DEFAULT_AVATAR_STYLE;
-    const player = loop.add(new PlayerSystem(physics, input.state, loop, layout.spawn, style));
+    const player = loop.add(new PlayerSystem(physics, input.state, loop, spawn, style));
     loop.add(physics);
     const renderer = new Renderer(options.canvas, player.camera.camera, this.#quality);
-    const environment = new Environment(renderer.renderer, renderer.scene);
-    renderer.scene.add(...level.root, player.avatar.object);
+    const environment = new Environment(renderer.renderer, renderer.scene, this.#quality);
+    const city = world
+      ? new City({
+          snapshot: world,
+          physics,
+          bus: options.bus,
+          environment,
+          viewer: player.camera.camera.position,
+          player: player.renderPosition,
+          tier: this.#quality,
+          mediaHost: options.mediaHost ?? null,
+        })
+      : null;
+    if (city) {
+      const { x, z, yaw } = city.spawn;
+      player.teleport(x, 0, z, yaw);
+      renderer.scene.add(city.root);
+      player.onInteract = () => city.interact();
+    }
+    if (level) renderer.scene.add(...level.root);
+    renderer.scene.add(player.avatar.object);
     const onBenchmarkTier = options.isAutoQuality === false ? undefined : this.#lowerTier;
     const perf = loop.add(
       new PerfSystem(loop, renderer, options.bus, this.#quality, onBenchmarkTier),
     );
-    loop.add({ update: () => environment.follow(player.renderPosition), dispose() {} });
+    perf.textureBytes = () => city?.textureBytes ?? 0;
+    loop.add({
+      update: (dt) => environment.follow(player.renderPosition, dt),
+      dispose() {},
+    });
+    if (city) loop.add({ update: (dt) => city.update(dt), dispose() {} });
     const art: ArtHost = { art: null, stress: null, ready: Promise.resolve(null) };
     loop.add({ update: (dt) => art.stress?.update(dt), dispose() {} });
     if (debug.has('physics')) loop.add(new PhysicsWireframe(physics, renderer.scene));
@@ -121,6 +152,7 @@ export class Engine {
       physics,
       renderer,
       environment,
+      city,
       level,
       layout,
       player,
@@ -158,12 +190,21 @@ export class Engine {
     if (touch) touch.onJoystick = listener;
   }
 
-  updateBooths(_changes: BoothChange[]): void {
-    throw notImplemented('updateBooths');
+  /**
+   * Adds, changes and removes booths without rebuilding the city. New booths take the next free
+   * lot and build up over 1.2 s; existing booths never move. Each change is validated.
+   */
+  updateBooths(changes: BoothChange[]): void {
+    const parsed = changes.map((change) => BoothChangeSchema.parse(change));
+    this.#runtime?.city?.apply(parsed);
   }
 
-  teleport(_to: Teleport): void {
-    throw notImplemented('teleport');
+  /** Moves the player in front of a booth or into a district. Unknown slugs are ignored. */
+  teleport(to: Teleport): void {
+    const runtime = this.#runtime;
+    const target = runtime?.city?.spawnFor(to);
+    if (!runtime || !target) return;
+    runtime.player.teleport(target.x, 0, target.z, target.yaw);
   }
 
   setInputEnabled(enabled: boolean): void {
@@ -174,6 +215,8 @@ export class Engine {
   setQuality(tier: QualityTier): void {
     this.#quality = tier;
     this.#runtime?.perf.setTier(tier);
+    this.#runtime?.environment.setTier(tier);
+    this.#runtime?.city?.setTier(tier);
   }
 
   dispose(): void {
@@ -191,7 +234,8 @@ export class Engine {
       runtime.art.stress?.dispose();
       runtime.art.art?.dispose();
     } finally {
-      runtime.level.dispose();
+      runtime.city?.dispose();
+      runtime.level?.dispose();
       runtime.environment.dispose();
       runtime.renderer.scene.clear();
       runtime.renderer.dispose();
@@ -216,6 +260,7 @@ export class Engine {
         return null;
       }
       host.art = art;
+      this.#runtime?.city?.attachArt(art);
       host.stress = new StressScene(
         art,
         renderer.scene,
@@ -249,9 +294,6 @@ export class Engine {
     on('input:enabled', ({ enabled }) => this.setInputEnabled(enabled));
     on('quality:set', ({ tier }) => this.setQuality(tier));
     on('emote', ({ e }) => this.#runtime?.player.avatar.playEmote(e));
+    on('teleport', (to) => this.teleport(to));
   }
-}
-
-function notImplemented(method: string): Error {
-  return new Error(`Engine.${method}: not implemented until prompt 05`);
 }

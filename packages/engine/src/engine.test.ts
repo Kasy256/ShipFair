@@ -11,10 +11,16 @@ const options = (): EngineOptions => ({
 });
 
 describe('Engine', () => {
-  it('throws from the methods prompt 05 implements', () => {
+  it('ignores booth updates and teleports before start', () => {
     const engine = new Engine(options());
-    expect(() => engine.updateBooths([])).toThrow('not implemented');
-    expect(() => engine.teleport({ kind: 'booth', slug: 'some-booth' })).toThrow('not implemented');
+    expect(() => engine.updateBooths([])).not.toThrow();
+    expect(() => engine.teleport({ kind: 'booth', slug: 'some-booth' })).not.toThrow();
+  });
+
+  it('validates booth changes', () => {
+    const engine = new Engine(options());
+    const bad = { type: 'remove', boothId: 'not-a-uuid' } as const;
+    expect(() => engine.updateBooths([bad])).toThrow();
   });
 
   it('remembers input and quality settings made before start', () => {

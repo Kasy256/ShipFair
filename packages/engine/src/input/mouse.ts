@@ -3,7 +3,7 @@ import type { InputState } from './state.ts';
 
 /**
  * Mouse look. Clicking the canvas asks for pointer lock (Esc releases it, the browser handles
- * that); while unlocked, dragging with a button held looks around instead. The wheel zooms.
+ * that); a click while locked interacts. While unlocked, dragging with a button held looks around instead. The wheel zooms.
  * Touch and pen pointers are left to the touch source.
  */
 export class MouseSource {
@@ -47,7 +47,12 @@ export class MouseSource {
   }
 
   readonly #click = (e: MouseEvent): void => {
-    if (!this.#isEnabled() || this.isLocked || (e as PointerEvent).pointerType === 'touch') return;
+    if (!this.#isEnabled() || (e as PointerEvent).pointerType === 'touch') return;
+    // Locked, a click is the interact action (open the focused booth); unlocked, it locks.
+    if (this.isLocked) {
+      this.#state.interact = true;
+      return;
+    }
     // Promise-returning in modern browsers; a refusal (e.g. right after Esc) just keeps drag-look.
     const request = this.#canvas.requestPointerLock?.() as Promise<void> | undefined;
     request?.catch?.(() => undefined);

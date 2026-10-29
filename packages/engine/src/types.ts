@@ -1,5 +1,6 @@
 import type {
   AvatarStyleV2,
+  BoothChange,
   EventBus,
   QualityTier,
   Teleport,
@@ -7,10 +8,7 @@ import type {
 } from '@shipfair/shared';
 import type { DebugFlag } from './debug/perf-overlay.ts';
 
-export type { EventBus, QualityTier, Teleport, WorldSnapshot };
-
-/** A booth added, changed or removed since the snapshot. Shaped in prompt 05. */
-export type BoothChange = Readonly<Record<string, unknown>>;
+export type { BoothChange, EventBus, QualityTier, Teleport, WorldSnapshot };
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
@@ -22,4 +20,6 @@ export interface EngineOptions {
   isAutoQuality?: boolean;
   debug?: ReadonlySet<DebugFlag>;
   avatarStyle?: AvatarStyleV2;
+  /** Host booth images load from (VITE_MEDIA_HOST). Without it booths show monograms only. */
+  mediaHost?: string | null;
 }

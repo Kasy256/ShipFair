@@ -10,6 +10,7 @@ export { assignLods, countLods, createLodScratch } from './avatars/lod.ts';
 export { BoothKit, type KitBooth } from './booths/kit.ts';
 export type { AssetView, CharacterView } from './debug/asset-viewer.ts';
 export { AssetViewer } from './debug/asset-viewer.ts';
+export type { CityDistrictInfo, CityStats, CityTestApi } from './debug/city-test-api.ts';
 export type { DebugFlag } from './debug/perf-overlay.ts';
 export { debugFlags } from './debug/perf-overlay.ts';
 export { Engine } from './engine.ts';
