@@ -43,3 +43,12 @@ export const ProfilePublic = z.object({
   links: ProfileLinks.default({}),
 });
 export type ProfilePublic = z.infer<typeof ProfilePublic>;
+
+/** A booth owner as the world snapshot shows them in booth panels: name and links, no avatar. */
+export const MakerPublic = ProfilePublic.pick({
+  id: true,
+  handle: true,
+  displayName: true,
+  links: true,
+});
+export type MakerPublic = z.infer<typeof MakerPublic>;

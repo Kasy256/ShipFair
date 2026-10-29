@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { filterProfanity, isHttpsUrl, normaliseText, slugify } from './text.ts';
+import { filterProfanity, normaliseText, slugify } from './text.ts';
+import { isHttpsUrl } from './url.ts';
 
 describe('filterProfanity', () => {
   it.each(['fuck off', 'this is shit', 'you bitch', 'FUCK'])('censors obvious: %s', (input) => {

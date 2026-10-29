@@ -29,20 +29,6 @@ export function normaliseText(input: string): string {
     .trim();
 }
 
-/** True for absolute `https:` URLs with a host and no embedded credentials. */
-export function isHttpsUrl(input: string): boolean {
-  let url: URL;
-  try {
-    // Not URL.canParse: it's missing before Safari 17 / Chrome 120.
-    url = new URL(input);
-  } catch {
-    return false;
-  }
-  return (
-    url.protocol === 'https:' && url.hostname !== '' && url.username === '' && url.password === ''
-  );
-}
-
 /** Lowercase ASCII `a-z0-9-`, at most 40 chars. May return fewer than 3 chars; schemas check that. */
 export function slugify(input: string): string {
   return input

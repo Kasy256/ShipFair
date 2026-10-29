@@ -2,6 +2,7 @@ import * as z from 'zod';
 import { BoothPublic } from './booth.ts';
 import { Timestamp, Uuid } from './common.ts';
 import { District } from './district.ts';
+import { MakerPublic } from './profile.ts';
 
 /** Everything needed to build the city: the `/api/world` body and the input to `layoutCity`. */
 export const WorldSnapshot = z.object({
@@ -10,6 +11,8 @@ export const WorldSnapshot = z.object({
   generatedAt: Timestamp,
   districts: z.array(District),
   booths: z.array(BoothPublic),
+  /** The owners of `booths` (handle and links for the booth panel). Older snapshots have none. */
+  makers: z.array(MakerPublic).default([]),
 });
 export type WorldSnapshot = z.infer<typeof WorldSnapshot>;
 

@@ -53,6 +53,11 @@ export const BOOTH_MEDIA_MAX = 5;
 export const BOOTH_TIER_VISITORS = 250; // sum of daily unique visitors for the `booth` tier
 export const PAVILION_TOP_N = 10; // by weekly unique visitors
 
+// World snapshot edge cache (INFRASTRUCTURE.md §6)
+export const WORLD_CACHE_MAX_AGE_S = 30;
+export const WORLD_CACHE_STALE_S = 300; // stale-while-revalidate window after max-age
+export const SHARE_PANEL_DELAY_S = 1.5; // /b/:slug opens the booth panel this long after entering
+
 // Protocol versioning (CODING_STANDARDS.md §6)
 export const PROTOCOL_VERSION = 1;
 export const MIN_CLIENT_PROTOCOL = 1;
