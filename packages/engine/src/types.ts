@@ -22,4 +22,19 @@ export interface EngineOptions {
   avatarStyle?: AvatarStyleV2;
   /** Host booth images load from (VITE_MEDIA_HOST). Without it booths show monograms only. */
   mediaHost?: string | null;
+  /** Reduced motion: no booth build-up animation. Change it later with `setReducedMotion`. */
+  isReducedMotion?: boolean;
+}
+
+/** What `start()` is doing, in order, for a loading screen's progress bar. */
+export type StartStage = 'physics' | 'city' | 'shaders' | 'ready';
+
+/** Where the player is, for the web shell's minimap. Filled once per frame; read it, don't keep it. */
+export interface PlayerView {
+  x: number;
+  z: number;
+  /** The way the avatar faces: the look direction is (sin yaw, cos yaw). */
+  yaw: number;
+  /** The way the camera looks, same convention. */
+  cameraYaw: number;
 }

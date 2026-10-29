@@ -70,6 +70,7 @@ export class City {
   readonly #static: Mesh[];
   readonly #colliders: RAPIER.Collider[];
   #tier: QualityTier;
+  #isReducedMotion = false;
   #sinceCull = Number.POSITIVE_INFINITY;
 
   constructor(opts: CityOptions) {
@@ -154,8 +155,15 @@ export class City {
       mediaHost: this.#opts.mediaHost,
       load: this.#opts.load ?? bitmapSource(),
     });
+    this.booths.isReducedMotion = this.#isReducedMotion;
     this.root.add(this.booths.root);
     this.#sinceCull = Number.POSITIVE_INFINITY;
+  }
+
+  /** Reduced motion turns off the booth build-up animation. */
+  setReducedMotion(isReduced: boolean): void {
+    this.#isReducedMotion = isReduced;
+    if (this.booths) this.booths.isReducedMotion = isReduced;
   }
 
   apply(changes: readonly BoothChange[]): CityDiff {

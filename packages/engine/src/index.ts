@@ -26,7 +26,9 @@ export type {
   BoothChange,
   EngineOptions,
   EventBus,
+  PlayerView,
   QualityTier,
+  StartStage,
   Teleport,
   WorldSnapshot,
 } from './types.ts';

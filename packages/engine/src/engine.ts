@@ -1,11 +1,13 @@
 import {
   type AvatarStyleV2,
   BoothChange as BoothChangeSchema,
+  type CityLayout,
   DEFAULT_AVATAR_STYLE,
   type EngineEvents,
   type Handler,
 } from '@shipfair/shared';
 import { Art } from './art.ts';
+import { AudioHub } from './audio/audio-hub.ts';
 import { GltfAvatar } from './avatars/gltf-avatar.ts';
 import { Loop } from './core/loop.ts';
 import { PerfOverlay } from './debug/perf-overlay.ts';
@@ -17,7 +19,15 @@ import { initPhysics, PhysicsWorld } from './physics/world.ts';
 import { PlayerSystem } from './player/player-system.ts';
 import { PerfSystem } from './quality/perf-system.ts';
 import { Renderer } from './render/renderer.ts';
-import type { BoothChange, EngineOptions, QualityTier, Teleport, WorldSnapshot } from './types.ts';
+import type {
+  BoothChange,
+  EngineOptions,
+  PlayerView,
+  QualityTier,
+  StartStage,
+  Teleport,
+  WorldSnapshot,
+} from './types.ts';
 import { City } from './world/city.ts';
 import { Environment } from './world/environment.ts';
 import { type BuiltLevel, buildTestLevel } from './world/test-level.ts';
@@ -54,12 +64,17 @@ export class Engine {
   readonly #unsubscribe: (() => void)[] = [];
   #runtime: Runtime | undefined;
   #quality: QualityTier;
+  readonly #audio = new AudioHub();
+  readonly #view: PlayerView = { x: 0, z: 0, yaw: 0, cameraYaw: 0 };
+  #onFrame: ((view: Readonly<PlayerView>) => void) | undefined;
   #isInputEnabled = true;
+  #isReducedMotion: boolean;
   #isDisposed = false;
 
   constructor(options: EngineOptions) {
     this.#options = options;
     this.#quality = options.quality;
+    this.#isReducedMotion = options.isReducedMotion ?? false;
   }
 
   get canvas(): HTMLCanvasElement {
@@ -74,6 +89,11 @@ export class Engine {
     return this.#quality;
   }
 
+  /** The city's layout (pure data, no Three.js) for maps. Null before start and in the test level. */
+  get layout(): CityLayout | null {
+    return this.#runtime?.city?.layout ?? null;
+  }
+
   /** Internals for the in-page test API and the web shell. Undefined before `start()`. */
   get runtime(): Readonly<Runtime> | undefined {
     return this.#runtime;
@@ -82,12 +102,14 @@ export class Engine {
   /**
    * Boots physics and rendering and builds the city from `world` (`/api/world`, already
    * validated by the caller). Without a snapshot it builds the prompt-04 test level instead,
-   * which the movement and collision e2e probes measure against.
+   * which the movement and collision e2e probes measure against. `onStage` reports progress.
    */
-  async start(world?: WorldSnapshot): Promise<void> {
+  async start(world?: WorldSnapshot, onStage?: (stage: StartStage) => void): Promise<void> {
     if (this.#runtime || this.#isDisposed) return;
+    onStage?.('physics');
     await initPhysics();
     if (this.#isDisposed) return;
+    onStage?.('city');
     const options = this.#options;
     const debug = options.debug ?? new Set();
     const loop = new Loop();
@@ -114,6 +136,7 @@ export class Engine {
         })
       : null;
     if (city) {
+      city.setReducedMotion(this.#isReducedMotion);
       const { x, z, yaw } = city.spawn;
       player.teleport(x, 0, z, yaw);
       renderer.scene.add(city.root);
@@ -138,6 +161,7 @@ export class Engine {
       const parent = options.canvas.parentElement ?? document.body;
       loop.add(new PerfOverlay(parent, loop, renderer.info, () => renderer.renderScale));
     }
+    loop.add({ update: () => this.#reportFrame(player), dispose() {} });
     // Rendering is the last thing every frame, but the renderer is disposed by the engine, after
     // everything that owns GPU resources has released them.
     loop.add({ update: (dt) => renderer.update(dt), dispose() {} });
@@ -162,7 +186,16 @@ export class Engine {
     input.setEnabled(this.#isInputEnabled);
     this.#listen();
     loop.advance(0);
+    onStage?.('shaders');
+    try {
+      await renderer.compile();
+    } catch (error) {
+      // Only a head start: anything not compiled here compiles on first draw.
+      console.warn('Shader warm-up failed', error);
+    }
+    if (this.#isDisposed) return;
     if (options.isTestMode !== true) loop.start();
+    onStage?.('ready');
   }
 
   /** Test mode: `n` frames of `dt` seconds with no rAF. Works in live mode too (it adds frames). */
@@ -199,12 +232,35 @@ export class Engine {
     this.#runtime?.city?.apply(parsed);
   }
 
-  /** Moves the player in front of a booth or into a district. Unknown slugs are ignored. */
-  teleport(to: Teleport): void {
+  /**
+   * Moves the player in front of a booth or to a district's gate. Returns false (and stays put)
+   * for an unknown slug or before start.
+   */
+  teleport(to: Teleport): boolean {
     const runtime = this.#runtime;
     const target = runtime?.city?.spawnFor(to);
-    if (!runtime || !target) return;
+    if (!runtime || !target) return false;
     runtime.player.teleport(target.x, 0, target.z, target.yaw);
+    return true;
+  }
+
+  /**
+   * Called once per frame with the player's position and facing (the minimap). One shared object
+   * is passed every time, so nothing is allocated per frame.
+   */
+  onFrame(listener: ((view: Readonly<PlayerView>) => void) | undefined): void {
+    this.#onFrame = listener;
+  }
+
+  /** Reduced motion: booths appear without the build-up animation. */
+  setReducedMotion(isReduced: boolean): void {
+    this.#isReducedMotion = isReduced;
+    this.#runtime?.city?.setReducedMotion(isReduced);
+  }
+
+  /** Call from a user gesture (a click): browsers keep audio locked until one happens. */
+  unlockAudio(): Promise<boolean> {
+    return this.#audio.unlock();
   }
 
   setInputEnabled(enabled: boolean): void {
@@ -224,6 +280,8 @@ export class Engine {
     this.#isDisposed = true;
     for (const off of this.#unsubscribe) off();
     this.#unsubscribe.length = 0;
+    this.#onFrame = undefined;
+    this.#audio.dispose();
     const runtime = this.#runtime;
     this.#runtime = undefined;
     if (!runtime) return;
@@ -280,6 +338,18 @@ export class Engine {
       console.error('Art failed to load; the game keeps its placeholders.', error);
       return null;
     }
+  }
+
+  #reportFrame(player: PlayerSystem): void {
+    const listener = this.#onFrame;
+    if (!listener) return;
+    const view = this.#view;
+    view.x = player.renderPosition.x;
+    view.z = player.renderPosition.z;
+    view.yaw = player.controller.yaw;
+    // The camera sits at (sin yaw, cos yaw) from the player and looks back, so it faces yaw + π.
+    view.cameraYaw = player.camera.yaw + Math.PI;
+    listener(view);
   }
 
   readonly #lowerTier = (tier: QualityTier): void => {

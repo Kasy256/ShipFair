@@ -14,7 +14,19 @@ describe('Engine', () => {
   it('ignores booth updates and teleports before start', () => {
     const engine = new Engine(options());
     expect(() => engine.updateBooths([])).not.toThrow();
-    expect(() => engine.teleport({ kind: 'booth', slug: 'some-booth' })).not.toThrow();
+    expect(engine.teleport({ kind: 'booth', slug: 'some-booth' })).toBe(false);
+    expect(engine.layout).toBeNull();
+  });
+
+  it('accepts frame listeners and reduced motion before start', async () => {
+    const engine = new Engine({ ...options(), isReducedMotion: true });
+    const views: unknown[] = [];
+    engine.onFrame((view) => views.push({ ...view }));
+    engine.setReducedMotion(false);
+    engine.step(1 / 60, 3);
+    expect(views).toEqual([]);
+    // No AudioContext in Node: unlocking reports false instead of throwing.
+    expect(await engine.unlockAudio()).toBe(false);
   });
 
   it('validates booth changes', () => {
