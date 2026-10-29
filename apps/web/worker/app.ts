@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import pkg from '../package.json';
+import { deleteAccount, requireUser } from './account.ts';
 import type { Env } from './env.ts';
 import { AppError } from './errors.ts';
 import { securityHeaders } from './security-headers.ts';
@@ -32,6 +33,12 @@ app.get('/api/world', async (c) => {
 });
 
 app.get('/b/:slug', sharePage);
+
+app.post('/api/me/delete', async (c) => {
+  const userId = await requireUser(c.env, c.req.header('authorization'));
+  const body: unknown = await c.req.json().catch(() => null);
+  return c.json(await deleteAccount(c.env, userId, body), 200, { 'cache-control': 'no-store' });
+});
 
 // Local proof that web → realtime RPC works through the dev registry. Hidden outside development.
 app.get('/api/dev/ping-realtime', async (c) => {
