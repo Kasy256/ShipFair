@@ -7,8 +7,8 @@ import {
   PROTOCOL_VERSION,
 } from './constants.ts';
 import { err, ok, type Result } from './result.ts';
+import { AvatarStyle } from './schemas/avatar.ts';
 import { Slug, Uuid } from './schemas/common.ts';
-import { AvatarStyle } from './schemas/profile.ts';
 
 // Realtime wire protocol (ARCHITECTURE.md §7). Positions travel as integer centimetres and yaw as
 // a uint16 turn fraction; convert only with the helpers below.

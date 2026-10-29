@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { Handle } from './common.ts';
 import { WorldSnapshot } from './world.ts';
 
 // Request/response schemas for routes that exist. Each later prompt adds the ones for its routes.
@@ -30,3 +31,14 @@ export const HealthResponse = z.object({
   db: z.enum(['ok', 'down']),
 });
 export type HealthResponse = z.infer<typeof HealthResponse>;
+
+/** POST /api/me/delete: the user types their handle to confirm. */
+export const DeleteAccountRequest = z.object({ handle: Handle });
+export type DeleteAccountRequest = z.infer<typeof DeleteAccountRequest>;
+
+export const DeleteAccountResponse = z.object({
+  ok: z.literal(true),
+  /** Booth media keys queued for deletion after 30 days. */
+  queuedMedia: z.int().nonnegative(),
+});
+export type DeleteAccountResponse = z.infer<typeof DeleteAccountResponse>;

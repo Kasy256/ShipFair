@@ -154,6 +154,33 @@ export const BuiltWardrobeItem = z.object({
 });
 export type BuiltWardrobeItem = z.infer<typeof BuiltWardrobeItem>;
 
+/**
+ * One choosable 04c item for the avatar editor, body-independent. `bald` is here even though it
+ * has no file. Hair carries its texture `family` (straight, wavy, curly, coily, protective, or
+ * none for bald and buzz cuts) and `length`; other kinds have null.
+ */
+export const CatalogItem = z.object({
+  kind: WardrobeKind,
+  id: AssetId,
+  name: z.string().min(1).max(48),
+  family: z
+    .string()
+    .regex(/^[a-z]{1,16}$/)
+    .nullable(),
+  length: z
+    .string()
+    .regex(/^[a-z]{1,16}$/)
+    .nullable(),
+  /** Pre-rendered 256 px thumbnail (04c), or null when there is none. */
+  thumb: Url.nullable(),
+  /** How many colours the editor offers: 0 (none), 1 or 2. */
+  colors: z.int().min(0).max(2),
+  hasPrint: z.boolean(),
+  /** Passport stamp that unlocks it (`stamp:…`), or null when it's open to everyone. */
+  unlock: z.string().nullable(),
+});
+export type CatalogItem = z.infer<typeof CatalogItem>;
+
 /** `apps/web/public/assets/assets-manifest.generated.json`. */
 export const GeneratedAssetManifest = z.object({
   version: z.literal(1),
@@ -163,5 +190,7 @@ export const GeneratedAssetManifest = z.object({
   boothKit: BuiltBoothKit,
   props: z.array(BuiltProp),
   wardrobe: z.array(BuiltWardrobeItem),
+  /** Editor options in manifest order. Empty when built with placeholders. */
+  catalog: z.array(CatalogItem).default([]),
 });
 export type GeneratedAssetManifest = z.infer<typeof GeneratedAssetManifest>;

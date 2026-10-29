@@ -75,7 +75,7 @@ describe('DistrictFromRow', () => {
 });
 
 describe('ProfilePublicFromRow', () => {
-  it('maps a public_profiles row and fills avatar defaults', () => {
+  it('maps a public_profiles row and migrates the stored avatar to v2', () => {
     const profile = ProfilePublicFromRow.parse({
       id: owner,
       handle: 'maker1',
@@ -89,7 +89,7 @@ describe('ProfilePublicFromRow', () => {
       displayName: 'Maker One',
       links: { github: 'maker1' },
     });
-    expect(profile.avatarStyle.hair).toBe('short');
+    expect(profile.avatarStyle).toMatchObject({ v: 2, hair: { item: 'crew_cut' } });
   });
 
   it('rejects a bad handle', () => {

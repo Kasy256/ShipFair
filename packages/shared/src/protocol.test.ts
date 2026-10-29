@@ -17,7 +17,7 @@ import {
   toNetYaw,
 } from './protocol.ts';
 import { rangeInt, rng } from './rng.ts';
-import { AvatarStyle } from './schemas/profile.ts';
+import { AvatarStyle } from './schemas/avatar.ts';
 
 const avatar = AvatarStyle.parse({});
 const uuid = '5f0c6c0e-3a8b-4c55-9a51-0b7e2f1e9d10';
