@@ -5,6 +5,7 @@ import {
   type Enums,
   GuestbookEntry,
   MakerPublic,
+  OwnProfile,
   ProfilePublic,
   type Tables,
 } from '@shipfair/shared';
@@ -88,6 +89,33 @@ export const ProfilePublicFromRow = z
       }) satisfies FieldsOf<ProfilePublic>,
   )
   .pipe(ProfilePublic);
+
+/** Columns the signed-in user may read on their own `profiles` row (never `role`). */
+export const OWN_PROFILE_COLUMNS = [
+  'id',
+  'handle',
+  'display_name',
+  'avatar_style',
+  'links',
+  'onboarded_at',
+] as const satisfies readonly (keyof Tables<'profiles'>)[];
+type OwnProfileRow = Pick<Tables<'profiles'>, (typeof OWN_PROFILE_COLUMNS)[number]>;
+
+/** The signed-in user's row; the stored avatar style is migrated to v2 on the way in. */
+export const OwnProfileFromRow = z
+  .custom<OwnProfileRow>(isRow)
+  .transform(
+    (row): unknown =>
+      ({
+        id: row.id,
+        handle: row.handle,
+        displayName: row.display_name,
+        avatarStyle: row.avatar_style,
+        links: row.links,
+        onboardedAt: row.onboarded_at,
+      }) satisfies FieldsOf<OwnProfile>,
+  )
+  .pipe(OwnProfile);
 
 /** Columns to select from `public_profiles` for `MakerFromRow`. */
 export const MAKER_COLUMNS = [

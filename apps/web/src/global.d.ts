@@ -1,4 +1,4 @@
-import type { ShipfairTestApi } from '@shipfair/engine';
+import type { AvatarPreview, ShipfairTestApi } from '@shipfair/engine';
 import type { AnalyticsEvent } from './lib/analytics.ts';
 
 declare global {
@@ -7,5 +7,11 @@ declare global {
     __shipfair?: ShipfairTestApi;
     /** Product events tracked so far, in non-production builds only (e2e checks them). */
     __shipfairEvents?: AnalyticsEvent[];
+    /** The open avatar editor preview, in non-production builds only (prompt 07 e2e). */
+    __shipfairPreview?: AvatarPreview;
+    /** Test-only sign-in with the local email + password provider (non-production builds). */
+    __shipfairAuth?: {
+      signInWithPassword(email: string, password: string): Promise<string | null>;
+    };
   }
 }

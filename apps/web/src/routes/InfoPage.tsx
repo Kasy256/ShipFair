@@ -2,9 +2,9 @@ import { APP_NAME } from '@shipfair/shared';
 import { type ReactNode, useEffect } from 'react';
 import { Link } from 'react-router';
 
-export type InfoPageId = 'submit' | 'me' | 'admin' | 'rules' | 'privacy' | 'terms';
+export type InfoPageId = 'submit' | 'admin' | 'rules' | 'privacy' | 'terms';
 
-// Placeholders until their prompts: /submit (08), /me (07), /admin (09). /rules carries the
+// Placeholders until their prompts: /submit (08), /admin (09). /rules carries the
 // content rules from TRUST_AND_SAFETY.md; /privacy and /terms are drafts until legal review (16).
 const PAGES: Record<InfoPageId, { title: string; body: ReactNode }> = {
   submit: {
@@ -15,10 +15,6 @@ const PAGES: Record<InfoPageId, { title: string; body: ReactNode }> = {
         tagline, link and screenshots, and a person reviews it before it appears in the city.
       </p>
     ),
-  },
-  me: {
-    title: 'Your profile',
-    body: <p>Sign-in, your profile and your passport stamps are coming soon.</p>,
   },
   admin: {
     title: 'Admin',

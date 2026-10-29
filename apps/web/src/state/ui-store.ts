@@ -2,6 +2,9 @@ import * as z from 'zod';
 import { create } from 'zustand';
 import { prefersReducedMotion } from '../lib/device.ts';
 
+/** Why sign-in failed, shown in the sign-in sheet (text in ui/errors.ts). */
+export type AuthErrorCode = 'account_banned' | 'sign_in_failed' | 'auth_not_configured';
+
 /** How long a toast stays up. */
 export const TOAST_MS = 3500;
 const REDUCED_MOTION_KEY = 'shipfair:reduced-motion';
@@ -18,6 +21,14 @@ interface UiState {
   isHelpOpen: boolean;
   /** The plaza kiosk's "Claim a booth" sheet. */
   isClaimOpen: boolean;
+  /** The sign-in sheet, and the path to come back to after OAuth (e.g. the open booth). */
+  isSignInOpen: boolean;
+  signInReturnTo: string;
+  authError: AuthErrorCode | null;
+  /** First-run onboarding (a signed-in user without a chosen handle). */
+  isOnboardingOpen: boolean;
+  /** The avatar editor over the world (guests and signed-in users). */
+  isAvatarOpen: boolean;
   isReducedMotion: boolean;
   toasts: readonly Toast[];
   openBooth(id: string): void;
@@ -25,6 +36,10 @@ interface UiState {
   setMapOpen(isOpen: boolean): void;
   setHelpOpen(isOpen: boolean): void;
   setClaimOpen(isOpen: boolean): void;
+  openSignIn(returnTo: string, error?: AuthErrorCode | null): void;
+  closeSignIn(): void;
+  setOnboardingOpen(isOpen: boolean): void;
+  setAvatarOpen(isOpen: boolean): void;
   setReducedMotion(isReduced: boolean): void;
   showToast(text: string): void;
   dismissToast(id: number): void;
@@ -51,6 +66,11 @@ export const useUiStore = create<UiState>()((set, get) => ({
   isMapOpen: false,
   isHelpOpen: false,
   isClaimOpen: false,
+  isSignInOpen: false,
+  signInReturnTo: '/',
+  authError: null,
+  isOnboardingOpen: false,
+  isAvatarOpen: false,
   isReducedMotion: initialReducedMotion(),
   toasts: [],
   // One overlay at a time: opening a booth closes the map, and the other way round.
@@ -62,6 +82,29 @@ export const useUiStore = create<UiState>()((set, get) => ({
   setClaimOpen: (isOpen) =>
     set(
       isOpen ? { isClaimOpen: true, openBoothId: null, isMapOpen: false } : { isClaimOpen: false },
+    ),
+  openSignIn: (returnTo, error = null) =>
+    set({
+      isSignInOpen: true,
+      signInReturnTo: returnTo,
+      authError: error,
+      openBoothId: null,
+      isMapOpen: false,
+      isClaimOpen: false,
+      isAvatarOpen: false,
+    }),
+  closeSignIn: () => set({ isSignInOpen: false, authError: null }),
+  setOnboardingOpen: (isOpen) =>
+    set(
+      isOpen
+        ? { isOnboardingOpen: true, isSignInOpen: false, openBoothId: null }
+        : { isOnboardingOpen: false },
+    ),
+  setAvatarOpen: (isOpen) =>
+    set(
+      isOpen
+        ? { isAvatarOpen: true, openBoothId: null, isMapOpen: false }
+        : { isAvatarOpen: false },
     ),
   setReducedMotion(isReduced) {
     set({ isReducedMotion: isReduced });
@@ -81,4 +124,9 @@ export const useUiStore = create<UiState>()((set, get) => ({
 
 /** True while anything modal is up (the engine's input is off then). */
 export const selectIsOverlayOpen = (s: UiState): boolean =>
-  s.openBoothId !== null || s.isMapOpen || s.isClaimOpen;
+  s.openBoothId !== null ||
+  s.isMapOpen ||
+  s.isClaimOpen ||
+  s.isSignInOpen ||
+  s.isOnboardingOpen ||
+  s.isAvatarOpen;
