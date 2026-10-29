@@ -28,8 +28,8 @@ export function pickBooth(world: WorldSnapshot, index = 0): BoothPublic {
   return booth;
 }
 
-/** Opens `path` in deterministic test mode, waits for the city, and clicks Enter. */
-export async function openCity(page: Page, path = '/', query = 'quality=low'): Promise<void> {
+/** Opens `path` in deterministic test mode and waits for the city (but doesn't enter it). */
+export async function loadCity(page: Page, path = '/', query = 'quality=low'): Promise<void> {
   const sep = path.includes('?') ? '&' : '?';
   await page.goto(`${path}${sep}test&${query}`);
   await expect(page.getByRole('progressbar', { name: 'Loading the city' })).toBeVisible();
@@ -37,6 +37,11 @@ export async function openCity(page: Page, path = '/', query = 'quality=low'): P
     timeout: 60_000,
   });
   await page.waitForFunction(() => window.__shipfair?.city.hasBooths !== undefined);
+}
+
+/** `loadCity`, then clicks Enter. */
+export async function openCity(page: Page, path = '/', query = 'quality=low'): Promise<void> {
+  await loadCity(page, path, query);
   await enterWorld(page);
 }
 

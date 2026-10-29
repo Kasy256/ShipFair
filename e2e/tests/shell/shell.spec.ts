@@ -5,7 +5,9 @@ import {
   cityLayout,
   DT,
   distanceToBooth,
+  enterWorld,
   holdKey,
+  loadCity,
   openCity,
   pickBooth,
   playerPosition,
@@ -84,17 +86,26 @@ test('/b/:slug spawns within 6 m of the booth and opens its panel after 1.5 s', 
   request,
 }) => {
   const booth = pickBooth(await serverWorld(request), 3);
-  await openCity(page, `/b/${booth.slug}`);
-  const enteredAt = Date.now();
+  await loadCity(page, `/b/${booth.slug}`);
+  // Timed in the page: from just before the Enter click to the moment the dialog opens. Starting
+  // before the click makes this an upper bound on the delay, so ">= 1.5 s" can't pass by luck.
+  const clickedAt = await page.evaluate(() => performance.now());
+  await enterWorld(page);
+  const openedAt = await page.waitForFunction(
+    () =>
+      document.querySelector('dialog[open][data-testid="booth-panel"]') ? performance.now() : 0,
+    undefined,
+    { timeout: 10_000 },
+  );
+  const openedAfterMs = Math.round((await openedAt.jsonValue()) - clickedAt);
+  report('panelOpenedAfterMs', openedAfterMs);
+  expect(openedAfterMs).toBeGreaterThanOrEqual(SHARE_PANEL_DELAY_S * 1000);
+  const panel = page.getByRole('dialog', { name: booth.name });
+  await expect(panel).toBeVisible();
+
   const distance = await distanceToBooth(page, booth.id);
   report('spawnDistanceM', distance.toFixed(2));
   expect(distance).toBeLessThanOrEqual(6);
-
-  const panel = page.getByRole('dialog', { name: booth.name });
-  await expect(panel).toBeVisible({ timeout: 10_000 });
-  const openedAfterMs = Date.now() - enteredAt;
-  report('panelOpenedAfterMs', openedAfterMs);
-  expect(openedAfterMs).toBeGreaterThanOrEqual(SHARE_PANEL_DELAY_S * 1000 - 100);
 
   // "Copy booth link" puts /b/:slug on the clipboard and says so.
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
