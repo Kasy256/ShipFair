@@ -7,7 +7,8 @@ export const DT = 1 / 60;
  * and waits for `window.__shipfair`.
  */
 export async function boot(page: Page, query = 'quality=low'): Promise<void> {
-  await page.goto(`/?test&${query}`);
+  // The prompt-04 test level: these probes measure against its known boxes, stairs and ramp.
+  await page.goto(`/?test&level=test&${query}`);
   await expect(page.getByTestId('world-canvas')).toHaveAttribute('data-status', 'ready', {
     timeout: 30_000,
   });
