@@ -3,6 +3,7 @@ export type { AssetLoader, LoadedAsset } from './assets/asset-manager.ts';
 export { AssetManager } from './assets/asset-manager.ts';
 export { EMOTE_CLIPS } from './avatars/anim-state.ts';
 export { AnimationSet } from './avatars/animation-set.ts';
+export { AvatarPreview } from './avatars/avatar-preview.ts';
 export { CharacterFactory } from './avatars/character-factory.ts';
 export { GltfAvatar } from './avatars/gltf-avatar.ts';
 export type { LodLevel } from './avatars/lod.ts';

@@ -68,6 +68,9 @@ export class Engine {
   readonly #view: PlayerView = { x: 0, z: 0, yaw: 0, cameraYaw: 0 };
   #onFrame: ((view: Readonly<PlayerView>) => void) | undefined;
   #isInputEnabled = true;
+  /** The local player's look and name tag text, kept across art loading (prompt 07). */
+  #style: AvatarStyleV2;
+  #playerName: string;
   #isReducedMotion: boolean;
   #isDisposed = false;
 
@@ -75,6 +78,8 @@ export class Engine {
     this.#options = options;
     this.#quality = options.quality;
     this.#isReducedMotion = options.isReducedMotion ?? false;
+    this.#style = options.avatarStyle ?? DEFAULT_AVATAR_STYLE;
+    this.#playerName = options.playerName ?? '';
   }
 
   get canvas(): HTMLCanvasElement {
@@ -87,6 +92,11 @@ export class Engine {
 
   get quality(): QualityTier {
     return this.#quality;
+  }
+
+  /** The local player's current style and name (what `setLocalPlayer` last set). */
+  get localPlayer(): { readonly style: AvatarStyleV2; readonly name: string } {
+    return { style: this.#style, name: this.#playerName };
   }
 
   /** The city's layout (pure data, no Three.js) for maps. Null before start and in the test level. */
@@ -118,7 +128,7 @@ export class Engine {
     const layout = world ? null : testLevelLayout();
     const level = layout ? buildTestLevel(layout, physics) : null;
     const spawn = layout ? layout.spawn : { x: 0, y: 0, z: 0, yaw: 0 };
-    const style = options.avatarStyle ?? DEFAULT_AVATAR_STYLE;
+    const style = this.#style;
     const player = loop.add(new PlayerSystem(physics, input.state, loop, spawn, style));
     loop.add(physics);
     const renderer = new Renderer(options.canvas, player.camera.camera, this.#quality);
@@ -182,7 +192,7 @@ export class Engine {
       player,
       perf,
     };
-    art.ready = this.#loadArt(art, renderer, physics, player, style);
+    art.ready = this.#loadArt(art, renderer, physics, player);
     input.setEnabled(this.#isInputEnabled);
     this.#listen();
     loop.advance(0);
@@ -263,6 +273,17 @@ export class Engine {
     return this.#audio.unlock();
   }
 
+  /**
+   * The signed-in user's (or guest's) look and name. Colours change at once; new items or a new
+   * body rebuild in the background and swap in. Name tags arrive with remote players (prompt 11);
+   * until then the name is only kept here.
+   */
+  setLocalPlayer(player: { style: AvatarStyleV2; name: string }): void {
+    this.#style = player.style;
+    this.#playerName = player.name;
+    this.#runtime?.player.setStyle(player.style);
+  }
+
   setInputEnabled(enabled: boolean): void {
     this.#isInputEnabled = enabled;
     this.#runtime?.input.setEnabled(enabled);
@@ -309,7 +330,6 @@ export class Engine {
     renderer: Renderer,
     physics: PhysicsWorld,
     player: PlayerSystem,
-    style: AvatarStyleV2,
   ): Promise<Art | null> {
     try {
       const art = await Art.load(this.#options.bus, renderer.renderer);
@@ -327,11 +347,16 @@ export class Engine {
         () => this.#quality,
       );
       const factory = art.factory;
+      const style = this.#style;
       if (factory && art.canBuildCharacters(`body_${style.body}`)) {
         const avatar = await GltfAvatar.create(factory, art.animations, style, 0);
         // After dispose the art (and so this avatar's geometry) is already released.
         if (this.#isDisposed) avatar.dispose();
-        else player.setAvatar(avatar);
+        else {
+          player.setAvatar(avatar);
+          // setLocalPlayer may have run while the character was building.
+          if (this.#style !== style) avatar.setStyle(this.#style);
+        }
       }
       return art;
     } catch (error) {
