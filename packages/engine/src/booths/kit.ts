@@ -26,7 +26,23 @@ export interface KitBooth {
   readonly theme?: string;
 }
 
-type Role = 'palette' | 'accent' | 'glow';
+export type Role = 'palette' | 'accent' | 'glow';
+
+/** One primitive one booth draws: which batch it goes in and where it sits on the lot. */
+export interface KitPrimitive {
+  /** Batch key: tier, resolved part and primitive index. */
+  readonly batch: string;
+  /** Resolved part name (a theme variant when the kit has one). */
+  readonly part: string;
+  /** Index of the placement in the tier, so repeated parts get distinct instances. */
+  readonly placement: number;
+  /** Part transform on the lot (column-major, 16 numbers). */
+  readonly matrix: readonly number[];
+  readonly geometry: BufferGeometry;
+  readonly material: Material;
+  readonly role: Role;
+}
+
 interface PartPrimitive {
   readonly geometry: BufferGeometry;
   readonly role: Role;
@@ -75,6 +91,7 @@ export class BoothKit {
   readonly #materials: PaletteMaterials;
   readonly #hasAo: boolean;
   readonly #release: () => void;
+  readonly #resolved = new Map<string, readonly KitPrimitive[]>();
 
   private constructor(opts: {
     tiers: readonly BuiltTier[];
@@ -131,6 +148,34 @@ export class BoothKit {
     if (!found) return false;
     out.fromArray(found.matrix).premultiply(booth.matrix);
     return true;
+  }
+
+  /**
+   * What one booth of `tier` draws, with `<part>_<theme>` variants swapped in when the kit has
+   * them. Cached per (tier, theme); empty for an unknown tier.
+   */
+  resolve(tier: string, theme: string | null): readonly KitPrimitive[] {
+    const cacheKey = `${tier}|${theme ?? ''}`;
+    const cached = this.#resolved.get(cacheKey);
+    if (cached) return cached;
+    const out: KitPrimitive[] = [];
+    this.tiers.get(tier)?.parts.forEach((placement, index) => {
+      const variant = theme ? `${placement.part}_${theme}` : '';
+      const part = this.#parts.has(variant) ? variant : placement.part;
+      (this.#parts.get(part) ?? []).forEach((prim, p) => {
+        out.push({
+          batch: `${tier}/${part}/${p}`,
+          part,
+          placement: index,
+          matrix: placement.matrix,
+          geometry: prim.geometry,
+          material: this.#material(prim.role),
+          role: prim.role,
+        });
+      });
+    });
+    this.#resolved.set(cacheKey, out);
+    return out;
   }
 
   /** Instanced meshes for `booths`, with a draw distance. The caller disposes the set. */
