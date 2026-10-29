@@ -7,6 +7,7 @@ import {
   tierFromQuery,
 } from '@shipfair/engine';
 import { useEffect, useRef, useState } from 'react';
+import { loadWorld } from '../lib/world-source.ts';
 import { engineBus } from '../state/engine-bus.ts';
 
 type Status = 'loading' | 'ready' | 'error';
@@ -16,9 +17,11 @@ interface WorldCanvasProps {
 }
 
 /**
- * Mounts the engine on a full-screen canvas. `?quality=high|low` forces a tier, `?debug=perf`
- * and `?debug=physics` turn on the overlays, and `?test` starts in deterministic test mode
- * (no rAF; Playwright drives it through `window.__shipfair.step`).
+ * Mounts the engine on a full-screen canvas and builds the world from `loadWorld`.
+ * `?quality=high|low` forces a tier, `?debug=perf` and `?debug=physics` turn on the overlays,
+ * `?debug=fake500` builds a fake city, `?level=test` the prompt-04 test level, and `?test`
+ * starts in deterministic test mode (no rAF; Playwright drives it through
+ * `window.__shipfair.step`).
  */
 export function WorldCanvas({ onEngine }: WorldCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -31,23 +34,29 @@ export function WorldCanvas({ onEngine }: WorldCanvasProps) {
     const params = new URLSearchParams(search);
     const forcedTier = tierFromQuery(search);
     const isTestMode = params.has('test');
-    const engine = new Engine({
-      canvas,
-      bus: engineBus,
-      quality: forcedTier ?? guessTier(readDeviceInfo()),
-      isAutoQuality: forcedTier === undefined && !isTestMode,
-      isTestMode,
-      debug: debugFlags(search),
-    });
+    let engine: Engine | undefined;
     let isCurrent = true;
-    engine
-      .start()
-      .then(() => {
+    loadWorld(search)
+      .then((world) => {
         if (!isCurrent) return;
+        engine = new Engine({
+          canvas,
+          bus: engineBus,
+          quality: forcedTier ?? guessTier(readDeviceInfo()),
+          isAutoQuality: forcedTier === undefined && !isTestMode,
+          isTestMode,
+          debug: debugFlags(search),
+          mediaHost: world.mediaHost,
+        });
+        const started = engine;
+        return started.start(world.snapshot).then(() => started);
+      })
+      .then((started) => {
+        if (!started || !isCurrent) return;
         // Vite replaces MODE at build time, so production bundles drop this branch entirely.
-        if (import.meta.env.MODE !== 'production') window.__shipfair = createTestApi(engine);
+        if (import.meta.env.MODE !== 'production') window.__shipfair = createTestApi(started);
         setStatus('ready');
-        onEngine?.(engine);
+        onEngine?.(started);
       })
       .catch((error: unknown) => {
         if (!isCurrent) return;
@@ -57,10 +66,10 @@ export function WorldCanvas({ onEngine }: WorldCanvasProps) {
     return () => {
       isCurrent = false;
       onEngine?.(undefined);
-      if (import.meta.env.MODE !== 'production' && window.__shipfair?.engine === engine) {
+      if (import.meta.env.MODE !== 'production' && engine && window.__shipfair?.engine === engine) {
         delete window.__shipfair;
       }
-      engine.dispose();
+      engine?.dispose();
     };
   }, [onEngine]);
 

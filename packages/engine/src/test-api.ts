@@ -1,5 +1,6 @@
 import type { WebGLInfo } from 'three';
 import { GltfAvatar } from './avatars/gltf-avatar.ts';
+import { type CityTestApi, createCityTestApi } from './debug/city-test-api.ts';
 import type { Engine } from './engine.ts';
 import type { InputAction, ScriptedMove } from './input/manager.ts';
 import type { TestLevelLayout } from './world/test-level-layout.ts';
@@ -55,6 +56,8 @@ export interface ShipfairTestApi {
     /** Resolves when every avatar build started so far is done. */
     settled(): Promise<void>;
   };
+  /** The city built from the snapshot (prompt 05). */
+  city: CityTestApi;
   /** A booth city for draw-call and triangle budgets. */
   stress: {
     city(booths: number, seed?: number): { booths: number; props: number };
@@ -84,7 +87,7 @@ export function createTestApi(engine: Engine): ShipfairTestApi {
       return rt()?.renderer.info;
     },
     get level() {
-      return rt()?.layout;
+      return rt()?.layout ?? undefined;
     },
     player: {
       get position() {
@@ -164,6 +167,7 @@ export function createTestApi(engine: Engine): ShipfairTestApi {
       shown: () => rt()?.art.stress?.crowd?.shownCounts() ?? [0, 0, 0],
       settled: async () => rt()?.art.stress?.crowd?.settled(),
     },
+    city: createCityTestApi(engine),
     stress: {
       city: (booths, seed) => rt()?.art.stress?.buildCity(booths, seed) ?? { booths: 0, props: 0 },
       clear: () => rt()?.art.stress?.clearCity(),

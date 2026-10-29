@@ -7,6 +7,7 @@ import { tierAfterBenchmark } from './detect.ts';
 
 /** Frames skipped before the benchmark starts timing (shader compiles, first uploads). */
 const BENCHMARK_WARMUP_FRAMES = 5;
+const MB = 1024 * 1024;
 
 /**
  * Runs the boot benchmark, then the adaptive controller, and emits `perf:sample` once a second.
@@ -28,6 +29,8 @@ export class PerfSystem implements System {
   #benchFrames = 0;
   #benchMs = 0;
   #level = 0;
+  /** Estimated texture bytes (the booth texture cache); renderer.info can't report them. */
+  textureBytes: () => number = () => 0;
   /** Average frame time measured by the boot benchmark, once it has finished. */
   benchmarkMs: number | undefined;
 
@@ -68,7 +71,7 @@ export class PerfSystem implements System {
     sample.fps = Math.round(this.adaptive.fps * 10) / 10;
     sample.drawCalls = info.render.calls;
     sample.triangles = info.render.triangles;
-    sample.textureMb = 0; // estimated by the booth texture cache from prompt 05 on
+    sample.textureMb = Math.round((this.textureBytes() / MB) * 10) / 10;
     sample.renderScale = this.adaptive.settings.renderScale;
     this.#bus.emit('perf:sample', sample);
   }
