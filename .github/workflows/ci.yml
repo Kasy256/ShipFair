@@ -76,6 +76,16 @@ jobs:
       - name: E2E
         run: pnpm e2e
 
+      # Pass or fail, so visual changes can be reviewed from the run (prompt 05 screenshots).
+      - name: Upload city screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-screenshots
+          path: e2e/artifacts/city-*.png
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Upload e2e artifacts
         if: failure()
         uses: actions/upload-artifact@v4
