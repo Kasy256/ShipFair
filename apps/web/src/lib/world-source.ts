@@ -9,11 +9,22 @@ export interface WorldSource {
 
 /** Fake booths' image keys don't exist on the real media host; e2e serves this one. */
 export const FAKE_MEDIA_HOST = 'fake-media.shipfair.test';
-/** Booths in the dev fallback city while `/api/world` doesn't exist yet (prompt 06). */
-const DEV_FALLBACK_BOOTHS = 40;
 
 const isDev = import.meta.env.MODE !== 'production';
 const mediaHost = (import.meta.env.VITE_MEDIA_HOST as string | undefined) || null;
+
+/** Why the world didn't load. The UI maps these to friendly text in `ui/errors.ts`. */
+export type WorldErrorCode = 'world_unavailable' | 'invalid_world' | 'network';
+
+export class WorldLoadError extends Error {
+  readonly code: WorldErrorCode;
+
+  constructor(code: WorldErrorCode, message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'WorldLoadError';
+    this.code = code;
+  }
+}
 
 /** `?debug=fake500` → 500 (any `fakeN` among the comma-separated debug flags). */
 export function fakeBoothCount(search: string): number | undefined {
@@ -31,32 +42,40 @@ async function fakeWorld(count: number): Promise<WorldSource> {
   return { snapshot: fake.fakeWorld(count), mediaHost: FAKE_MEDIA_HOST };
 }
 
+async function fetchWorld(): Promise<WorldSource> {
+  let response: Response;
+  try {
+    response = await fetch('/api/world', { headers: { accept: 'application/json' } });
+  } catch (error) {
+    throw new WorldLoadError('network', 'The world request failed', { cause: error });
+  }
+  if (!response.ok) {
+    throw new WorldLoadError('world_unavailable', `GET /api/world answered ${response.status}`);
+  }
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (error) {
+    throw new WorldLoadError('invalid_world', 'The world is not JSON', { cause: error });
+  }
+  const parsed = WorldSnapshot.safeParse(body);
+  if (!parsed.success) {
+    throw new WorldLoadError('invalid_world', 'The world failed validation', {
+      cause: parsed.error,
+    });
+  }
+  return { snapshot: parsed.data, mediaHost };
+}
+
 /**
  * Picks the world to build. In development `?level=test` gives the test level and
  * `?debug=fakeN` a fake city of N booths. Otherwise it is `/api/world`, parsed with the zod
- * schema; until that endpoint exists, development falls back to a small fake city and
- * production to an empty one (plaza only).
+ * schema; failures throw a `WorldLoadError` so the loading screen can offer "Retry".
  */
 export async function loadWorld(search: string): Promise<WorldSource> {
   const params = new URLSearchParams(search);
   if (isDev && params.get('level') === 'test') return { snapshot: undefined, mediaHost: null };
   const fakeCount = isDev ? fakeBoothCount(search) : undefined;
   if (fakeCount !== undefined) return fakeWorld(fakeCount);
-  try {
-    const response = await fetch('/api/world', { headers: { accept: 'application/json' } });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const parsed = WorldSnapshot.safeParse(await response.json());
-    if (!parsed.success) throw new Error(`invalid world: ${parsed.error.message}`);
-    return { snapshot: parsed.data, mediaHost };
-  } catch (error) {
-    console.warn('The world snapshot is unavailable; using a fallback city.', error);
-    if (isDev) return fakeWorld(DEV_FALLBACK_BOOTHS);
-    const empty: WorldSnapshot = {
-      version: 0,
-      generatedAt: new Date().toISOString(),
-      districts: [],
-      booths: [],
-    };
-    return { snapshot: empty, mediaHost };
-  }
+  return fetchWorld();
 }

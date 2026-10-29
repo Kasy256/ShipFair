@@ -144,6 +144,7 @@ describe('WorldSnapshot and API schemas', () => {
     generatedAt: '2026-10-26T10:00:00.000Z',
     districts: [district],
     booths: [boothPublic],
+    makers: [{ id: boothPublic.ownerId, handle: 'maker1', displayName: 'Maker One', links: {} }],
   };
 
   it('parses the /api/world body', () => {
@@ -151,6 +152,11 @@ describe('WorldSnapshot and API schemas', () => {
     expect(WorldResponse.parse(snapshot)).toEqual(snapshot);
     expect(WorldSnapshot.safeParse({ ...snapshot, version: -1 }).success).toBe(false);
     expect(WorldRequestQuery.parse({ cb: '123' })).toEqual({});
+  });
+
+  it('defaults makers for snapshots without them', () => {
+    const { makers: _, ...old } = snapshot;
+    expect(WorldSnapshot.parse(old).makers).toEqual([]);
   });
 
   it('parses health and error bodies', () => {

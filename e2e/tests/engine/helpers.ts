@@ -13,9 +13,16 @@ export async function boot(page: Page, query = 'quality=low'): Promise<void> {
     timeout: 30_000,
   });
   await page.waitForFunction(() => window.__shipfair !== undefined);
+  await enterWorld(page);
   // Art loads after start and swaps the procedural avatar for the glTF one (prompt 04b). Wait,
   // so draw counts never depend on how fast the files arrived.
   await page.evaluate(() => window.__shipfair?.assets.ready());
+}
+
+/** Clicks "Enter" on the loading screen: the world takes no input until then (prompt 06). */
+export async function enterWorld(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Enter' }).click();
+  await expect(page.getByTestId('loading-screen')).toBeHidden();
 }
 
 /** Records a measured number on the test (shown in the report) and in the log. */

@@ -1,5 +1,6 @@
 import { deflateSync } from 'node:zlib';
 import { expect, type Page } from '@playwright/test';
+import { enterWorld } from './helpers.ts';
 
 /** Must match apps/web/src/lib/world-source.ts (the fake world's media host). */
 export const FAKE_MEDIA_HOST = 'fake-media.shipfair.test';
@@ -83,6 +84,7 @@ export async function bootCity(page: Page, query: string, booths = 500): Promise
     timeout: 60_000,
   });
   await page.waitForFunction(() => window.__shipfair !== undefined);
+  await enterWorld(page);
   await page.evaluate(() => window.__shipfair?.assets.ready());
   await page.waitForFunction(() => window.__shipfair?.city.hasBooths === true);
 }

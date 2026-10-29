@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { isHttpsUrl } from '../text.ts';
+import { isHttpsUrl } from '../url.ts';
 
 const URL_MAX_CHARS = 2048;
 const MEDIA_KEY_MAX_CHARS = 512;

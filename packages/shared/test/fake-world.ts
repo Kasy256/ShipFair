@@ -109,6 +109,7 @@ export function fakeWorld(
     generatedAt: new Date(BASE_MS).toISOString(),
     districts: [...districts],
     booths: Array.from({ length: count }, (_, i) => fakeBooth(random, i, districts)),
+    makers: [],
   };
 }
 

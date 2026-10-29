@@ -12,3 +12,4 @@ export * from './result.ts';
 export * from './rng.ts';
 export * from './schemas/index.ts';
 export * from './text.ts';
+export * from './url.ts';

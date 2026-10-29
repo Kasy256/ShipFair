@@ -90,9 +90,12 @@ export class BoothLayer {
 
   readonly #visualOf = (id: string): ContentBooth | undefined => this.#visuals.get(id);
 
+  /** Reduced motion: new booths appear at full size instead of building up. */
+  isReducedMotion = false;
+
   added(id: string): void {
     const placed = this.#model.lotOf(id);
-    if (placed) this.#add(id, placed.lot, true);
+    if (placed) this.#add(id, placed.lot, !this.isReducedMotion);
   }
 
   removed(id: string): void {

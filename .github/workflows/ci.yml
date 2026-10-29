@@ -60,6 +60,11 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm --filter @shipfair/e2e exec playwright install --with-deps chromium
 
+      # /api/world reads the seeded city from local Supabase (prompt 06). Only Postgres, Auth and
+      # the REST API; db:start also writes the anon key into apps/web/.dev.vars.
+      - name: Start Supabase
+        run: pnpm db:start -x studio,mailpit,realtime,storage-api,imgproxy,edge-runtime,logflare,vector,supavisor
+
       - name: Start dev servers
         run: |
           pnpm dev > dev.log 2>&1 &

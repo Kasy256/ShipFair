@@ -3,7 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1020" />
     <title>%APP_NAME%</title>
+    <!-- Share tags. The Worker rewrites them per booth on /b/:slug (worker/share.ts). -->
+    <meta name="description" content="%APP_TAGLINE%" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="%APP_NAME%" />
+    <meta property="og:title" content="%APP_NAME%" />
+    <meta property="og:description" content="%APP_TAGLINE%" />
+    <meta property="og:url" content="/" />
+    <meta property="og:image" content="/og-placeholder.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="%APP_NAME%" />
+    <meta name="twitter:description" content="%APP_TAGLINE%" />
+    <meta name="twitter:image" content="/og-placeholder.png" />
   </head>
   <body>
     <div id="root"></div>

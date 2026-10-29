@@ -1,12 +1,10 @@
 import type { Engine, JoystickView } from '@shipfair/engine';
 import { useEffect, useRef } from 'react';
+import { isCoarsePointer } from '../lib/device.ts';
 
 interface TouchControlsProps {
   engine: Engine;
 }
-
-const isCoarsePointer = () =>
-  typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
 
 /**
  * On-screen controls for touch screens: the floating joystick's ring and knob (the engine reads
@@ -49,6 +47,7 @@ export function TouchControls({ engine }: TouchControlsProps) {
       />
       <div
         ref={knobRef}
+        data-testid="joystick-knob"
         className="absolute top-0 left-0 hidden h-12 w-12 rounded-full bg-paper/60"
       />
       <div className="absolute right-6 bottom-8 flex flex-col items-end gap-4">

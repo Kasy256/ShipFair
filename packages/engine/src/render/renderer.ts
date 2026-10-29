@@ -121,6 +121,14 @@ export class Renderer implements System {
     if (this.isAutoRendering) this.render(dt);
   }
 
+  /**
+   * Compiles every material in the scene before the first frame (in parallel where the browser
+   * supports KHR_parallel_shader_compile), so walking in doesn't stall on shader compiles.
+   */
+  async compile(): Promise<void> {
+    await this.renderer.compileAsync(this.scene, this.#camera);
+  }
+
   dispose(): void {
     this.#observer?.disconnect();
     this.#bloom?.dispose();

@@ -253,6 +253,9 @@ importers:
       "@shipfair/shared":
         specifier: workspace:*
         version: link:../../packages/shared
+      "@tanstack/react-query":
+        specifier: 5.104.5
+        version: 5.104.5(@types/react@19.3.0)(react@19.3.1)
       hono:
         specifier: 4.13.14
         version: 4.13.14
@@ -262,9 +265,15 @@ importers:
       react-dom:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
+      react-router:
+        specifier: 8.5.0
+        version: 8.5.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       zod:
         specifier: 4.6.7
         version: 4.6.7
+      zustand:
+        specifier: 5.0.16
+        version: 5.0.16(@types/react@19.3.0)(react@19.3.1)
     devDependencies:
       "@cloudflare/vite-plugin":
         specifier: 1.65.0
@@ -1874,6 +1883,12 @@ packages:
         integrity: sha512-dCED+QRChTVatE9ibtoaxc+WkdzOSjYTKi/+uacHWIsfodVfpsueo3+DKpgU5Px8qXjgmXkSvhXvSCz3fnP9lw==,
       }
 
+  "@remix-run/route-pattern@0.22.1":
+    resolution:
+      {
+        integrity: sha512-czdGJWh09Lapvcqt7Vb09KlrU2PhRJ8xQaI+AItTuD9aDJ5MAgxnS38lnys6Ll+6RJEqPiaUqTwIQhVLwFvv+w==,
+      }
+
   "@rolldown/binding-android-arm-eabi@1.2.15":
     resolution:
       {
@@ -2246,6 +2261,24 @@ packages:
       }
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
+
+  "@tanstack/query-core@5.104.5":
+    resolution:
+      {
+        integrity: sha512-Q94gI8Opd+CbdVNOdj8ZCyV8WqLYitrDq1t96Xc8WZT6lY0r5iRnJLXYDxMex7EEf2v+mXvn4FcjaBKSxXZQ9A==,
+      }
+
+  "@tanstack/react-query@5.104.5":
+    resolution:
+      {
+        integrity: sha512-RORgFe052U+93weaNuqg7qHq7vNVNzXN/VrXqD4bbAuQCWUqOl2lV5Ui9flWk5CVvMyL/Bh27QWhzwH0aaOx9g==,
+      }
+    peerDependencies:
+      "@types/react": ^18 || ^19
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      "@types/react":
+        optional: true
 
   "@turbo/darwin-64@2.11.10":
     resolution:
@@ -2679,6 +2712,12 @@ packages:
     resolution:
       {
         integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==,
+      }
+
+  cookie-es@3.1.1:
+    resolution:
+      {
+        integrity: sha512-UaXxwISYJPTr9hwQxMFYZ7kNhSXboMXP+Z3TRX6f1/NyaGPfuNUZOWP1pUEb75B2HjfklIYLVRfWiFZJyC6Npg==,
       }
 
   cookie@1.1.1:
@@ -3308,6 +3347,25 @@ packages:
     peerDependencies:
       react: ^19.3.1
 
+  react-router@8.5.0:
+    resolution:
+      {
+        integrity: sha512-9nEd/deifcTJIIcUaNIyQGkyXD0D6QVB9XD2O5GgHpP3xu3U5RXm87YQ8++Wn8JQWgMBM/5+PjWPM/7n7O7WHA==,
+      }
+    engines: { node: ">=22.22.0" }
+    peerDependencies:
+      "@types/react": ">=19.2.0"
+      "@types/react-dom": ">=19.2.0"
+      react: ">=19.2.7"
+      react-dom: ">=19.2.7"
+    peerDependenciesMeta:
+      "@types/react":
+        optional: true
+      "@types/react-dom":
+        optional: true
+      react-dom:
+        optional: true
+
   react@19.3.1:
     resolution:
       {
@@ -3701,6 +3759,27 @@ packages:
       {
         integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==,
       }
+
+  zustand@5.0.16:
+    resolution:
+      {
+        integrity: sha512-Uv7e327ihlCfayfja3hDc0M64Upev1LWBKpRobdK4NyovDDPeeX4imWXc/wzC1yc6fkYPoAY/ncKVPAs2jrtQw==,
+      }
+    engines: { node: ">=12.20.0" }
+    peerDependencies:
+      "@types/react": ">=18.0.0"
+      immer: ">=9.0.6"
+      react: ">=18.0.0"
+      use-sync-external-store: ">=1.2.0"
+    peerDependenciesMeta:
+      "@types/react":
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
 
 snapshots:
   "@babel/helper-string-parser@7.29.11": {}
@@ -4307,6 +4386,8 @@ snapshots:
 
   "@poppinss/exception@1.2.3": {}
 
+  "@remix-run/route-pattern@0.22.1": {}
+
   "@rolldown/binding-android-arm-eabi@1.2.15":
     optional: true
 
@@ -4451,6 +4532,15 @@ snapshots:
       "@tailwindcss/oxide": 4.3.3
       tailwindcss: 4.3.3
       vite: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)
+
+  "@tanstack/query-core@5.104.5": {}
+
+  "@tanstack/react-query@5.104.5(@types/react@19.3.0)(react@19.3.1)":
+    dependencies:
+      "@tanstack/query-core": 5.104.5
+      react: 19.3.1
+    optionalDependencies:
+      "@types/react": 19.3.0
 
   "@turbo/darwin-64@2.11.10":
     optional: true
@@ -4653,6 +4743,8 @@ snapshots:
   cjs-module-lexer@1.2.3: {}
 
   convert-source-map@2.0.0: {}
+
+  cookie-es@3.1.1: {}
 
   cookie@1.1.1: {}
 
@@ -5030,6 +5122,16 @@ snapshots:
       react: 19.3.1
       scheduler: 0.28.0
 
+  react-router@8.5.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+    dependencies:
+      "@remix-run/route-pattern": 0.22.1
+      cookie-es: 3.1.1
+      react: 19.3.1
+    optionalDependencies:
+      "@types/react": 19.3.0
+      "@types/react-dom": 19.3.0(@types/react@19.3.0)
+      react-dom: 19.3.1(react@19.3.1)
+
   react@19.3.1: {}
 
   rolldown@1.2.15:
@@ -5334,3 +5436,8 @@ snapshots:
   zod@4.4.3: {}
 
   zod@4.6.7: {}
+
+  zustand@5.0.16(@types/react@19.3.0)(react@19.3.1):
+    optionalDependencies:
+      "@types/react": 19.3.0
+      react: 19.3.1

@@ -69,13 +69,16 @@ test('steps: walk up the 0.3 m staircase onto the 1.2 m platform', async ({ page
 
 test('input toggle: a disabled engine ignores keys', async ({ page }) => {
   const before = await page.evaluate(() => window.__shipfair?.player.position.z ?? 0);
-  await page.getByRole('button', { name: 'Controls' }).click();
+  // The map is a modal sheet: while it is open the engine's input is off.
+  await page.getByRole('button', { name: /^Map/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Map' })).toBeVisible();
   await page.keyboard.down('KeyW');
   await page.evaluate((dt) => window.__shipfair?.step(dt, 60), DT);
   await page.keyboard.up('KeyW');
   const during = await page.evaluate(() => window.__shipfair?.player.position.z ?? 0);
   expect(Math.abs(during - before)).toBeLessThan(1e-3);
-  await page.getByRole('button', { name: 'Close controls' }).click();
+  await page.getByRole('button', { name: 'Close map' }).click();
+  await expect(page.getByRole('dialog', { name: 'Map' })).toBeHidden();
   await page.keyboard.down('KeyW');
   await page.evaluate((dt) => window.__shipfair?.step(dt, 60), DT);
   await page.keyboard.up('KeyW');

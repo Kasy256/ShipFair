@@ -4,6 +4,7 @@ import {
   District,
   type Enums,
   GuestbookEntry,
+  MakerPublic,
   ProfilePublic,
   type Tables,
 } from '@shipfair/shared';
@@ -87,6 +88,29 @@ export const ProfilePublicFromRow = z
       }) satisfies FieldsOf<ProfilePublic>,
   )
   .pipe(ProfilePublic);
+
+/** Columns to select from `public_profiles` for `MakerFromRow`. */
+export const MAKER_COLUMNS = [
+  'id',
+  'handle',
+  'display_name',
+  'links',
+] as const satisfies readonly (keyof Tables<'public_profiles'>)[];
+type MakerRow = Pick<Tables<'public_profiles'>, (typeof MAKER_COLUMNS)[number]>;
+
+/** A booth owner for the world snapshot (no avatar, no join date). */
+export const MakerFromRow = z
+  .custom<MakerRow>(isRow)
+  .transform(
+    (row): unknown =>
+      ({
+        id: row.id,
+        handle: row.handle,
+        displayName: row.display_name,
+        links: row.links,
+      }) satisfies FieldsOf<MakerPublic>,
+  )
+  .pipe(MakerPublic);
 
 export const GuestbookEntryFromRow = z
   .custom<Tables<'guestbook_entries'>>(isRow)
