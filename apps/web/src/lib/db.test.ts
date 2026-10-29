@@ -4,6 +4,8 @@ import {
   BoothPublicFromRow,
   DistrictFromRow,
   GuestbookEntryFromRow,
+  MAKER_COLUMNS,
+  MakerFromRow,
   ProfilePublicFromRow,
 } from './db.ts';
 
@@ -93,6 +95,26 @@ describe('ProfilePublicFromRow', () => {
   it('rejects a bad handle', () => {
     const row = { id: owner, handle: 'Maker One', display_name: 'x', avatar_style: {}, links: {} };
     expect(ProfilePublicFromRow.safeParse(row).success).toBe(false);
+  });
+});
+
+describe('MakerFromRow', () => {
+  const row = { id: owner, handle: 'maker1', display_name: 'Maker One', links: { x: 'maker1' } };
+
+  it('maps the selected public_profiles columns', () => {
+    expect([...MAKER_COLUMNS].sort()).toEqual(Object.keys(row).sort());
+    expect(MakerFromRow.parse(row)).toEqual({
+      id: owner,
+      handle: 'maker1',
+      displayName: 'Maker One',
+      links: { x: 'maker1' },
+    });
+  });
+
+  it('rejects a link that is not https', () => {
+    expect(MakerFromRow.safeParse({ ...row, links: { site: 'javascript:alert(1)' } }).success).toBe(
+      false,
+    );
   });
 });
 
