@@ -22,4 +22,16 @@ describe('realtime Worker', () => {
   it('RealtimeRpc.ping answers', async () => {
     expect(await exports.RealtimeRpc.ping()).toBe('pong from realtime');
   });
+
+  it('RealtimeRpc.worldUpdate accepts booth ids (stub until prompt 10)', async () => {
+    const id = '6f1c1e5e-3f7a-4c39-9a51-5d2b8f0d7a10';
+    expect(await exports.RealtimeRpc.worldUpdate([id, 'not-an-id'])).toBe(1);
+  });
+
+  it('RealtimeRpc.kick accepts a user id (stub until prompt 10)', async () => {
+    expect(await exports.RealtimeRpc.kick('00000000-0000-4000-8000-000000000001', 'banned')).toBe(
+      true,
+    );
+    expect(await exports.RealtimeRpc.kick('nope', 'banned')).toBe(false);
+  });
 });
