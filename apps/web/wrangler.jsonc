@@ -15,8 +15,6 @@
     "SUPABASE_URL": "http://127.0.0.1:54321",
     // Cloudflare's always-pass Turnstile test secret (public). Real secrets: `wrangler secret put`.
     "TURNSTILE_SECRET": "1x0000000000000000000000000000000AA",
-    // The live default is 60 (TRUST_AND_SAFETY.md); 0 lets fresh local and e2e accounts submit.
-    "MIN_ACCOUNT_AGE_MINUTES": "0",
     "R2_BUCKET": "shipfair-media-dev"
   },
   // Booth media. Locally Miniflare's R2 (no S3 endpoint, so uploads go through the Worker).

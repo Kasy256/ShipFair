@@ -163,16 +163,22 @@ describe('POST /api/booths/:id/submit', () => {
     expect((await submit()).status).toBe(200);
   });
 
-  it('refuses accounts younger than MIN_ACCOUNT_AGE_MINUTES', async () => {
-    await seed({ booths: [await draft({}, NEWBIE, 'newbie-token')] });
-    const res = await withEnv(
-      { MIN_ACCOUNT_AGE_MINUTES: '60' },
-      `/api/booths/${BOOTH}/submit`,
-      { turnstileToken: PASS },
-      'newbie-token',
-    );
+  it('refuses accounts younger than the MIN_ACCOUNT_AGE_MINUTES flag', async () => {
+    await seed({
+      booths: [await draft({}, NEWBIE, 'newbie-token')],
+      flags: [{ key: 'MIN_ACCOUNT_AGE_MINUTES', value: 60 }],
+    });
+    const res = await submit('newbie-token');
     expect(res.status).toBe(403);
     expect(await errorCode(res)).toBe('account_too_new');
+  });
+
+  it('is paused while the SUBMISSIONS_OPEN flag is off', async () => {
+    await seed({ booths: [await draft()], flags: [{ key: 'SUBMISSIONS_OPEN', value: false }] });
+    const res = await submit();
+    expect(res.status).toBe(503);
+    expect(await errorCode(res)).toBe('submissions_paused');
+    expect((await table<BoothRow>('booths'))[0]?.status).toBe('draft');
   });
 
   it('re-validates the booth fields and needs a logo', async () => {

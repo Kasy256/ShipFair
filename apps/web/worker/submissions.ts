@@ -3,7 +3,7 @@ import {
   BoothDraftInput,
   type BoothMedia,
   BoothStatus,
-  MIN_ACCOUNT_AGE_MINUTES,
+  type FeatureFlags,
   PENDING_BOOTHS_PER_USER_MAX,
   type PrescreenResult,
   SubmitBoothRequest,
@@ -17,6 +17,7 @@ import {
 import * as z from 'zod';
 import type { Env } from './env.ts';
 import { AppError } from './errors.ts';
+import { readFlags } from './flags.ts';
 import { type MediaRef, type VerifiedMedia, verifyUploads } from './media-check.ts';
 import { defaultChecks, type PrescreenCheck, prescreen } from './moderation/prescreen.ts';
 import { checkUrl } from './moderation/url-check.ts';
@@ -75,14 +76,22 @@ function firstIssue(error: z.ZodError): string {
   return field ? `${field}: ${issue.message}` : issue.message;
 }
 
-/** TRUST_AND_SAFETY.md "Limits": account age, 1 pending, 3 in total. */
-async function checkLimits(env: Env, db: ServiceDb, userId: string, boothId: string) {
-  const minAge = z.coerce
-    .number()
-    .int()
-    .nonnegative()
-    .catch(MIN_ACCOUNT_AGE_MINUTES)
-    .parse(env.MIN_ACCOUNT_AGE_MINUTES ?? MIN_ACCOUNT_AGE_MINUTES);
+/** The `SUBMISSIONS_OPEN` flag: staff can pause submissions and edits (INFRASTRUCTURE.md §10). */
+async function openFlags(env: Env): Promise<FeatureFlags> {
+  const flags = await readFlags(env);
+  if (!flags.SUBMISSIONS_OPEN) {
+    throw new AppError(
+      'submissions_paused',
+      503,
+      'Submissions are paused for a little while; your draft is saved',
+    );
+  }
+  return flags;
+}
+
+/** TRUST_AND_SAFETY.md "Limits": account age (flag), 1 pending, 3 in total. */
+async function checkLimits(flags: FeatureFlags, db: ServiceDb, userId: string, boothId: string) {
+  const minAge = flags.MIN_ACCOUNT_AGE_MINUTES;
   const profile = ProfileAge.parse(
     await db.select('profiles', { id: `eq.${userId}` }, 'created_at'),
   );
@@ -147,13 +156,14 @@ export async function submitBooth(
 ): Promise<SubmitBoothResponse> {
   const request = SubmitBoothRequest.safeParse(body);
   if (!request.success) throw new AppError('bad_request', 400, 'Complete the bot check first');
+  const flags = await openFlags(ctx.env);
   const db = serviceDb(ctx.env);
   const booth = await ownBooth(db, boothId, ctx.userId);
   if (booth.status !== 'draft' && booth.status !== 'rejected') {
     throw new AppError('not_submittable', 409, `This booth is ${booth.status}, not a draft`);
   }
   await verifyTurnstile(ctx.env, request.data.turnstileToken, ctx.remoteIp);
-  await checkLimits(ctx.env, db, ctx.userId, booth.id);
+  await checkLimits(flags, db, ctx.userId, booth.id);
 
   const draft = BoothDraftInput.safeParse({
     slug: booth.slug,
@@ -193,6 +203,7 @@ export async function submitRevision(
 ): Promise<SubmitRevisionResponse> {
   const request = SubmitRevisionRequest.safeParse(body);
   if (!request.success) throw new AppError('bad_request', 400, firstIssue(request.error));
+  await openFlags(ctx.env);
   const db = serviceDb(ctx.env);
   const booth = await ownBooth(db, boothId, ctx.userId);
   if (booth.status !== 'approved') {

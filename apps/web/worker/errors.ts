@@ -19,7 +19,9 @@ export type ErrorCode =
   | 'not_submittable'
   | 'logo_missing'
   | 'media_invalid'
-  | 'upload_invalid';
+  | 'upload_invalid'
+  | 'not_actionable'
+  | 'submissions_paused';
 
 /** Thrown inside services; the one `onError` handler turns it into the API error shape. */
 export class AppError extends Error {

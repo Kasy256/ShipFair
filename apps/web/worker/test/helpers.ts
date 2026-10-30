@@ -1,5 +1,7 @@
-import { exports } from 'cloudflare:workers';
+import { env, exports } from 'cloudflare:workers';
 import { ApiError, type UploadKind, UploadSignResponse } from '@shipfair/shared';
+import type { Env } from '../env.ts';
+import { forgetFlags } from '../flags.ts';
 import { resetRateLimits } from '../rate-limits.ts';
 import { sha256Hex } from '../uploads.ts';
 
@@ -7,13 +9,23 @@ import { sha256Hex } from '../uploads.ts';
 
 export const OWNER = '00000000-0000-4000-8000-000000000001';
 export const NEWBIE = '00000000-0000-4000-8000-000000000002';
+/** An admin (`staff-token`). */
+export const STAFF = '00000000-0000-4000-8000-000000000003';
 
 export const stub = (path: string, init?: RequestInit) =>
   fetch(`http://supabase.test${path}`, init);
 
-/** Fresh stub tables and rate limits (they live in this isolate across tests). */
-export const resetStub = () => {
+/** RPC calls the realtime stub received since the last read (vitest.config.ts). */
+export const realtimeCalls = async (): Promise<unknown[][]> =>
+  (await (
+    await (env as Env).REALTIME.fetch('https://realtime.test/__calls')
+  ).json()) as unknown[][];
+
+/** Fresh stub tables, rate limits, flags and realtime calls (they all outlive a test). */
+export const resetStub = async () => {
   resetRateLimits();
+  forgetFlags();
+  await realtimeCalls();
   return stub('/__mode', { method: 'POST', body: 'ok' });
 };
 export const seed = (tables: Record<string, unknown[]>) =>

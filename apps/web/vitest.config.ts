@@ -5,9 +5,21 @@ import { APP_NAME, APP_TAGLINE } from '@shipfair/shared';
 import { defineConfig } from 'vitest/config';
 
 // Stands in for the realtime Worker so the REALTIME service binding resolves inside the pool.
+// It records RPC calls; tests read (and clear) them with GET /__calls through the binding.
 const realtimeStub = `
   import { WorkerEntrypoint } from 'cloudflare:workers';
-  export class RealtimeRpc extends WorkerEntrypoint { ping() { return 'pong from realtime stub'; } }
+  let calls = [];
+  export class RealtimeRpc extends WorkerEntrypoint {
+    ping() { return 'pong from realtime stub'; }
+    worldUpdate(boothIds) { calls.push(['worldUpdate', boothIds]); return boothIds.length; }
+    kick(userId, code) { calls.push(['kick', userId, code]); return true; }
+    fetch(request) {
+      if (new URL(request.url).pathname !== '/__calls') return new Response(null, { status: 404 });
+      const answer = Response.json(calls);
+      calls = [];
+      return answer;
+    }
+  }
   export default { fetch: () => new Response(null, { status: 404 }) };
 `;
 

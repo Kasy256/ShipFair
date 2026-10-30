@@ -1,7 +1,8 @@
 import { WebWorkerEnv } from '@shipfair/shared';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import * as z from 'zod';
 import type { Env } from './env.ts';
-import { AppError } from './errors.ts';
+import { AppError, type ErrorCode } from './errors.ts';
 
 // Service-role access to Supabase (Auth and PostgREST) with plain fetch, no supabase-js. Used by
 // routes that need trust the browser doesn't have: account deletion, submissions, revisions.
@@ -67,6 +68,26 @@ function restUrl(base: string, path: string, filters: Filters, select?: string):
   return url;
 }
 
+const DbError = z.object({ hint: z.string().nullable().optional(), message: z.string() });
+
+/**
+ * Hints our SQL functions raise (P0001 … using hint = '…'), as API errors. The message is the
+ * function's own, written for staff, e.g. "booth is not pending".
+ */
+const HINT_ERRORS: Readonly<Record<string, [ErrorCode, ContentfulStatusCode]>> = {
+  forbidden: ['forbidden', 403],
+  not_found: ['not_found', 404],
+  not_actionable: ['not_actionable', 409],
+  bad_request: ['bad_request', 400],
+};
+
+async function rpcError(res: Response, name: string): Promise<AppError> {
+  const body = DbError.safeParse(await res.json().catch(() => null));
+  const mapped = body.success && body.data.hint ? HINT_ERRORS[body.data.hint] : undefined;
+  if (mapped && body.success) return new AppError(mapped[0], mapped[1], body.data.message);
+  return new AppError('unavailable', 503, `${name} failed (${res.status})`);
+}
+
 async function rows(res: Response, what: string): Promise<unknown[]> {
   if (!res.ok) throw new AppError('unavailable', 503, `${what} failed (${res.status})`);
   const body: unknown = await res.json();
@@ -109,7 +130,7 @@ export function serviceDb(env: Env) {
         headers,
         body: JSON.stringify(args),
       });
-      if (!res.ok) throw new AppError('unavailable', 503, `${name} failed (${res.status})`);
+      if (!res.ok) throw await rpcError(res, name);
       return res.json();
     },
   };

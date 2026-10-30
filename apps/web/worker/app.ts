@@ -1,10 +1,13 @@
+import type { SubmissionsStatus } from '@shipfair/shared';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import pkg from '../package.json';
 import { deleteAccount, requireUser } from './account.ts';
+import { admin } from './admin/routes.ts';
 import { dev } from './dev.ts';
 import type { Env } from './env.ts';
 import { AppError } from './errors.ts';
+import { readFlags } from './flags.ts';
 import { rateLimit } from './rate-limits.ts';
 import { securityHeaders } from './security-headers.ts';
 import { sharePage } from './share.ts';
@@ -83,6 +86,14 @@ app.post('/api/booths/:id/revision', async (c) => {
   const ctx = await submitContext(c);
   return c.json(await submitRevision(ctx, c.req.param('id'), await jsonBody(c)), 200, NO_STORE);
 });
+
+/** The submit form's "Submissions are paused" notice (flag `SUBMISSIONS_OPEN`). */
+app.get('/api/submissions/status', async (c) => {
+  const flags = await readFlags(c.env);
+  return c.json({ isOpen: flags.SUBMISSIONS_OPEN } satisfies SubmissionsStatus, 200, NO_STORE);
+});
+
+app.route('/', admin);
 
 app.route('/', dev);
 

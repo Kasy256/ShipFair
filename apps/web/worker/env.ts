@@ -1,12 +1,16 @@
 /** RPC surface of the realtime Worker's `RealtimeRpc` entrypoint, as seen from web. */
 export interface RealtimeRpc {
   ping(): Promise<string>;
+  /** Booths changed (approved, edited, hidden); shards tell players to refetch them. */
+  worldUpdate(boothIds: readonly string[]): Promise<number>;
+  /** Closes a user's sockets (bans). */
+  kick(userId: string, code: string): Promise<boolean>;
 }
 
 export interface Env {
   ASSETS: Fetcher;
   REALTIME: Fetcher & RealtimeRpc;
-  /** World cache version (and, later, the feature-flag cache). */
+  /** World cache version. */
   KV: KVNamespace;
   ENVIRONMENT: 'development' | 'staging' | 'production';
   /** Validated where used (`WebWorkerEnv`), so a missing value is a clear 503, not a crash. */
@@ -26,6 +30,4 @@ export interface Env {
   /** Text moderation vendor key; none means the pre-screen records `text_unchecked`. */
   MODERATION_API_KEY?: string;
   SAFE_BROWSING_KEY?: string;
-  /** Accounts younger than this can't submit (TRUST_AND_SAFETY.md). A string var; default 60. */
-  MIN_ACCOUNT_AGE_MINUTES?: string;
 }
