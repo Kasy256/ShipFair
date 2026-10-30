@@ -13,6 +13,9 @@ select tests.create_booth(:'owner_id', 'test-hidden', 'hidden') as hidden_id \gs
 -- Rejected after having been approved once, so approved_at is set and the slug is fixed.
 select tests.create_booth(:'owner_id', 'test-was-live', 'rejected') as was_live_id \gset
 update public.booths set approved_at = now() where id = :'was_live_id';
+-- This owner already has 4 booths; the 3-booth cap (prompt 08) has its own tests in 10, so it is
+-- off here (inside this transaction only) to keep these tests about the column guard and RLS.
+alter table public.booths disable trigger booths_owner_limit;
 
 -- anon -----------------------------------------------------------------------------------------
 select tests.logout_anon();

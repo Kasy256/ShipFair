@@ -1,4 +1,4 @@
-import type { AvatarPreview, ShipfairTestApi } from '@shipfair/engine';
+import type { AvatarPreview, BoothPreview, ShipfairTestApi } from '@shipfair/engine';
 
 declare global {
   interface Window {
@@ -8,6 +8,8 @@ declare global {
     __shipfairEvents?: { name: string; props: Record<string, unknown> }[];
     /** The open avatar editor preview (prompt 07). */
     __shipfairPreview?: AvatarPreview;
+    /** The /submit form's booth preview (prompt 08). */
+    __shipfairBoothPreview?: BoothPreview;
     /** Test-only email + password sign-in against local Supabase (prompt 07). */
     __shipfairAuth?: {
       signInWithPassword(email: string, password: string): Promise<string | null>;

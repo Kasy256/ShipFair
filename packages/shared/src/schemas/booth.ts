@@ -55,3 +55,39 @@ export const BoothDraftInput = z.object({
   pricing: BoothPricing.optional(),
 });
 export type BoothDraftInput = z.infer<typeof BoothDraftInput>;
+
+export const BoothStatus = z.enum([
+  'draft',
+  'pending',
+  'approved',
+  'rejected',
+  'hidden',
+  'archived',
+]);
+export type BoothStatus = z.infer<typeof BoothStatus>;
+
+export const RevisionStatus = z.enum(['pending', 'approved', 'rejected']);
+export type RevisionStatus = z.infer<typeof RevisionStatus>;
+
+/** The open (or last) edit of a live booth, as its owner sees it. */
+export const BoothRevisionOwn = z.object({
+  id: Uuid,
+  status: RevisionStatus,
+  rejectReason: z.string().nullable(),
+  tagline: BoothTagline,
+  description: BoothDescription.nullable(),
+  url: HttpsUrl,
+  logoKey: MediaKey,
+  media: BoothMediaList,
+});
+export type BoothRevisionOwn = z.infer<typeof BoothRevisionOwn>;
+
+/** A booth in "My booths" (any status; RLS lets owners read their own). */
+export const BoothOwn = BoothPublic.omit({ approvedAt: true }).extend({
+  status: BoothStatus,
+  rejectReason: z.string().nullable(),
+  approvedAt: Timestamp.nullable(),
+  updatedAt: Timestamp,
+  revision: BoothRevisionOwn.nullable().default(null),
+});
+export type BoothOwn = z.infer<typeof BoothOwn>;

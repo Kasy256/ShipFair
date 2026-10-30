@@ -7,23 +7,31 @@
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/b/*"]
+    "run_worker_first": ["/api/*", "/b/*", "/u/*"]
   },
   "vars": {
     "ENVIRONMENT": "development",
     // Local Supabase. SUPABASE_ANON_KEY is per machine: `pnpm db:start` writes it to .dev.vars.
-    "SUPABASE_URL": "http://127.0.0.1:54321"
+    "SUPABASE_URL": "http://127.0.0.1:54321",
+    // Cloudflare's always-pass Turnstile test secret (public). Real secrets: `wrangler secret put`.
+    "TURNSTILE_SECRET": "1x0000000000000000000000000000000AA",
+    // The live default is 60 (TRUST_AND_SAFETY.md); 0 lets fresh local and e2e accounts submit.
+    "MIN_ACCOUNT_AGE_MINUTES": "0",
+    "R2_BUCKET": "shipfair-media-dev"
   },
+  // Booth media. Locally Miniflare's R2 (no S3 endpoint, so uploads go through the Worker).
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "shipfair-media-dev" }],
   // World cache version. No id: wrangler provisions the namespace on first deploy (prompt 15).
   "kv_namespaces": [{ "binding": "KV" }],
   // RPC to the realtime Worker. Locally this resolves through wrangler's dev registry.
   "services": [
     { "binding": "REALTIME", "service": "shipfair-realtime", "entrypoint": "RealtimeRpc" }
   ],
-  // Names only for now. Routes, R2, SUPABASE_* values and secrets arrive with prompt 15.
+  // Routes, SUPABASE_* values and secrets arrive with prompt 15.
   "env": {
     "staging": {
-      "vars": { "ENVIRONMENT": "staging" },
+      "vars": { "ENVIRONMENT": "staging", "R2_BUCKET": "shipfair-media-staging" },
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "shipfair-media-staging" }],
       "kv_namespaces": [{ "binding": "KV" }],
       "services": [
         {
@@ -34,7 +42,8 @@
       ]
     },
     "production": {
-      "vars": { "ENVIRONMENT": "production" },
+      "vars": { "ENVIRONMENT": "production", "R2_BUCKET": "shipfair-media" },
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "shipfair-media" }],
       "kv_namespaces": [{ "binding": "KV" }],
       "services": [
         {

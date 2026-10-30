@@ -1,5 +1,7 @@
 import {
+  BoothOwn,
   BoothPublic,
+  BoothRevisionOwn,
   type BoothTier,
   District,
   type Enums,
@@ -59,6 +61,78 @@ export const BoothPublicFromRow = z
       }) satisfies FieldsOf<BoothPublic>,
   )
   .pipe(BoothPublic);
+
+/** Columns of a maker's own booth, any status (RLS: owners read their own). */
+export const BOOTH_OWN_COLUMNS = [
+  ...BOOTH_PUBLIC_COLUMNS,
+  'status',
+  'reject_reason',
+  'updated_at',
+] as const satisfies readonly (keyof Tables<'booths'>)[];
+type BoothOwnRow = Pick<Tables<'booths'>, (typeof BOOTH_OWN_COLUMNS)[number]>;
+
+export const REVISION_OWN_COLUMNS = [
+  'id',
+  'booth_id',
+  'status',
+  'reject_reason',
+  'tagline',
+  'description',
+  'url',
+  'logo_key',
+  'media',
+  'created_at',
+] as const satisfies readonly (keyof Tables<'booth_revisions'>)[];
+type RevisionOwnRow = Pick<Tables<'booth_revisions'>, (typeof REVISION_OWN_COLUMNS)[number]>;
+
+export const RevisionOwnFromRow = z
+  .custom<RevisionOwnRow>(isRow)
+  .transform(
+    (row): unknown =>
+      ({
+        id: row.id,
+        status: row.status,
+        rejectReason: row.reject_reason,
+        tagline: row.tagline,
+        description: row.description,
+        url: row.url,
+        logoKey: row.logo_key,
+        media: row.media,
+      }) satisfies FieldsOf<BoothRevisionOwn>,
+  )
+  .pipe(BoothRevisionOwn);
+
+const BoothOwnFromRow = z
+  .custom<BoothOwnRow>(isRow)
+  .transform(
+    (row): unknown =>
+      ({
+        id: row.id,
+        ownerId: row.owner_id,
+        slug: row.slug,
+        name: row.name,
+        tagline: row.tagline,
+        description: row.description,
+        url: row.url,
+        districtId: row.district_id,
+        logoKey: row.logo_key,
+        media: row.media,
+        pricing: row.pricing,
+        tier: row.tier,
+        status: row.status,
+        rejectReason: row.reject_reason,
+        approvedAt: row.approved_at,
+        updatedAt: row.updated_at,
+        revision: null,
+      }) satisfies FieldsOf<BoothOwn>,
+  )
+  .pipe(BoothOwn);
+
+/** A maker's booth row with its latest revision row (null when it has none). */
+export function boothOwnFromRow(row: unknown, revision: unknown): BoothOwn {
+  const booth = BoothOwnFromRow.parse(row);
+  return { ...booth, revision: revision ? RevisionOwnFromRow.parse(revision) : null };
+}
 
 export const DistrictFromRow = z
   .custom<Tables<'districts'>>(isRow)
@@ -157,3 +231,5 @@ export const GuestbookEntryFromRow = z
 // Compile-time drift check: the DB enum and the shared zod enum must list the same tiers.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 true satisfies Same<Enums<'booth_tier'>, BoothTier>;
+true satisfies Same<Enums<'booth_status'>, BoothOwn['status']>;
+true satisfies Same<Enums<'revision_status'>, BoothRevisionOwn['status']>;

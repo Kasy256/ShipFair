@@ -8,6 +8,11 @@ export { CharacterFactory } from './avatars/character-factory.ts';
 export { GltfAvatar } from './avatars/gltf-avatar.ts';
 export type { LodLevel } from './avatars/lod.ts';
 export { assignLods, countLods, createLodScratch } from './avatars/lod.ts';
+export {
+  BoothPreview,
+  type BoothPreviewContent,
+  type BoothPreviewStats,
+} from './booths/booth-preview.ts';
 export { BoothKit, type KitBooth } from './booths/kit.ts';
 export type { AssetView, CharacterView } from './debug/asset-viewer.ts';
 export { AssetViewer } from './debug/asset-viewer.ts';

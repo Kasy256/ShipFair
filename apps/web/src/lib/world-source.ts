@@ -11,7 +11,13 @@ export interface WorldSource {
 export const FAKE_MEDIA_HOST = 'fake-media.shipfair.test';
 
 const isDev = import.meta.env.MODE !== 'production';
-const mediaHost = (import.meta.env.VITE_MEDIA_HOST as string | undefined) || null;
+/**
+ * Where approved booth images live. In development without VITE_MEDIA_HOST it is this origin: the
+ * dev Worker serves `/u/…` from the local R2 bucket (worker/dev.ts), on whichever port Vite runs.
+ */
+export const mediaHost =
+  (import.meta.env.VITE_MEDIA_HOST as string | undefined) ||
+  (import.meta.env.DEV && typeof window !== 'undefined' ? window.location.host : null);
 
 /** Why the world didn't load. The UI maps these to friendly text in `ui/errors.ts`. */
 export type WorldErrorCode = 'world_unavailable' | 'invalid_world' | 'network';

@@ -2,10 +2,14 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import pkg from '../package.json';
 import { deleteAccount, requireUser } from './account.ts';
+import { dev } from './dev.ts';
 import type { Env } from './env.ts';
 import { AppError } from './errors.ts';
+import { rateLimit } from './rate-limits.ts';
 import { securityHeaders } from './security-headers.ts';
 import { sharePage } from './share.ts';
+import { checkBoothUrl, type SubmitContext, submitBooth, submitRevision } from './submissions.ts';
+import { localUpload, signUpload } from './uploads.ts';
 import { cachedWorld, WORLD_CACHE_CONTROL } from './world.ts';
 
 export const app = new Hono<{ Bindings: Env }>();
@@ -39,6 +43,48 @@ app.post('/api/me/delete', async (c) => {
   const body: unknown = await c.req.json().catch(() => null);
   return c.json(await deleteAccount(c.env, userId, body), 200, { 'cache-control': 'no-store' });
 });
+
+const NO_STORE = { 'cache-control': 'no-store' } as const;
+const jsonBody = (c: { req: { json(): Promise<unknown> } }) => c.req.json().catch(() => null);
+
+app.post('/api/uploads/sign', async (c) => {
+  const userId = await requireUser(c.env, c.req.header('authorization'));
+  rateLimit('sign', userId);
+  return c.json(await signUpload(c.env, userId, await jsonBody(c)), 200, NO_STORE);
+});
+
+// Development stand-in for a presigned R2 PUT (uploads.ts); 404 elsewhere.
+app.put('/api/uploads/local', async (c) => {
+  await localUpload(c.env, c.req.raw);
+  return c.body(null, 200);
+});
+
+app.post('/api/booths/check-url', async (c) => {
+  const userId = await requireUser(c.env, c.req.header('authorization'));
+  rateLimit('checkUrl', userId);
+  return c.json(await checkBoothUrl(await jsonBody(c)), 200, NO_STORE);
+});
+
+const submitContext = async (c: {
+  env: Env;
+  req: { header(name: string): string | undefined };
+}): Promise<SubmitContext> => {
+  const userId = await requireUser(c.env, c.req.header('authorization'));
+  rateLimit('submit', userId);
+  return { env: c.env, userId, remoteIp: c.req.header('cf-connecting-ip') };
+};
+
+app.post('/api/booths/:id/submit', async (c) => {
+  const ctx = await submitContext(c);
+  return c.json(await submitBooth(ctx, c.req.param('id'), await jsonBody(c)), 200, NO_STORE);
+});
+
+app.post('/api/booths/:id/revision', async (c) => {
+  const ctx = await submitContext(c);
+  return c.json(await submitRevision(ctx, c.req.param('id'), await jsonBody(c)), 200, NO_STORE);
+});
+
+app.route('/', dev);
 
 // Local proof that web → realtime RPC works through the dev registry. Hidden outside development.
 app.get('/api/dev/ping-realtime', async (c) => {

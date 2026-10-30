@@ -8,7 +8,18 @@ export type ErrorCode =
   | 'bad_request'
   | 'unauthorized'
   | 'handle_mismatch'
-  | 'unavailable';
+  | 'unavailable'
+  | 'forbidden'
+  | 'rate_limited'
+  | 'too_large'
+  | 'turnstile_failed'
+  | 'account_too_new'
+  | 'limit_pending'
+  | 'limit_total'
+  | 'not_submittable'
+  | 'logo_missing'
+  | 'media_invalid'
+  | 'upload_invalid';
 
 /** Thrown inside services; the one `onError` handler turns it into the API error shape. */
 export class AppError extends Error {

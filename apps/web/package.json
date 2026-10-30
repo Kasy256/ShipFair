@@ -11,13 +11,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@hookform/resolvers": "6.0.2",
     "@shipfair/engine": "workspace:*",
     "@shipfair/shared": "workspace:*",
     "@supabase/supabase-js": "2.118.0",
     "@tanstack/react-query": "5.104.5",
+    "aws4fetch": "1.0.20",
     "hono": "4.13.14",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-hook-form": "7.91.0",
     "react-router": "8.5.0",
     "zod": "4.6.7",
     "zustand": "5.0.16"

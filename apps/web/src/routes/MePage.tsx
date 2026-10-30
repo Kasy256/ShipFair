@@ -8,6 +8,7 @@ import { useUiStore } from '../state/ui-store.ts';
 import { signOut } from '../state/use-auth-sync.ts';
 import { AvatarEditor } from '../ui/avatar/AvatarEditor.tsx';
 import { saveLook } from '../ui/avatar/AvatarSheet.tsx';
+import { MyBooths } from '../ui/booths/MyBooths.tsx';
 import { authToastText, profileErrorText } from '../ui/errors.ts';
 import { DeleteAccount } from '../ui/profile/DeleteAccount.tsx';
 import { ProfileFields } from '../ui/profile/ProfileFields.tsx';
@@ -115,7 +116,7 @@ function AvatarSection() {
   );
 }
 
-/** `/me`: profile, avatar, "My booths" (prompt 08), sign out and delete account. */
+/** `/me`: profile, avatar, "My booths", sign out and delete account. */
 export function MePage() {
   const status = useSessionStore((s) => s.status);
   const profile = useSessionStore((s) => s.profile);
@@ -159,12 +160,7 @@ export function MePage() {
               <h2 id="me-booths" className="font-bold text-xl">
                 My booths
               </h2>
-              <p className="mt-2 text-muted">
-                No booths yet. Once you submit one, its review status shows up here.
-              </p>
-              <Link to="/submit" className="mt-3 inline-block font-semibold text-accent">
-                Claim a booth →
-              </Link>
+              <MyBooths userId={profile.id} />
             </section>
             <section className={section} aria-labelledby="me-account">
               <h2 id="me-account" className="mb-4 font-bold text-xl">
