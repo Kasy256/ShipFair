@@ -20,6 +20,8 @@ const SENTRY = [
   'https://*.ingest.de.sentry.io',
 ];
 const POSTHOG = 'https://*.posthog.com';
+/** Presigned booth media uploads go straight to R2's S3 endpoint (prompt 08). */
+const R2_UPLOADS = 'https://*.r2.cloudflarestorage.com';
 
 const originOf = (url: string | undefined): string[] => {
   if (!url) return [];
@@ -57,6 +59,7 @@ export function contentSecurityPolicy(hosts: SecurityHosts): string {
       ...originOf(hosts.supabaseUrl),
       ...realtime,
       ...media,
+      R2_UPLOADS,
       ...SENTRY,
       POSTHOG,
       ...devConnect,

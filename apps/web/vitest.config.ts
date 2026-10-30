@@ -69,6 +69,10 @@ export default defineConfig({
           ...vitestPreset.test,
           name: 'worker',
           include: ['worker/**/*.test.ts'],
+          // Submission tests upload several objects through workerd each; 5 s is too tight on slow CI.
+          testTimeout: 30_000,
+          // The first request in each file pays workerd cold start, which stacks up in parallel.
+          hookTimeout: 30_000,
           // obscenity (via @shipfair/shared) is CommonJS; workerd needs it pre-bundled as ESM.
           deps: {
             optimizer: { ssr: { enabled: true, include: ['@shipfair/shared > obscenity'] } },
