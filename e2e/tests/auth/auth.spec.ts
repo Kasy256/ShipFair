@@ -27,6 +27,7 @@ const keys = (page: import('@playwright/test').Page) =>
   page.evaluate(() => ({
     preview: window.__shipfairPreview?.key ?? '',
     world: window.__shipfair?.player.avatarKey ?? '',
+    isDrawing: window.__shipfairPreview?.isDrawing ?? false,
     worldTop: JSON.parse(window.__shipfair?.player.styleJson ?? '{}')?.top?.item as string,
   }));
 
@@ -40,15 +41,17 @@ test('sign in → onboarding → handle → avatar change shows in the preview a
 
   const sheet = page.getByTestId('onboarding-sheet');
   await expect(sheet).toBeVisible();
+  // The preview opens with the profile's (default) look and waves, then stops drawing. On
+  // SwiftShader its frames take ~100 ms, so the steps below wait for it to settle first.
+  await expect(sheet.getByTestId('avatar-preview')).toHaveAttribute('data-status', 'ready', {
+    timeout: 60_000,
+  });
+  await expect.poll(async () => (await keys(page)).isDrawing, { timeout: 30_000 }).toBe(false);
+
   const handle = uniqueHandle('e2e');
   await sheet.getByLabel('Handle').fill(handle);
   await expect(sheet.getByText(`@${handle} is available`)).toBeVisible();
   await sheet.getByLabel('Display name').fill('E2E Maker');
-
-  // The preview opens with the profile's (default) look and waves.
-  await expect(sheet.getByTestId('avatar-preview')).toHaveAttribute('data-status', 'ready', {
-    timeout: 60_000,
-  });
   // Its own live WebGL context (StrictMode mounts it twice in dev; each instance owns a canvas).
   expect(await page.evaluate(() => window.__shipfairPreview?.isContextLost)).toBe(false);
   const before = await keys(page);
@@ -66,6 +69,7 @@ test('sign in → onboarding → handle → avatar change shows in the preview a
     .poll(async () => (await keys(page)).world, { timeout: 30_000 })
     .toContain('top:hoodie');
   report('keys after', await keys(page));
+  await expect.poll(async () => (await keys(page)).isDrawing, { timeout: 30_000 }).toBe(false);
 
   await sheet.getByRole('button', { name: 'Save and enter the city' }).click();
   await expect(sheet).toBeHidden();

@@ -22,12 +22,19 @@ const CAMERA = { y: 1.05, z: 4.2, lookY: 0.92 } as const;
 const MAX_PIXEL_RATIO = 2;
 /** Radians of turn per pixel dragged. */
 const DRAG_RAD_PER_PX = 0.012;
+/**
+ * Seconds of continuous drawing after anything changes (covers the wave on open). Afterwards the
+ * last frame stays up: the idle sway is not worth a renderer running flat out next to the world,
+ * which on software WebGL or a low-end phone starves the page (measured: 4 s per fetch).
+ */
+const ACTIVE_S = 3;
 
 /**
  * The avatar editor's live preview (prompt 07): one character at LOD0 on its own small canvas,
  * with its own WebGLRenderer and loop, separate from the world. It loads only the manifest, the
  * clips and the character parts (no booth kit or props), waves once when opened, and turns when
- * dragged. `dispose()` frees every GPU resource and the WebGL context.
+ * dragged. It draws only while something changes (see ACTIVE_S). `dispose()` frees every GPU
+ * resource and the WebGL context.
  */
 export class AvatarPreview {
   readonly #renderer: WebGLRenderer;
@@ -43,6 +50,10 @@ export class AvatarPreview {
   #avatar: AvatarView;
   #style: AvatarStyleV2;
   #isDisposed = false;
+  /** Seconds of drawing left; 0 holds the last frame. */
+  #activeS = ACTIVE_S;
+  /** Item-set key last drawn, so a rebuilt outfit that swaps in late is drawn too. */
+  #drawnKey = '';
 
   private constructor(
     canvas: HTMLCanvasElement,
@@ -71,6 +82,13 @@ export class AvatarPreview {
     this.#fit();
     this.#loop.add({
       update: (dt) => {
+        const key = this.key;
+        if (key !== this.#drawnKey) {
+          this.#drawnKey = key;
+          this.#wake();
+        }
+        if (this.#activeS <= 0) return;
+        this.#activeS -= dt;
         this.#avatar.update(dt, this.#loop.time);
         this.#renderer.render(this.#scene, this.#camera);
       },
@@ -118,6 +136,11 @@ export class AvatarPreview {
     return avatar instanceof GltfAvatar ? avatar.character.key : 'procedural';
   }
 
+  /** True while it is drawing frames (for tests: it stops a few seconds after the last change). */
+  get isDrawing(): boolean {
+    return this.#activeS > 0;
+  }
+
   get isDisposed(): boolean {
     return this.#isDisposed;
   }
@@ -132,10 +155,16 @@ export class AvatarPreview {
     if (this.#isDisposed) return;
     this.#style = style;
     this.#avatar.setStyle(style);
+    this.#wake();
   }
 
   wave(): void {
     this.#avatar.playEmote(EMOTE_WAVE);
+    this.#wake();
+  }
+
+  #wake(): void {
+    this.#activeS = ACTIVE_S;
   }
 
   dispose(): void {
@@ -159,6 +188,7 @@ export class AvatarPreview {
     this.#renderer.setSize(w, h, false);
     this.#camera.aspect = w / h;
     this.#camera.updateProjectionMatrix();
+    this.#wake();
   }
 
   #listenDrag(): () => void {
@@ -171,6 +201,7 @@ export class AvatarPreview {
     const move = (e: PointerEvent) => {
       if (lastX === null) return;
       this.#avatar.object.rotation.y += (e.clientX - lastX) * DRAG_RAD_PER_PX;
+      this.#wake();
       lastX = e.clientX;
     };
     const up = () => {
