@@ -1,6 +1,7 @@
 import type { BoothPricing, BoothPublic } from '@shipfair/shared';
 import { track } from '../lib/analytics.ts';
 import { makerLinks, mediaUrl, shareUrl, tryItUrl } from '../lib/booth-links.ts';
+import { useSessionStore } from '../state/session-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
 import { useWorldStore } from '../state/world-store.ts';
 import { ScreenshotCarousel } from './ScreenshotCarousel.tsx';
@@ -40,6 +41,8 @@ interface BoothDetailsProps {
 function BoothDetails({ booth, onClose }: BoothDetailsProps) {
   const district = useWorldStore((s) => s.districtsById.get(booth.districtId));
   const maker = useWorldStore((s) => s.makersById.get(booth.ownerId));
+  const isGuest = useSessionStore((s) => s.status !== 'signed-in');
+  const openSignIn = useUiStore((s) => s.openSignIn);
   const mediaHost = useWorldStore((s) => s.mediaHost);
   const showToast = useUiStore((s) => s.showToast);
   const tryHref = tryItUrl(booth.url);
@@ -153,24 +156,34 @@ function BoothDetails({ booth, onClose }: BoothDetailsProps) {
         </section>
       )}
 
-      {/* Upvotes and the guestbook arrive with sign-in (prompts 07 and 12). */}
+      {/* Upvotes and the guestbook arrive in prompt 12; signing in from here returns to this booth. */}
       <section aria-labelledby="booth-social" className="mt-6 border-paper/10 border-t pt-4">
         <h3 id="booth-social" className="sr-only">
           Votes and guestbook
         </h3>
-        <button
-          type="button"
-          disabled
-          className="rounded-xl bg-ink-3 px-4 py-2 font-semibold opacity-60"
-        >
-          ▲ Sign in to vote
-        </button>
+        {isGuest ? (
+          <button
+            type="button"
+            onClick={() => openSignIn(`/b/${booth.slug}`)}
+            className="rounded-xl bg-ink-3 px-4 py-2 font-semibold hover:bg-ink"
+          >
+            ▲ Sign in to vote
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="rounded-xl bg-ink-3 px-4 py-2 font-semibold opacity-60"
+          >
+            ▲ Voting opens soon
+          </button>
+        )}
         <label className="mt-3 block text-sm">
           <span className="mb-1 block text-muted">Guestbook</span>
           <textarea
             disabled
             rows={2}
-            placeholder="Sign in to sign the guestbook"
+            placeholder={isGuest ? 'Sign in to sign the guestbook' : 'The guestbook opens soon'}
             className="w-full resize-none rounded-lg border border-paper/15 bg-transparent px-3 py-2 opacity-60"
           />
         </label>

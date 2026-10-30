@@ -12,4 +12,6 @@ export interface Env {
   /** Validated where used (`WebWorkerEnv`), so a missing value is a clear 503, not a crash. */
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
+  /** Account deletion only (`/api/me/delete`). A secret: .dev.vars locally, wrangler secret elsewhere. */
+  SUPABASE_SERVICE_ROLE_KEY?: string;
 }

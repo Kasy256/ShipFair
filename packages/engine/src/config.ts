@@ -106,8 +106,8 @@ export const ADAPT_UP_S = 10;
 export const PERF_SAMPLE_S = 1;
 export const RENDER_SCALES = [1, 0.75, 0.6] as const;
 
-// Art assets (prompt 04b, ARCHITECTURE.md §4)
-export const ASSET_MANIFEST_URL = '/assets/assets-manifest.generated.json';
+// Art assets (prompt 04b, ARCHITECTURE.md §4). The URL is shared: the avatar editor reads it too.
+export { ASSET_MANIFEST_URL } from '@shipfair/shared';
 
 // Character LOD policy for remote players (used by prompt 11). Nearest by distance get LOD0, the
 // next ones within LOD1_MAX_DISTANCE_M get LOD1, everyone else the instanced stand-in.

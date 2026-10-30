@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { loadEngineModule } from '../lib/engine-loader.ts';
 import type { WorldSource } from '../lib/world-source.ts';
 import { engineBus } from '../state/engine-bus.ts';
+import { selectName, selectStyle, useSessionStore } from '../state/session-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
 
 type Status = 'loading' | 'ready' | 'error';
@@ -48,6 +49,9 @@ export function WorldCanvas({ source, onStage, onEngine, onError }: WorldCanvasP
           debug: mod.debugFlags(search),
           mediaHost: source.mediaHost,
           isReducedMotion: useUiStore.getState().isReducedMotion,
+          // The look at start; later changes arrive through setLocalPlayer (useLocalPlayer).
+          avatarStyle: selectStyle(useSessionStore.getState()),
+          playerName: selectName(useSessionStore.getState()),
         });
         engine = started;
         await started.start(source.snapshot, (stage) => {

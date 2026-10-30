@@ -1,5 +1,5 @@
-// Our additions on top of obscenity's English dataset. Prompt 12 mirrors this list into SQL
-// (tools/sync-blocklist.ts) for the guestbook trigger, so keep entries as plain strings.
+// Our additions on top of obscenity's English dataset. `pnpm db:sync-blocklist` mirrors them into SQL
+// (`public.has_profanity`, packages/shared/scripts) for the name checks, so keep entries as plain strings.
 //
 // Pattern syntax is obscenity's: `?` matches any one character, `[x]` makes x optional and `|` at
 // either end anchors to a word boundary (but a trailing `|` after `*` never matches, so masked

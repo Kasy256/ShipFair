@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError, HealthResponse, WorldRequestQuery, WorldResponse } from './api.ts';
+import { AvatarStyle, migrateAvatarStyle } from './avatar.ts';
 import { BoothDraftInput, BoothPublic } from './booth.ts';
 import { District } from './district.ts';
 import { RealtimeEnv, WebBuildEnv, WebWorkerEnv } from './env.ts';
 import { GuestbookEntry } from './guestbook.ts';
-import { AvatarStyle, ProfilePublic } from './profile.ts';
+import { ProfilePublic } from './profile.ts';
 import { ReportInput } from './report.ts';
 import { WorldSnapshot } from './world.ts';
 
@@ -94,7 +95,8 @@ describe('AvatarStyle and ProfilePublic', () => {
 
   it('defaults a missing avatar and links, and validates handles', () => {
     const profile = ProfilePublic.parse({ id: uuid(3), handle: 'ada_l', displayName: 'Ada' });
-    expect(profile.avatarStyle).toEqual(AvatarStyle.parse({}));
+    expect(profile.avatarStyle).toEqual(migrateAvatarStyle({}));
+    expect(profile.avatarStyle.v).toBe(2);
     expect(profile.links).toEqual({});
     expect(
       ProfilePublic.safeParse({ id: uuid(3), handle: 'Ada!', displayName: 'Ada' }).success,

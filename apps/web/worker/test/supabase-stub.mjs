@@ -59,21 +59,49 @@ const profiles = [
 
 let calls = 0;
 let mode = 'ok';
+/** User ids `delete_account` was called for (`/__deleted`). */
+let deleted = [];
+
+// Access tokens the fake Auth accepts: the booth owner, and a user whose profile is gone.
+const TOKENS = { 'owner-token': owner, 'ghost-token': '00000000-0000-4000-8000-0000000000aa' };
+const SERVICE_KEY = 'test-service-key';
 
 // biome-ignore lint/style/noDefaultExport: a Worker module's handler must be the default export.
 export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === '/__calls') return Response.json({ calls });
+    if (url.pathname === '/__deleted') return Response.json(deleted);
     if (url.pathname === '/__mode') {
       mode = await request.text();
       calls = 0;
+      deleted = [];
       return new Response('ok');
     }
     calls++;
     if (mode === 'fail') return new Response('down', { status: 500 });
-    if (request.headers.get('apikey') !== 'test-anon-key')
-      return new Response('no key', { status: 401 });
+    const apikey = request.headers.get('apikey');
+    if (url.pathname === '/auth/v1/user') {
+      const token = request.headers.get('authorization')?.replace('Bearer ', '') ?? '';
+      if (apikey !== 'test-anon-key' || !(token in TOKENS)) {
+        return Response.json({ msg: 'invalid JWT' }, { status: 401 });
+      }
+      return Response.json({ id: TOKENS[token], aud: 'authenticated' });
+    }
+    if (apikey === SERVICE_KEY) {
+      if (url.pathname === '/rest/v1/profiles') {
+        const id = url.searchParams.get('id')?.replace('eq.', '');
+        return Response.json(
+          profiles.filter((p) => p.id === id).map((p) => ({ handle: p.handle })),
+        );
+      }
+      if (url.pathname === '/rest/v1/rpc/delete_account' && request.method === 'POST') {
+        const { uid } = await request.json();
+        deleted.push(uid);
+        return Response.json(2);
+      }
+    }
+    if (apikey !== 'test-anon-key') return new Response('no key', { status: 401 });
     if (url.pathname === '/rest/v1/districts') return Response.json(districts);
     if (url.pathname === '/rest/v1/booths') {
       return Response.json(url.searchParams.get('status') === 'eq.approved' ? booths : []);

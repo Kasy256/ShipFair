@@ -30,6 +30,12 @@ export interface ShipfairTestApi {
     readonly footsteps: number;
     /** The dominant clip of the glTF avatar (null while it is the procedural rig). */
     readonly activeClip: string | null;
+    /** The name `setLocalPlayer` set (shown on name tags from prompt 11). */
+    readonly name: string;
+    /** The style the engine was last given, as JSON (plain data for `page.evaluate`). */
+    readonly styleJson: string;
+    /** Item-set key of the avatar on screen ('procedural' for the rig); changes after a rebuild. */
+    readonly avatarKey: string;
     readonly input: ScriptedMove | undefined;
     press(action: InputAction): void;
     teleport(x: number, y: number, z: number, yaw?: number): void;
@@ -111,6 +117,16 @@ export function createTestApi(engine: Engine): ShipfairTestApi {
       get activeClip() {
         const avatar = rt()?.player.avatar;
         return avatar instanceof GltfAvatar ? avatar.activeClip : null;
+      },
+      get name() {
+        return engine.localPlayer.name;
+      },
+      get styleJson() {
+        return JSON.stringify(engine.localPlayer.style);
+      },
+      get avatarKey() {
+        const avatar = rt()?.player.avatar;
+        return avatar instanceof GltfAvatar ? avatar.character.key : 'procedural';
       },
       get input() {
         return rt()?.input.script;

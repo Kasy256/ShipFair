@@ -1,0 +1,89 @@
+import type { AvatarPreview } from '@shipfair/engine';
+import type { AvatarStyleV2 } from '@shipfair/shared';
+import { useEffect, useRef, useState } from 'react';
+import { loadEngineModule } from '../../lib/engine-loader.ts';
+import { engineBus } from '../../state/engine-bus.ts';
+
+interface AvatarPreviewCanvasProps {
+  style: AvatarStyleV2;
+}
+
+type Status = 'loading' | 'ready' | 'error';
+
+/**
+ * The editor's 3D preview: its own small canvas and renderer (AvatarPreview), created when the
+ * editor opens and disposed when it closes. The avatar waves on open; drag to turn it.
+ *
+ * Each preview makes its own <canvas>: disposing one loses its WebGL context for good, and
+ * StrictMode (dev) mounts twice, so a shared element would hand the second preview a dead context.
+ */
+export function AvatarPreviewCanvas({ style }: AvatarPreviewCanvasProps) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<AvatarPreview | null>(null);
+  // The latest style, so a preview that finishes loading after a change starts from it.
+  const latestStyle = useRef(style);
+  latestStyle.current = style;
+  const [status, setStatus] = useState<Status>('loading');
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'block h-full w-full touch-none';
+    box.prepend(canvas);
+    let isCurrent = true;
+    let preview: AvatarPreview | undefined;
+    loadEngineModule()
+      .then((mod) => mod.AvatarPreview.create(canvas, engineBus, latestStyle.current))
+      .then((created) => {
+        preview = created;
+        if (!isCurrent) return created.dispose();
+        previewRef.current = created;
+        created.setStyle(latestStyle.current);
+        if (import.meta.env.MODE !== 'production') window.__shipfairPreview = created;
+        setStatus('ready');
+      })
+      .catch((error: unknown) => {
+        console.error('Avatar preview failed', error);
+        if (isCurrent) setStatus('error');
+      });
+    return () => {
+      isCurrent = false;
+      previewRef.current = null;
+      if (import.meta.env.MODE !== 'production' && window.__shipfairPreview === preview) {
+        delete window.__shipfairPreview;
+      }
+      preview?.dispose();
+      canvas.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    previewRef.current?.setStyle(style);
+  }, [style]);
+
+  return (
+    <div
+      ref={boxRef}
+      role="img"
+      aria-label="Preview of your avatar. Drag to turn it."
+      data-testid="avatar-preview"
+      data-status={status}
+      className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-ink-3"
+    >
+      {status === 'loading' && (
+        <p className="absolute inset-0 grid place-items-center text-muted text-sm">
+          Loading preview…
+        </p>
+      )}
+      {status === 'error' && (
+        <p
+          role="alert"
+          className="absolute inset-0 grid place-items-center p-4 text-center text-sm"
+        >
+          The 3D preview couldn't start (WebGL may be off). Your choices still save.
+        </p>
+      )}
+    </div>
+  );
+}

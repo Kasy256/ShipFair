@@ -19,8 +19,23 @@ import {
   TOP_IDS,
 } from '../generated/wardrobe-ids.ts';
 import { pick, type Rng } from '../rng.ts';
-import { Slug } from './common.ts';
-import { AvatarStyle as AvatarStyleV1 } from './profile.ts';
+import { HexColor, Slug } from './common.ts';
+
+const PartId = z.string().regex(/^[a-z0-9_]{1,32}$/);
+
+/**
+ * Avatar style v1 (prompt 02): flat tints and free-text part ids. Still sent in `hello` until the
+ * realtime prompts move the protocol to v2; stored styles are migrated with `migrateAvatarStyle`.
+ */
+export const AvatarStyle = z.object({
+  skin: HexColor.default('#e0b18f'),
+  top: HexColor.default('#3b82f6'),
+  bottom: HexColor.default('#1f2937'),
+  hair: PartId.default('short'),
+  accessory: PartId.default('none'),
+});
+export type AvatarStyle = z.infer<typeof AvatarStyle>;
+const AvatarStyleV1 = AvatarStyle;
 
 /** Chest print patterns. Textures are added by the engine; ids are fixed here. */
 export const PRINT_PATTERNS = ['stripes', 'dots', 'check', 'waves', 'stars'] as const;

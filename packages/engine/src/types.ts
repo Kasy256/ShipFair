@@ -20,6 +20,8 @@ export interface EngineOptions {
   isAutoQuality?: boolean;
   debug?: ReadonlySet<DebugFlag>;
   avatarStyle?: AvatarStyleV2;
+  /** Name tag text for the local player (a handle or Guest-####). Change it with . */
+  playerName?: string;
   /** Host booth images load from (VITE_MEDIA_HOST). Without it booths show monograms only. */
   mediaHost?: string | null;
   /** Reduced motion: no booth build-up animation. Change it later with `setReducedMotion`. */

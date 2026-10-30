@@ -134,3 +134,7 @@ jobs:
         run: |
           pnpm db:types
           git diff --exit-code packages/shared/src/db.types.ts
+
+      # has_profanity (SQL) and its pgTAP test are generated from the client's blocklist.
+      - name: Name filter is in sync with the blocklist
+        run: pnpm db:sync-blocklist --check

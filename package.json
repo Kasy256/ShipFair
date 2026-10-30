@@ -22,6 +22,7 @@
     "db:test": "supabase test db",
     "db:lint": "supabase db lint --level warning --fail-on warning && pnpm db:check-rls",
     "db:types": "supabase gen types typescript --local > packages/shared/src/db.types.ts && biome check --write packages/shared/src/db.types.ts",
+    "db:sync-blocklist": "node packages/shared/scripts/sync-blocklist.ts",
     "db:check-rls": "docker exec -i supabase_db_shipfair psql -U postgres -q -v ON_ERROR_STOP=1 < supabase/checks/rls.sql",
     "art:inspect": "node tools/blender/run.ts inspect",
     "art:characters": "node tools/blender/run.ts characters",

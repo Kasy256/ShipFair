@@ -12,6 +12,7 @@ import {
   type BuiltWardrobeItem,
   GeneratedAssetManifest,
 } from '@shipfair/shared';
+import { buildCatalog, headwearColors } from './lib/catalog.ts';
 import { Contract } from './lib/contract.ts';
 import { getIO } from './lib/io.ts';
 import {
@@ -70,6 +71,7 @@ async function main(argv: readonly string[]): Promise<number> {
     bodies,
     longHairIds(ART),
   );
+  const catalog = buildCatalog(ctx, manifest.wardrobe, headwearColors(ART));
 
   const generated = GeneratedAssetManifest.parse({
     version: 1,
@@ -79,6 +81,7 @@ async function main(argv: readonly string[]): Promise<number> {
     boothKit,
     props,
     wardrobe,
+    catalog,
   });
   const json = `${JSON.stringify(generated, null, 2)}\n`;
   const { report, sink } = ctx;

@@ -8,9 +8,11 @@ import { selectIsOverlayOpen, useUiStore } from '../state/ui-store.ts';
 import { useDeepLinks } from '../state/use-deep-links.ts';
 import { useEngineBridge } from '../state/use-engine-bridge.ts';
 import { useInputLock } from '../state/use-input-lock.ts';
+import { useLocalPlayer } from '../state/use-local-player.ts';
 import { useWorldQuery } from '../state/use-world-query.ts';
 import { useWorldShortcuts } from '../state/use-world-shortcuts.ts';
 import { useWorldStore } from '../state/world-store.ts';
+import { AvatarSheet } from '../ui/avatar/AvatarSheet.tsx';
 import { BoothPanel } from '../ui/BoothPanel.tsx';
 import { ClaimSheet } from '../ui/ClaimSheet.tsx';
 import { ControlsHelp } from '../ui/ControlsHelp.tsx';
@@ -48,6 +50,7 @@ export function WorldRoute() {
   const isOverlayOpen = useUiStore(selectIsOverlayOpen);
 
   useEngineBridge();
+  useLocalPlayer(engine);
   useDeepLinks(engine, hasEntered);
   useWorldShortcuts(hasEntered);
   // Nothing behind the loading screen may move the avatar.
@@ -125,6 +128,7 @@ export function WorldRoute() {
           <BoothPanel />
           <MapOverlay engine={engine} />
           <ClaimSheet />
+          <AvatarSheet />
           {!isOverlayOpen && <Toasts />}
         </>
       )}

@@ -58,6 +58,9 @@ export const WORLD_CACHE_MAX_AGE_S = 30;
 export const WORLD_CACHE_STALE_S = 300; // stale-while-revalidate window after max-age
 export const SHARE_PANEL_DELAY_S = 1.5; // /b/:slug opens the booth panel this long after entering
 
+// Art (prompt 04b): written by `pnpm assets:build`, read by the engine and the avatar editor.
+export const ASSET_MANIFEST_URL = '/assets/assets-manifest.generated.json';
+
 // Protocol versioning (CODING_STANDARDS.md §6)
 export const PROTOCOL_VERSION = 1;
 export const MIN_CLIENT_PROTOCOL = 1;

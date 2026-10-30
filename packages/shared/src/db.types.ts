@@ -400,6 +400,28 @@ export type Database = {
           },
         ];
       };
+      pending_media_deletes: {
+        Row: {
+          created_at: string;
+          id: number;
+          key: string;
+          purge_after: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: never;
+          key: string;
+          purge_after?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: never;
+          key?: string;
+          purge_after?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_style: NonNullable<Json>;
@@ -408,6 +430,7 @@ export type Database = {
           handle: string;
           id: string;
           links: NonNullable<Json>;
+          onboarded_at: string | null;
           role: string;
         };
         ComputedFields: never;
@@ -418,6 +441,7 @@ export type Database = {
           handle: string;
           id: string;
           links?: NonNullable<Json>;
+          onboarded_at?: string | null;
           role?: string;
         };
         Update: {
@@ -427,6 +451,7 @@ export type Database = {
           handle?: string;
           id?: string;
           links?: NonNullable<Json>;
+          onboarded_at?: string | null;
           role?: string;
         };
         Relationships: [];
@@ -532,6 +557,10 @@ export type Database = {
         Args: { logo_key: string; media: Json; owner: string };
         Returns: boolean;
       };
+      delete_account: { Args: { uid: string }; Returns: number };
+      handle_available: { Args: { candidate: string }; Returns: boolean };
+      has_profanity: { Args: { input: string }; Returns: boolean };
+      hook_before_user_created: { Args: { event: Json }; Returns: Json };
       is_not_banned: { Args: { uid: string }; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
     };
