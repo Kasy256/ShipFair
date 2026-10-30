@@ -5,7 +5,12 @@ export type AnalyticsEvent =
   | { name: 'world_loaded'; props: { loadMs: number; tier: string; booths: number } }
   | { name: 'booth_open'; props: { boothId: string; source: 'walk' | 'share_link' } }
   | { name: 'booth_try_click'; props: { boothId: string } }
-  | { name: 'share_link_opened'; props: { slug: string; found: boolean } };
+  | { name: 'share_link_opened'; props: { slug: string; found: boolean } }
+  | { name: 'submit_started'; props: { isEdit: boolean } }
+  | {
+      name: 'submit_completed';
+      props: { boothId: string; kind: 'booth' | 'revision'; score: number };
+    };
 
 const MAX_BUFFERED = 200;
 const buffer: AnalyticsEvent[] = [];

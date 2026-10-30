@@ -1,5 +1,5 @@
 import { APP_NAME } from '@shipfair/shared';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useSession } from '../state/session-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
 import { useWorldStore } from '../state/world-store.ts';
@@ -8,7 +8,7 @@ import { zoneName } from './districts.ts';
 /**
  * Top-left: brand, the current district and the live visitor count (a placeholder until the
  * realtime client lands in prompt 11). Top-right: the visitor (sign in, or the handle linking to
- * /me), the avatar editor, map and help.
+ * /me), "Claim a booth" (/submit, or sign-in first), the avatar editor, map and help.
  */
 export function Hud() {
   const zone = useWorldStore((s) => zoneName(s.currentDistrictId, s.districtsById));
@@ -19,6 +19,9 @@ export function Hud() {
   const setAvatarOpen = useUiStore((s) => s.setAvatarOpen);
   const session = useSession();
   const location = useLocation();
+  const navigate = useNavigate();
+  const claim = () =>
+    session.status === 'signed-in' ? navigate('/submit') : openSignIn('/submit');
   const button =
     'pointer-events-auto rounded-lg bg-ink/75 px-3 py-1.5 font-semibold text-sm backdrop-blur hover:bg-ink';
 
@@ -61,6 +64,15 @@ export function Hud() {
             Sign in
           </button>
         )}
+        <button
+          type="button"
+          className={button}
+          data-testid="hud-claim"
+          disabled={session.status === 'loading'}
+          onClick={claim}
+        >
+          Claim a booth
+        </button>
         <button type="button" className={button} onClick={() => setAvatarOpen(true)}>
           Avatar
         </button>

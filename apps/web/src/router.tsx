@@ -13,13 +13,25 @@ const DevAssets =
     ? lazy(() => import('./dev/DevAssets.tsx').then((m) => ({ default: m.DevAssets })))
     : null;
 
+// The form (React Hook Form, image pipeline, booth preview) loads only when someone opens it.
+const SubmitPage = lazy(() =>
+  import('./routes/SubmitPage.tsx').then((m) => ({ default: m.SubmitPage })),
+);
+
 const pages: RouteObject[] = [
   // One pathless parent, so the engine stays mounted while moving between these three.
   {
     element: <WorldRoute />,
     children: [{ index: true }, { path: 'b/:slug' }, { path: 'd/:district' }],
   },
-  { path: 'submit', element: <InfoPage page="submit" /> },
+  {
+    path: 'submit',
+    element: (
+      <Suspense fallback={<p className="min-h-dvh bg-ink p-4 text-paper">Loading…</p>}>
+        <SubmitPage />
+      </Suspense>
+    ),
+  },
   { path: 'me', element: <MePage /> },
   { path: AUTH_CALLBACK_PATH.slice(1), element: <AuthCallback /> },
   { path: 'admin', element: <InfoPage page="admin" /> },

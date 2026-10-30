@@ -2,20 +2,11 @@ import { APP_NAME } from '@shipfair/shared';
 import { type ReactNode, useEffect } from 'react';
 import { Link } from 'react-router';
 
-export type InfoPageId = 'submit' | 'admin' | 'rules' | 'privacy' | 'terms';
+export type InfoPageId = 'admin' | 'rules' | 'privacy' | 'terms';
 
-// Placeholders until their prompts: /submit (08), /admin (09). /rules carries the
+// Placeholder until its prompt: /admin (09). /rules carries the
 // content rules from TRUST_AND_SAFETY.md; /privacy and /terms are drafts until legal review (16).
 const PAGES: Record<InfoPageId, { title: string; body: ReactNode }> = {
-  submit: {
-    title: 'Claim a booth',
-    body: (
-      <p>
-        Booth submissions open soon. You'll sign in with GitHub or Google, add your project's name,
-        tagline, link and screenshots, and a person reviews it before it appears in the city.
-      </p>
-    ),
-  },
   admin: {
     title: 'Admin',
     body: <p>The review queue and moderation tools are coming soon. Staff only.</p>,
