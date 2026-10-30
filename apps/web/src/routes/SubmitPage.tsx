@@ -2,7 +2,7 @@ import { APP_NAME, type OwnProfile } from '@shipfair/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { fetchDistricts, fetchMyBooths } from '../lib/booth-api.ts';
+import { fetchDistricts, fetchMyBooths, fetchSubmissionsOpen } from '../lib/booth-api.ts';
 import { loadSupabase } from '../lib/supabase.ts';
 import { mediaHost } from '../lib/world-source.ts';
 import { useSessionStore } from '../state/session-store.ts';
@@ -83,6 +83,7 @@ export function SubmitPage() {
   const [params] = useSearchParams();
   // Read once: the wizard writes the new draft's id into the address without remounting.
   const [boothId] = useState(() => params.get('booth'));
+  const isOpen = useQuery({ queryKey: ['submissions-open'], queryFn: fetchSubmissionsOpen });
 
   useEffect(() => {
     document.title = `Claim a booth · ${APP_NAME}`;
@@ -98,6 +99,16 @@ export function SubmitPage() {
           ← Back to the city
         </Link>
         <h1 className="mt-6 font-bold text-4xl">{boothId ? 'Edit your booth' : 'Claim a booth'}</h1>
+        {isOpen.data === false && (
+          <p
+            role="status"
+            className="mt-4 rounded-xl bg-amber-300 p-4 font-semibold text-ink"
+            data-testid="submissions-paused"
+          >
+            Submissions are paused for a little while. You can still fill in your booth; it is saved
+            as a draft, and you can submit it once we reopen.
+          </p>
+        )}
         {status === 'loading' && <p className="mt-4 text-muted">Loading…</p>}
         {status === 'guest' && (
           <div className="mt-4">

@@ -5,6 +5,7 @@ import { loadEngineModule } from '../lib/engine-loader.ts';
 import { WorldLoadError } from '../lib/world-source.ts';
 import { attachPlayerView } from '../state/player-view.ts';
 import { selectIsOverlayOpen, useUiStore } from '../state/ui-store.ts';
+import { useBoothNotices } from '../state/use-booth-notices.ts';
 import { useDeepLinks } from '../state/use-deep-links.ts';
 import { useEngineBridge } from '../state/use-engine-bridge.ts';
 import { useInputLock } from '../state/use-input-lock.ts';
@@ -53,6 +54,7 @@ export function WorldRoute() {
   useLocalPlayer(engine);
   useDeepLinks(engine, hasEntered);
   useWorldShortcuts(hasEntered);
+  useBoothNotices(hasEntered);
   // Nothing behind the loading screen may move the avatar.
   useInputLock(!hasEntered);
 

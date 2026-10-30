@@ -83,6 +83,8 @@ const BOOTH_ERRORS: Record<BoothErrorCode, string> = {
   media_invalid: 'One of the images needs replacing. Go back to the Media step and add it again.',
   upload_invalid: "The upload didn't go through. Add the image again.",
   unavailable: "Submissions aren't available right now. Your draft is saved; try again later.",
+  submissions_paused:
+    'Submissions are paused for a little while. Your draft is saved; come back and submit it later.',
   no_permission: "You can't change this booth. If your account was restricted, check your email.",
   network: "We couldn't reach the server. Check your connection and try again.",
 };
