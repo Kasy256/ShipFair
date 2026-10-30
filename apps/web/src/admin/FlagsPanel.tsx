@@ -46,15 +46,18 @@ function MinutesFlag(props: {
 /** Feature flags (prompt 09 §7). The Worker re-reads them within 30 s of a change. */
 export function FlagsPanel() {
   const query = useQuery({ queryKey: ['admin', 'flags'], queryFn: fetchFlags });
-  const [isBusy, setIsBusy] = useState(false);
+  // The edit being saved: shown at once, dropped once the saved value is back (or on failure).
+  const [saving, setSaving] = useState<FlagUpdate | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isBusy = saving !== null;
 
   if (query.isPending) return <p className="text-muted">Loading flags…</p>;
   if (query.isError) return <p role="alert">{adminErrorText(query.error)}</p>;
   const { flags, updated } = query.data;
+  const isOpen = saving?.key === 'SUBMISSIONS_OPEN' ? saving.value : flags.SUBMISSIONS_OPEN;
 
   const save = async (update: FlagUpdate) => {
-    setIsBusy(true);
+    setSaving(update);
     setError(null);
     try {
       await setFlag(update);
@@ -62,7 +65,7 @@ export function FlagsPanel() {
     } catch (e) {
       setError(adminErrorText(e));
     } finally {
-      setIsBusy(false);
+      setSaving(null);
     }
   };
   const changed = (key: FlagKey) => {
@@ -90,7 +93,7 @@ export function FlagsPanel() {
         <label className="flex items-center gap-3 font-semibold">
           <input
             type="checkbox"
-            checked={flags.SUBMISSIONS_OPEN}
+            checked={isOpen}
             disabled={isBusy}
             onChange={(e) => void save({ key: 'SUBMISSIONS_OPEN', value: e.target.checked })}
             data-testid="flag-SUBMISSIONS_OPEN"
