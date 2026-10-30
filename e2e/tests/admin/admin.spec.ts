@@ -12,6 +12,7 @@ import {
   adminCall,
   boothRow,
   currentCard,
+  deleteReports,
   deleteStaff,
   fileReport,
   focusOwnCard,
@@ -94,8 +95,10 @@ test('staff approve 10 queued booths with the keyboard alone', async ({ page, co
   while (approved.length < seeded.length) {
     const id = await focusOwnCard(page, ours);
     await page.keyboard.press('a');
+    // An approval copies media, writes the DB and KV, and calls realtime: slow under parallel load.
     await expect(page.getByTestId('queue-status')).toContainText(
       seeded.find((b) => b.id === id)?.name ?? '',
+      { timeout: 30_000 },
     );
     approved.push(id);
     ours.delete(id);
@@ -198,6 +201,8 @@ test('3 reports auto-hide a booth, and it waits in the reports inbox', async ({ 
   await group.getByRole('button', { name: 'Dismiss' }).click();
   await expect(group).toHaveCount(0);
   expect(await boothRow(booth.id)).toMatchObject({ status: 'approved' });
+  // Reports outlive their reporters (reporter_id is set null), so remove them explicitly.
+  await deleteReports(booth.id);
 });
 
 test('turning SUBMISSIONS_OPEN off blocks submits with a friendly message', async ({

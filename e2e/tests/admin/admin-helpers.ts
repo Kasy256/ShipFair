@@ -123,6 +123,11 @@ export async function fileReport(user: TestUser, boothId: string): Promise<void>
   expect(res.status, await res.clone().text()).toBe(201);
 }
 
+/** Removes every report about a booth (the tests' own; local Supabase only). */
+export async function deleteReports(boothId: string): Promise<void> {
+  await rest(`reports?target_type=eq.booth&target_id=eq.${boothId}`, { method: 'DELETE' });
+}
+
 /** Calls an admin route as `staff`. */
 export async function adminCall(
   request: APIRequestContext,

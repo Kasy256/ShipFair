@@ -1,6 +1,6 @@
 begin;
 \ir _helpers.psql
-select plan(31);
+select plan(34);
 
 select tests.create_user('mod_one', 'moderator') as mod_id \gset
 select tests.create_user('plain_user') as user_id \gset
@@ -97,6 +97,23 @@ select is(
   'the revision is marked approved'
 );
 
+insert into public.booth_revisions (booth_id, owner_id, tagline, url, logo_key)
+values (:'live_id', :'user_id', 'A second edit staff will turn down', 'https://example.com/v3', 'u/' || :'user_id' || '/new.webp')
+returning id as revision2_id \gset
+select is(
+  public.admin_action(:'mod_id', 'reject_revision', :'revision2_id', '{"reason":"nsfw","reasonText":"Not safe for work"}') ->> 'boothId',
+  :'live_id', 'rejecting a revision returns its booth'
+);
+select results_eq(
+  format($$select status::text, reject_reason, decided_at is not null from public.booth_revisions where id = %L$$, :'revision2_id'),
+  $$values ('rejected'::text, 'Not safe for work'::text, true)$$,
+  'the revision is rejected with the reason; the live booth keeps its content'
+);
+select is(
+  (select tagline from public.booths where id = :'live_id'), 'The edited tagline after review',
+  'a rejected revision leaves the booth as it was'
+);
+
 -- Hide -------------------------------------------------------------------------------------------
 select lives_ok(
   format($$select public.admin_action(%L, 'hide_booth', %L, '{"hidden":true}')$$, :'mod_id', :'live_id'),
@@ -110,7 +127,7 @@ select lives_ok(
 select is(
   (select array_agg(action order by id)::text from public.moderation_log
     where target_id = :'live_id' or detail ->> 'boothId' = :'live_id'),
-  '{approve_revision,hide,unhide}', 'revision, hide and unhide are logged against the booth'
+  '{approve_revision,reject_revision,hide,unhide}', 'revision decisions, hide and unhide are logged against the booth'
 );
 
 -- Ban --------------------------------------------------------------------------------------------
