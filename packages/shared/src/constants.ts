@@ -53,6 +53,24 @@ export const BOOTH_MEDIA_MAX = 5;
 export const BOOTH_TIER_VISITORS = 250; // sum of daily unique visitors for the `booth` tier
 export const PAVILION_TOP_N = 10; // by weekly unique visitors
 
+// Booth submission (prompt 08, TRUST_AND_SAFETY.md "Booths"). _B is bytes, _PX pixels.
+export const BOOTHS_PER_USER_MAX = 3; // every status except archived
+export const PENDING_BOOTHS_PER_USER_MAX = 1;
+export const MIN_ACCOUNT_AGE_MINUTES = 60; // default; the Worker var overrides it (0 locally)
+export const UPLOAD_INPUT_MAX_B = 10 * 1024 * 1024; // the file picked, before resizing
+export const UPLOAD_LOGO_MAX_B = 300 * 1024; // WebP as uploaded
+export const UPLOAD_SCREENSHOT_MAX_B = 600 * 1024;
+export const UPLOAD_URL_TTL_S = 300; // presigned PUT lifetime
+export const UPLOAD_PENDING_PREFIX = 'pending/'; // private until a moderator approves
+export const LOGO_PX = 512; // square
+export const LOGO_MIN_PX = 256; // smallest source a logo may come from
+export const SCREENSHOT_MAX_W_PX = 1280;
+export const SCREENSHOT_MIN_W_PX = 640;
+export const WEBP_QUALITY = 0.85;
+export const URL_CHECK_TIMEOUT_MS = 5000;
+export const URL_CHECK_MAX_REDIRECTS = 3;
+export const DRAFT_AUTOSAVE_MS = 5000;
+
 // World snapshot edge cache (INFRASTRUCTURE.md §6)
 export const WORLD_CACHE_MAX_AGE_S = 30;
 export const WORLD_CACHE_STALE_S = 300; // stale-while-revalidate window after max-age

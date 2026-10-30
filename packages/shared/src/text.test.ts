@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterProfanity, normaliseText, slugify } from './text.ts';
+import { boothSlugBase, filterProfanity, normaliseText, slugify } from './text.ts';
 import { isHttpsUrl } from './url.ts';
 
 describe('filterProfanity', () => {
@@ -133,5 +133,16 @@ describe('slugify', () => {
 
   it('never exceeds 40 characters', () => {
     expect(slugify('word '.repeat(30)).length).toBeLessThanOrEqual(40);
+  });
+});
+
+describe('boothSlugBase', () => {
+  it('slugifies the name', () => {
+    expect(boothSlugBase('My Cool App!')).toBe('my-cool-app');
+  });
+
+  it('pads names that slugify to fewer than 3 characters', () => {
+    expect(boothSlugBase('AI')).toBe('ai-booth');
+    expect(boothSlugBase('🚀🚀')).toBe('booth');
   });
 });

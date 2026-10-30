@@ -8,4 +8,5 @@ export * from './env.ts';
 export * from './guestbook.ts';
 export * from './profile.ts';
 export * from './report.ts';
+export * from './submission.ts';
 export * from './world.ts';

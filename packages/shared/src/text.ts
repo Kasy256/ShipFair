@@ -84,3 +84,16 @@ export function filterProfanity(input: string): ProfanityResult {
   text += input.slice(cursor);
   return { text, hasProfanity: spans > 0, matchCount: spans };
 }
+
+const SLUG_MIN_CHARS = 3;
+const SLUG_FALLBACK = 'booth';
+
+/**
+ * The slug a booth name asks for: `slugify(name)`, padded to the 3-character minimum ("AI" →
+ * `ai-booth`). The database appends `-2`, `-3`… when another booth has it (prompt 08).
+ */
+export function boothSlugBase(name: string): string {
+  const slug = slugify(name);
+  if (slug.length >= SLUG_MIN_CHARS) return slug;
+  return slug ? `${slug}-${SLUG_FALLBACK}` : SLUG_FALLBACK;
+}
