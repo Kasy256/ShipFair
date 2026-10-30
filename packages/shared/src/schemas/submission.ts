@@ -29,8 +29,8 @@ export type UploadSignRequest = z.infer<typeof UploadSignRequest>;
 export const UploadSignResponse = z.object({
   /** `u/<userId>/<sha256>.webp`: what the booth stores. The object lands under `pending/`. */
   key: MediaKey,
-  /** Presigned PUT URL (R2), or the Worker's local upload route in development. */
-  url: z.string().min(1),
+  /** Presigned PUT URL (R2), or the Worker's local upload route in development. Empty when not needed. */
+  url: z.string(),
   /** Send exactly these headers with the PUT; they are part of the signature. */
   headers: z.record(z.string(), z.string()),
   /** False when an identical object is already uploaded: skip the PUT. */
