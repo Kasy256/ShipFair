@@ -84,13 +84,14 @@ export async function submitThroughForm(
     .fill('Made to check the whole submit, review and live loop.');
   await page.getByTestId('step-next').click();
 
-  // 4. Preview: the real stall shell with the uploaded logo and both screenshots
+  // 4. Preview: the real stall shell with the uploaded logo, and the first screenshot on the
+  // stall's one screen (stalls have a single screen slot; booths and pavilions have two)
   await expect(page.getByTestId('booth-preview')).toHaveAttribute('data-status', 'ready', {
     timeout: 60_000,
   });
   await expect
     .poll(() => page.evaluate(() => window.__shipfairBoothPreview?.stats ?? null))
-    .toMatchObject({ hasLogo: true, screens: 2 });
+    .toMatchObject({ hasLogo: true, screens: 1 });
   await page.getByTestId('step-next').click();
 
   // 5. Submit: rules, Turnstile (always-pass test key), submit
