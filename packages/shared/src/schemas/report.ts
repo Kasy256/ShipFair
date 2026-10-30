@@ -2,7 +2,11 @@ import * as z from 'zod';
 import { REPORT_NOTE_MAX_CHARS } from '../constants.ts';
 
 export const ReportTargetType = z.enum(['booth', 'guestbook', 'chat', 'user']);
+export type ReportTargetType = z.infer<typeof ReportTargetType>;
 export const ReportReason = z.enum(['spam', 'scam', 'nsfw', 'hate', 'other']);
+export type ReportReason = z.infer<typeof ReportReason>;
+export const ReportStatus = z.enum(['open', 'actioned', 'dismissed']);
+export type ReportStatus = z.infer<typeof ReportStatus>;
 
 export const ReportInput = z.object({
   targetType: ReportTargetType,
