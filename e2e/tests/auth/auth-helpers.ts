@@ -33,7 +33,7 @@ export function localSupabase(): Supabase {
   return cached;
 }
 
-function serviceHeaders(): Record<string, string> {
+export function serviceHeaders(): Record<string, string> {
   const { serviceKey } = localSupabase();
   const headers: Record<string, string> = {
     apikey: serviceKey,
