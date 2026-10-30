@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { AUTH_CALLBACK_PATH } from './lib/supabase.ts';
+import { AdminRoute } from './routes/AdminRoute.tsx';
 import { AuthCallback } from './routes/AuthCallback.tsx';
 import { InfoPage } from './routes/InfoPage.tsx';
 import { MePage } from './routes/MePage.tsx';
@@ -34,7 +35,8 @@ const pages: RouteObject[] = [
   },
   { path: 'me', element: <MePage /> },
   { path: AUTH_CALLBACK_PATH.slice(1), element: <AuthCallback /> },
-  { path: 'admin', element: <InfoPage page="admin" /> },
+  // Staff only: the guard asks the server, then lazy-loads the admin chunk.
+  { path: 'admin', element: <AdminRoute /> },
   { path: 'rules', element: <InfoPage page="rules" /> },
   { path: 'privacy', element: <InfoPage page="privacy" /> },
   { path: 'terms', element: <InfoPage page="terms" /> },
