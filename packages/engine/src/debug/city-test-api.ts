@@ -46,6 +46,8 @@ export interface CityTestApi {
   /** Every drawn booth's world transform (16 numbers, column-major). */
   transforms(): Record<string, number[]>;
   slugs(): Record<string, string>;
+  /** What a nearby booth's logo and screens show: image urls, or null for the monogram. */
+  content(boothId: string): { logo: string | null; screens: (string | null)[] } | null;
   update(changes: BoothChange[]): void;
   teleport(to: Teleport): void;
   interact(): 'booth' | 'kiosk' | null;
@@ -122,6 +124,7 @@ export function createCityTestApi(engine: Engine): CityTestApi {
       for (const booth of city()?.model.booths ?? []) out[booth.id] = booth.slug;
       return out;
     },
+    content: (boothId) => city()?.booths?.content.shown(boothId) ?? null,
     update: (changes) => engine.updateBooths(changes),
     teleport: (to) => engine.teleport(to),
     interact: () => city()?.interact() ?? null,

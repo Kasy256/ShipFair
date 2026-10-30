@@ -112,6 +112,16 @@ export class ContentStreamer {
     return this.cache.bytes + this.#content.size * MONOGRAM_PX * MONOGRAM_PX * 4 * MIP_FACTOR;
   }
 
+  /** For tests: the image urls a booth's logo and screens show (null = the monogram). */
+  shown(id: string): { logo: string | null; screens: (string | null)[] } | null {
+    const content = this.#content.get(id);
+    if (!content) return null;
+    return {
+      logo: content.logo?.shown ?? null,
+      screens: content.screens.map((s) => s.shown),
+    };
+  }
+
   setTier(tier: QualityTier): void {
     this.#tier = tier;
     this.cache.setMax(TEXTURE_CACHE_MAX[tier]);
