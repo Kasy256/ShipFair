@@ -131,6 +131,7 @@ export function AvatarEditor({ value, onChange }: AvatarEditorProps) {
               label="Body"
               name="body"
               options={BODIES}
+              variant="pills"
               value={value.body}
               onChange={(id) => onChange(setBody(value, id))}
             />

@@ -1,4 +1,5 @@
 import type { CatalogItem } from '@shipfair/shared';
+import { PillGroup } from './PillGroup.tsx';
 
 export interface GridOption {
   id: string;
@@ -27,16 +28,29 @@ export function gridOptions(
   ];
 }
 
-interface ItemGridProps {
+export interface ItemGridProps {
   label: string;
   name: string;
   options: readonly GridOption[];
   value: string;
   onChange: (id: string) => void;
+  /** 'pills' for options without thumbnails (body frames, prints). Default 'tiles'. */
+  variant?: 'tiles' | 'pills';
 }
 
 /** Thumbnails (pre-rendered by 04c) as native radios, so the grid works with arrow keys. */
-export function ItemGrid({ label, name, options, value, onChange }: ItemGridProps) {
+export function ItemGrid({
+  label,
+  name,
+  options,
+  value,
+  onChange,
+  variant = 'tiles',
+}: ItemGridProps) {
+  if (variant === 'pills')
+    return (
+      <PillGroup label={label} name={name} options={options} value={value} onChange={onChange} />
+    );
   return (
     <fieldset>
       <legend className="sr-only">{label}</legend>

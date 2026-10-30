@@ -122,6 +122,11 @@ export class AvatarPreview {
     return this.#isDisposed;
   }
 
+  /** True when the WebGL context is gone (it is after dispose); the preview then draws nothing. */
+  get isContextLost(): boolean {
+    return this.#renderer.getContext().isContextLost();
+  }
+
   /** Colours update at once; new items or a new body rebuild in the background and swap in. */
   setStyle(style: AvatarStyleV2): void {
     if (this.#isDisposed) return;

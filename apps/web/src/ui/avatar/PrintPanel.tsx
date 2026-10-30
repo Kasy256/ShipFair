@@ -32,6 +32,7 @@ export function PrintPanel({ style, tops, onChange }: PrintPanelProps) {
         label="Chest print"
         name="print"
         options={options}
+        variant="pills"
         value={style.top.print}
         onChange={(id) => onChange(setPrint(style, id))}
       />
