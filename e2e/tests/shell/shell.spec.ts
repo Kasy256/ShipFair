@@ -55,7 +55,8 @@ test('load → enter → walk to the nearest booth → open panel → Try it ope
   const panel = page.getByRole('dialog', { name: booth.name });
   await expect(panel).toBeVisible();
   await expect(panel.getByText(booth.tagline)).toBeVisible();
-  await expect(panel.getByRole('button', { name: /Sign in to vote/ })).toBeDisabled();
+  // Guests get a live "Sign in to vote" (prompt 07); voting itself arrives in prompt 12.
+  await expect(panel.getByRole('button', { name: /Sign in to vote/ })).toBeEnabled();
 
   // Booth sites are external; answer them locally.
   await page
