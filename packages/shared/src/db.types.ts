@@ -82,6 +82,77 @@ export type Database = {
           },
         ];
       };
+      booth_revisions: {
+        Row: {
+          booth_id: string;
+          created_at: string;
+          decided_at: string | null;
+          description: string | null;
+          id: string;
+          logo_key: string;
+          media: NonNullable<Json>;
+          owner_id: string;
+          reject_reason: string | null;
+          status: Database['public']['Enums']['revision_status'];
+          tagline: string;
+          updated_at: string;
+          url: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          booth_id: string;
+          created_at?: string;
+          decided_at?: string | null;
+          description?: string | null;
+          id?: string;
+          logo_key: string;
+          media?: NonNullable<Json>;
+          owner_id: string;
+          reject_reason?: string | null;
+          status?: Database['public']['Enums']['revision_status'];
+          tagline: string;
+          updated_at?: string;
+          url: string;
+        };
+        Update: {
+          booth_id?: string;
+          created_at?: string;
+          decided_at?: string | null;
+          description?: string | null;
+          id?: string;
+          logo_key?: string;
+          media?: NonNullable<Json>;
+          owner_id?: string;
+          reject_reason?: string | null;
+          status?: Database['public']['Enums']['revision_status'];
+          tagline?: string;
+          updated_at?: string;
+          url?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'booth_revisions_booth_id_fkey';
+            columns: ['booth_id'];
+            isOneToOne: false;
+            referencedRelation: 'booths';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'booth_revisions_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'booth_revisions_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       booth_stats_daily: {
         Row: {
           booth_id: string;
@@ -567,6 +638,7 @@ export type Database = {
     Enums: {
       booth_status: 'draft' | 'pending' | 'approved' | 'rejected' | 'hidden' | 'archived';
       booth_tier: 'stall' | 'booth' | 'pavilion';
+      revision_status: 'pending' | 'approved' | 'rejected';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -687,6 +759,7 @@ export const Constants = {
     Enums: {
       booth_status: ['draft', 'pending', 'approved', 'rejected', 'hidden', 'archived'],
       booth_tier: ['stall', 'booth', 'pavilion'],
+      revision_status: ['pending', 'approved', 'rejected'],
     },
   },
 } as const;
