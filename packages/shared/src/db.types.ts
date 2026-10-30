@@ -338,6 +338,43 @@ export type Database = {
         };
         Relationships: [];
       };
+      flags: {
+        Row: {
+          key: string;
+          updated_at: string;
+          updated_by: string | null;
+          value: NonNullable<Json>;
+        };
+        ComputedFields: never;
+        Insert: {
+          key: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value: NonNullable<Json>;
+        };
+        Update: {
+          key?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'flags_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'flags_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'public_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       guestbook_entries: {
         Row: {
           author_id: string;
@@ -578,6 +615,32 @@ export type Database = {
       };
     };
     Views: {
+      admin_report_targets: {
+        Row: {
+          first_at: string | null;
+          last_at: string | null;
+          open_reports: number | null;
+          reporters: number | null;
+          target_id: string;
+          target_type: string;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
+      admin_review_queue: {
+        Row: {
+          booth_id: string | null;
+          final_url: string | null;
+          flags: Json | null;
+          id: string | null;
+          kind: string | null;
+          owner_id: string | null;
+          score: number | null;
+          submitted_at: string | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
       booth_vote_counts: {
         Row: {
           booth_id: string;
@@ -624,6 +687,10 @@ export type Database = {
       };
     };
     Functions: {
+      admin_action: {
+        Args: { action: string; actor: string; payload?: Json; target_id: string };
+        Returns: Json;
+      };
       booth_media_keys_valid: {
         Args: { logo_key: string; media: Json; owner: string };
         Returns: boolean;

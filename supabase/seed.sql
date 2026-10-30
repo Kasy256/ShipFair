@@ -118,3 +118,8 @@ from (values
   (39, 3, 'standup-stand-in', 'Standup Stand-in', 'Attends your standup and says it is blocked on nothing', 'freemium'),
   (40, 3, 'budget-bubble', 'Budget Bubble', 'Plans budgets in a currency that only exists here', 'free')
 ) as b (n, district_id, slug, name, tagline, pricing);
+
+-- Feature flags --------------------------------------------------------------------------------
+-- Fresh local and e2e accounts submit straight away (the live default is 60 minutes).
+
+update public.flags set value = '0' where key = 'MIN_ACCOUNT_AGE_MINUTES';
