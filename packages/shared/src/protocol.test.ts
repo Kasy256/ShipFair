@@ -7,6 +7,8 @@ import {
   decodeServer,
   encodeClient,
   encodeServer,
+  encodeSnap,
+  encodeSnapEntry,
   fromNetPos,
   fromNetYaw,
   isProtocolSupported,
@@ -174,6 +176,35 @@ describe('net unit helpers', () => {
     expect(isProtocolSupported(PROTOCOL_VERSION)).toBe(true);
     expect(isProtocolSupported(0)).toBe(false);
     expect(isProtocolSupported(PROTOCOL_VERSION + 1)).toBe(false);
+  });
+});
+
+describe('encodeSnap', () => {
+  const entry = (i: number): SnapEntry => [
+    i,
+    i * 37 - 500,
+    i % 3,
+    -i * 91,
+    (i * 977) % 65536,
+    i % 8,
+  ];
+
+  it('is byte-identical to encodeServer for 0, 1, 15, 16, 60 and 70,000 entries', () => {
+    for (const n of [0, 1, 15, 16, 60, 70_000]) {
+      for (const t of [0, 1234, 1_793_000_000_000]) {
+        const s = Array.from({ length: n }, (_, i) => entry(i % 65536));
+        const fast = encodeSnap(t, s.map(encodeSnapEntry));
+        expect(Buffer.from(fast).equals(Buffer.from(encodeServer({ type: 'snap', t, s })))).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it('decodes back to the same snap', () => {
+    const s = [entry(1), entry(2)];
+    const decoded = decodeServer(encodeSnap(1_793_000_000_000, s.map(encodeSnapEntry)));
+    expect(decoded).toEqual({ ok: true, value: { type: 'snap', t: 1_793_000_000_000, s } });
   });
 });
 

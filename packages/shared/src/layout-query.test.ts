@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { booth, DISTRICTS, fakeBooths } from '../test/fake-world.ts';
-import { BOOTH_VISIT_RADIUS_M, LOT_D_M, SPAWN_DISTANCE_M } from './constants.ts';
+import {
+  BOOTH_VISIT_RADIUS_M,
+  DISTRICT_SPAWN_INSET_M,
+  LOT_D_M,
+  SPAWN_DISTANCE_M,
+} from './constants.ts';
 import { layoutCity } from './layout.ts';
-import { boothAnchor, districtAt, nearestBooth, spawnForBooth } from './layout-query.ts';
+import {
+  boothAnchor,
+  districtAt,
+  nearestBooth,
+  spawnForBooth,
+  spawnForDistrict,
+} from './layout-query.ts';
 import { range, rng } from './rng.ts';
 
 const layout = layoutCity(DISTRICTS, fakeBooths(500, 2026));
@@ -40,6 +51,32 @@ describe('spawnForBooth', () => {
       const d = districtAt(small, spawn?.x ?? 0, spawn?.z ?? 0);
       expect(d).not.toBeNull();
     }
+  });
+});
+
+describe('spawnForDistrict', () => {
+  it('lands inside the district, on the spine, facing outward, on every side', () => {
+    for (const d of layout.districts) {
+      const spawn = spawnForDistrict(d);
+      expect(districtAt(layout, spawn.x, spawn.z)?.id).toBe(d.id);
+      const spine = d.streets[0];
+      if (!spine) throw new Error('district without a spine');
+      expect(spawn.x).toBeGreaterThan(spine.minX);
+      expect(spawn.x).toBeLessThan(spine.maxX);
+      expect(spawn.z).toBeGreaterThan(spine.minZ);
+      expect(spawn.z).toBeLessThan(spine.maxZ);
+      // Yaw rotates +z by θ about y, so facing outward means (sin θ, cos θ) points away from origin.
+      const along = Math.sin(spawn.yaw) * spawn.x + Math.cos(spawn.yaw) * spawn.z;
+      expect(along).toBeGreaterThan(0);
+    }
+  });
+
+  it('moves the spawn by the inset along the outward direction', () => {
+    const d = layout.districts[0];
+    if (!d) throw new Error('no district');
+    const gate = spawnForDistrict(d, 0);
+    const spawn = spawnForDistrict(d);
+    expect(Math.hypot(spawn.x - gate.x, spawn.z - gate.z)).toBeCloseTo(DISTRICT_SPAWN_INSET_M, 9);
   });
 });
 

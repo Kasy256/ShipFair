@@ -181,6 +181,66 @@ const pack = (msg: ClientMessage | ServerMessage): Uint8Array =>
 export const encodeClient = (msg: ClientMessage): Uint8Array => pack(msg);
 export const encodeServer = (msg: ServerMessage): Uint8Array => pack(msg);
 
+// --- snap fast path (realtime server) --------------------------------------------------------
+
+const ascii = (text: string): number[] => Array.from(text, (c) => c.charCodeAt(0));
+// fixmap(3), "type": "snap", "t" (then t's own encoding), and later "s" (then the array).
+const SNAP_HEAD = Uint8Array.from([
+  0x83,
+  0xa4,
+  ...ascii('type'),
+  0xa4,
+  ...ascii('snap'),
+  0xa1,
+  0x74,
+]);
+const SNAP_S = Uint8Array.from([0xa1, 0x73]);
+const FIXARRAY_MAX = 15;
+const ARRAY16_MAX = 0xffff;
+
+/** One `snap` entry, packed once per tick and shared by every recipient's frame (`encodeSnap`). */
+export const encodeSnapEntry = (entry: SnapEntry): Uint8Array =>
+  new Uint8Array(getPackr().pack(entry));
+
+/**
+ * `encodeServer({ type: 'snap', t, s })` from pre-packed entries: the header and array length are
+ * written here and the entry bytes copied in. A shard packs each player's entry once per tick
+ * instead of once per recipient. Byte-identical to `encodeServer` (protocol.test.ts).
+ */
+export function encodeSnap(t: number, entries: readonly Uint8Array[]): Uint8Array {
+  const n = entries.length;
+  const arrayHead = n <= FIXARRAY_MAX ? 1 : n <= ARRAY16_MAX ? 3 : 5;
+  let size = SNAP_HEAD.length + SNAP_S.length + arrayHead;
+  for (const entry of entries) size += entry.byteLength;
+  const packedT = getPackr().pack(t); // a view into msgpackr's pool: copy it before packing again
+  const out = new Uint8Array(size + packedT.byteLength);
+  let at = 0;
+  out.set(SNAP_HEAD, at);
+  at += SNAP_HEAD.length;
+  out.set(packedT, at);
+  at += packedT.byteLength;
+  out.set(SNAP_S, at);
+  at += SNAP_S.length;
+  if (n <= FIXARRAY_MAX) {
+    out[at++] = 0x90 | n;
+  } else if (n <= ARRAY16_MAX) {
+    out[at++] = 0xdc;
+    out[at++] = n >>> 8;
+    out[at++] = n & 0xff;
+  } else {
+    out[at++] = 0xdd;
+    out[at++] = n >>> 24;
+    out[at++] = (n >>> 16) & 0xff;
+    out[at++] = (n >>> 8) & 0xff;
+    out[at++] = n & 0xff;
+  }
+  for (const entry of entries) {
+    out.set(entry, at);
+    at += entry.byteLength;
+  }
+  return out;
+}
+
 export const decodeClient = (buf: Uint8Array | ArrayBuffer): Result<ClientMessage, DecodeError> =>
   decode(buf, ClientMessage, MAX_CLIENT_MSG_BYTES);
 
