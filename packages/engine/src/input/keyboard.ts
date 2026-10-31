@@ -15,6 +15,16 @@ export const ACTION_KEYS: Readonly<Record<string, InputAction>> = {
   KeyF: 'wave',
 };
 
+/** Keys 1–6 play the emotes in EMOTE_CLIPS order (wave, clap, dance, cheer, point, sit). */
+export const EMOTE_KEYS: Readonly<Record<string, number>> = {
+  Digit1: 0,
+  Digit2: 1,
+  Digit3: 2,
+  Digit4: 3,
+  Digit5: 4,
+  Digit6: 5,
+};
+
 /** Keys the page must not act on (scrolling) while the world has focus. */
 const PREVENT_DEFAULT = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
@@ -46,11 +56,17 @@ export function isTypingTarget(target: EventTarget | null): boolean {
 export class KeyboardSource {
   readonly held = new Set<string>();
   readonly #onAction: (action: InputAction) => void;
+  readonly #onEmote: (emote: number) => void;
   readonly #target: Window;
 
-  constructor(target: Window, onAction: (action: InputAction) => void) {
+  constructor(
+    target: Window,
+    onAction: (action: InputAction) => void,
+    onEmote: (emote: number) => void,
+  ) {
     this.#target = target;
     this.#onAction = onAction;
+    this.#onEmote = onEmote;
     target.addEventListener('keydown', this.#down);
     target.addEventListener('keyup', this.#up);
     target.addEventListener('blur', this.#clear);
@@ -77,6 +93,8 @@ export class KeyboardSource {
     if (PREVENT_DEFAULT.has(e.code)) e.preventDefault();
     const action = ACTION_KEYS[e.code];
     if (action && !e.repeat) this.#onAction(action);
+    const emote = EMOTE_KEYS[e.code];
+    if (emote !== undefined && !e.repeat) this.#onEmote(emote);
   };
 
   readonly #up = (e: KeyboardEvent): void => {

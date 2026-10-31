@@ -1,5 +1,6 @@
 import type { WebGLInfo } from 'three';
 import { GltfAvatar } from './avatars/gltf-avatar.ts';
+import type { RemoteView } from './avatars/remote.ts';
 import { type CityTestApi, createCityTestApi } from './debug/city-test-api.ts';
 import type { Engine } from './engine.ts';
 import type { InputAction, ScriptedMove } from './input/manager.ts';
@@ -61,6 +62,27 @@ export interface ShipfairTestApi {
     shown(): [number, number, number];
     /** Resolves when every avatar build started so far is done. */
     settled(): Promise<void>;
+  };
+  /** The realtime client and remote players (prompt 11). */
+  net: {
+    readonly status: string;
+    readonly shard: string | null;
+    /** This player's shard-local id (−1 before welcome). */
+    readonly you: number;
+    readonly rttMs: number;
+    readonly offsetMs: number;
+    readonly stats: { sent: number; received: number; hellos: number; invalid: number };
+    /** Every remote player as drawn this frame. */
+    remotes(): RemoteView[];
+    /** Stand-ins and name tags drawn last frame. */
+    drawn(): { standIns: number; tags: number };
+    /** Resolves when every remote glTF avatar build started so far is done. */
+    settled(): Promise<void>;
+    /** `count` fake visitors walking around (x, z), through the real remote path (offline only). */
+    fake(count: number, seed: number, x: number, z: number): void;
+    clearFake(): void;
+    /** Plays an emote as if key 1–6 was pressed (and sends it). */
+    emote(e: number): void;
   };
   /** The city built from the snapshot (prompt 05). */
   city: CityTestApi;
@@ -182,6 +204,33 @@ export function createTestApi(engine: Engine): ShipfairTestApi {
         [...(rt()?.art.stress?.crowd?.counts() ?? [0, 0, 0])] as [number, number, number],
       shown: () => rt()?.art.stress?.crowd?.shownCounts() ?? [0, 0, 0],
       settled: async () => rt()?.art.stress?.crowd?.settled(),
+    },
+    net: {
+      get status() {
+        return rt()?.multiplayer.client.status ?? 'offline';
+      },
+      get shard() {
+        return rt()?.multiplayer.client.shard ?? null;
+      },
+      get you() {
+        return rt()?.multiplayer.client.you ?? -1;
+      },
+      get rttMs() {
+        return rt()?.multiplayer.clock.rttMs ?? Number.NaN;
+      },
+      get offsetMs() {
+        return rt()?.multiplayer.clock.offsetMs ?? Number.NaN;
+      },
+      get stats() {
+        const stats = rt()?.multiplayer.client.stats;
+        return { sent: 0, received: 0, hellos: 0, invalid: 0, ...stats };
+      },
+      remotes: () => rt()?.multiplayer.remotes.views() ?? [],
+      drawn: () => rt()?.multiplayer.remotes.drawn() ?? { standIns: 0, tags: 0 },
+      settled: async () => rt()?.multiplayer.remotes.settled(),
+      fake: (count, seed, x, z) => rt()?.multiplayer.fake(count, seed, x, z),
+      clearFake: () => rt()?.multiplayer.clearFake(),
+      emote: (e) => rt()?.player.emote(e),
     },
     city: createCityTestApi(engine),
     stress: {
