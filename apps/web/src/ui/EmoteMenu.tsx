@@ -3,7 +3,9 @@ import { engineBus } from '../state/engine-bus.ts';
 
 /** Emote ids in the engine's EMOTE_CLIPS order, with their button labels. */
 export const EMOTES = ['Wave', 'Clap', 'Dance', 'Cheer', 'Point', 'Sit'] as const;
-const RADIUS_PX = 92;
+/** 56 px buttons on this circle over ARC_RAD sit ~64 px apart, so none overlaps the next. */
+const RADIUS_PX = 135;
+const ARC_RAD = (3 * Math.PI) / 4;
 
 interface EmoteMenuProps {
   onClose: () => void;
@@ -35,11 +37,11 @@ export function EmoteMenu({ onClose }: EmoteMenuProps) {
       role="menu"
       aria-label="Emotes"
       data-testid="emote-menu"
-      className="pointer-events-auto absolute right-14 bottom-28 h-0 w-0"
+      className="pointer-events-auto absolute right-14 bottom-36 z-30 h-0 w-0"
     >
       {EMOTES.map((label, e) => {
-        // Spread over the upper-left half circle, away from the screen edges.
-        const angle = Math.PI / 2 + (e / (EMOTES.length - 1)) * (Math.PI / 2) + Math.PI / 12;
+        // From straight up, round to the lower left: away from the right and bottom edges.
+        const angle = Math.PI / 2 + (e / (EMOTES.length - 1)) * ARC_RAD;
         const x = Math.cos(angle) * RADIUS_PX;
         const y = -Math.sin(angle) * RADIUS_PX;
         return (

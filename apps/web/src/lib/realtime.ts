@@ -9,6 +9,8 @@ export const FRIEND_PARAM = 'with';
  * Where the realtime Worker is, or null for "don't connect" (the world is still explorable).
  * `VITE_REALTIME_HOST` in builds; in development `?realtime=host:port` overrides it (e2e runs its
  * own server) and `?realtime=off` stays solo, and without either it is this host on port 1999.
+ * Deterministic test pages (`?test`) stay solo unless they name a server, so specs never see
+ * each other's players.
  */
 export function realtimeHost(
   search: string,
@@ -18,6 +20,7 @@ export function realtimeHost(
     const override = new URLSearchParams(search).get('realtime');
     if (override === 'off') return null;
     if (override && /^[a-z0-9.-]+(:\d{1,5})?$/i.test(override)) return override;
+    if (new URLSearchParams(search).has('test')) return null;
   }
   if (env.configured) return env.configured;
   return env.isDev ? `${env.pageHostname}:${DEV_REALTIME_PORT}` : null;

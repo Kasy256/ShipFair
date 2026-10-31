@@ -19,6 +19,11 @@ describe('realtimeHost', () => {
     expect(realtimeHost('?realtime=a/b?c', dev)).toBe('localhost:1999');
   });
 
+  it('keeps deterministic test pages solo unless they name a server', () => {
+    expect(realtimeHost('?test&level=test', dev)).toBeNull();
+    expect(realtimeHost('?test&realtime=127.0.0.1:8898', dev)).toBe('127.0.0.1:8898');
+  });
+
   it('stays solo in a build without a host', () => {
     expect(realtimeHost('', { ...prod, configured: undefined })).toBeNull();
   });
