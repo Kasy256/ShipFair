@@ -9,6 +9,7 @@
   "dependencies": {
     "@shipfair/shared": "workspace:*",
     "jose": "6.2.13",
+    "msgpackr": "2.1.2",
     "partysocket": "1.3.0"
   },
   "devDependencies": {

@@ -1,14 +1,15 @@
 import {
   AvatarStyle,
   type ClientMessage,
-  decodeServer,
   encodeClient,
   layoutCity,
   PROTOCOL_VERSION,
+  type ServerMessage,
   toNetPos,
   toNetYaw,
 } from '@shipfair/shared';
 import { fakeWorld } from '@shipfair/shared/fake-world';
+import { unpack } from 'msgpackr';
 import { PartySocket } from 'partysocket';
 
 // One bot: joins through the coordinator, walks random paths at 10 Hz with idle pauses (1 Hz
@@ -140,9 +141,14 @@ export class Bot {
     const { stats } = this.#o;
     stats.framesIn++;
     stats.bytesIn += data.byteLength;
-    const decoded = decodeServer(new Uint8Array(data));
-    if (!decoded.ok) return;
-    const msg = decoded.value;
+    // Plain unpack, no schema: the server is what's under test, and zod-parsing every snap for 300
+    // bots in one process costs more CPU than the shards being measured.
+    let msg: ServerMessage;
+    try {
+      msg = unpack(new Uint8Array(data)) as ServerMessage;
+    } catch {
+      return;
+    }
     switch (msg.type) {
       case 'welcome':
         this.#begin();
