@@ -4,8 +4,12 @@
   "main": "./src/index.ts",
   // Held back for @cloudflare/vitest-pool-workers 0.23 (TECH_STACK.md "Known version constraints").
   "compatibility_date": "2026-08-15",
+  // STATS_INGEST_SECRET is a secret: `.dev.vars` locally (`pnpm db:dev-vars` writes the same value
+  // for web), `wrangler secret put STATS_INGEST_SECRET --env <env>` in staging and production.
+  // MAX_PLAYERS_PER_SHARD, AOI_RADIUS_M and CHAT_RADIUS_M may be set for load tests only.
   "vars": {
-    "ENVIRONMENT": "development"
+    "ENVIRONMENT": "development",
+    "SUPABASE_JWKS_URL": "http://127.0.0.1:54321/auth/v1/.well-known/jwks.json"
   },
   // Binding names map to PartyServer paths: /parties/coordinator/:id and /parties/world-shard/:id.
   "durable_objects": {
@@ -17,10 +21,13 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Coordinator", "WorldShard"] }],
   // RPC to the web Worker. Locally this resolves through wrangler's dev registry.
   "services": [{ "binding": "WEB", "service": "shipfair-web", "entrypoint": "WebRpc" }],
-  // Names only for now. Routes and secrets arrive with prompt 15.
+  // SUPABASE_JWKS_URL for staging and production is `https://<project-ref>.supabase.co/auth/v1/
+  // .well-known/jwks.json`; prompt 15 adds it once the projects exist. Until then the shard refuses
+  // to start there with a clear RealtimeEnv error rather than trusting a guessed URL.
   "env": {
     "staging": {
       "vars": { "ENVIRONMENT": "staging" },
+      "routes": [{ "pattern": "rt-staging.shipfair.xyz", "custom_domain": true }],
       "durable_objects": {
         "bindings": [
           { "name": "Coordinator", "class_name": "Coordinator" },
@@ -31,6 +38,7 @@
     },
     "production": {
       "vars": { "ENVIRONMENT": "production" },
+      "routes": [{ "pattern": "rt.shipfair.xyz", "custom_domain": true }],
       "durable_objects": {
         "bindings": [
           { "name": "Coordinator", "class_name": "Coordinator" },

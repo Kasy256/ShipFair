@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@shipfair/shared": "workspace:*",
+    "jose": "6.2.13",
     "partyserver": "0.5.10"
   },
   "devDependencies": {
