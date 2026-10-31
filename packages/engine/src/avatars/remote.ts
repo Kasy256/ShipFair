@@ -62,6 +62,8 @@ interface Remote {
   /** The emote playing on the stand-in (−1: none) and for how long. */
   emote: number;
   emoteS: number;
+  /** When the last emote arrived (this page's clock, ms), for the test API. */
+  emoteAtMs: number;
   lod: LodLevel;
   avatar: GltfAvatar | null;
   avatarFade: number;
@@ -97,6 +99,10 @@ export interface RemoteView {
   lod: LodLevel;
   /** The glTF avatar's dominant clip, or `stand-in:<emote id>` for an instanced player. */
   clip: string;
+  /** The emote this player is playing (−1: none), set the moment it is received. */
+  emote: number;
+  /** Epoch ms when the last emote arrived and started playing (NaN: none yet). */
+  emoteAt: number;
   hasBadge: boolean;
   isLeaving: boolean;
 }
@@ -207,6 +213,7 @@ export class RemotePlayers implements System, RemoteSink {
       isLeaving: false,
       emote: -1,
       emoteS: 0,
+      emoteAtMs: Number.NaN,
       lod: STAND_IN,
       avatar: null,
       avatarFade: 0,
@@ -240,6 +247,7 @@ export class RemotePlayers implements System, RemoteSink {
     if (!r || r.isLeaving) return;
     r.emote = e;
     r.emoteS = 0;
+    r.emoteAtMs = this.#now();
     r.avatar?.playEmote(e);
   }
 
@@ -283,7 +291,11 @@ export class RemotePlayers implements System, RemoteSink {
       }
       const standInFade = this.#drawAvatars(r, dt);
       if (standInFade > 0) this.#drawStandIn(r, dt, standInFade);
-      const distance = Math.hypot(s.x - v.x, s.y + NAME_TAG_Y_M - v.y, s.z - v.z);
+      const dx = s.x - v.x;
+      const dy = s.y + NAME_TAG_Y_M - v.y;
+      const dz = s.z - v.z;
+      // Not Math.hypot: it is variadic and allocates in V8.
+      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
       if (distance <= NAME_TAG_MAX_DISTANCE_M) {
         this.#tags.add(
           r.tag,
@@ -343,7 +355,9 @@ export class RemotePlayers implements System, RemoteSink {
       if (!r) continue;
       const s = r.sample;
       // Leaving players rank last, so they never take a glTF slot from someone staying.
-      this.#distances[i] = r.isLeaving ? Number.MAX_VALUE : Math.hypot(s.x - v.x, s.z - v.z);
+      const dx = s.x - v.x;
+      const dz = s.z - v.z;
+      this.#distances[i] = r.isLeaving ? Number.MAX_VALUE : Math.sqrt(dx * dx + dz * dz);
       this.#lods[i] = r.lod;
       r.hasBadge = r.uid !== null && (isMakerNear?.(r.uid, s.x, s.z) ?? false);
     }
@@ -426,6 +440,8 @@ export class RemotePlayers implements System, RemoteSink {
       yaw: r.sample.yaw,
       lod: r.avatar ? r.lod : STAND_IN,
       clip: r.avatar ? r.avatar.activeClip : `stand-in:${r.emote}`,
+      emote: r.emote,
+      emoteAt: performance.timeOrigin + r.emoteAtMs,
       hasBadge: r.hasBadge,
       isLeaving: r.isLeaving,
     }));

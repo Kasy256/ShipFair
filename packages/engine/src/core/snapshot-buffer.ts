@@ -136,7 +136,8 @@ export class SnapshotBuffer {
     out.y = ya + ((this.#y[b] ?? 0) - ya) * alpha;
     out.z = za + dz * alpha;
     out.yaw = lerpYaw(this.#yaw[a] ?? 0, this.#yaw[b] ?? 0, Math.min(alpha, 1));
-    out.speed = spanMs > 0 ? Math.hypot(dx, dz) / (spanMs / 1000) : 0;
+    // Not Math.hypot: it is variadic and allocates in V8.
+    out.speed = spanMs > 0 ? Math.sqrt(dx * dx + dz * dz) / (spanMs / 1000) : 0;
   }
 
   #hold(i: number, out: RemoteSample): boolean {

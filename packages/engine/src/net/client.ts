@@ -175,9 +175,12 @@ export class NetClient implements System {
     }
     const local = this.#deps.local();
     const sent = this.#sent;
+    const dx = local.x - sent.x;
+    const dy = local.y - sent.y;
+    const dz = local.z - sent.z;
     const hasMoved =
       Number.isNaN(sent.x) ||
-      Math.hypot(local.x - sent.x, local.y - sent.y, local.z - sent.z) > NET_SEND_MIN_MOVE_M ||
+      dx * dx + dy * dy + dz * dz > NET_SEND_MIN_MOVE_M * NET_SEND_MIN_MOVE_M ||
       Math.abs(shortestArc(sent.yaw, local.yaw)) > NET_SEND_MIN_TURN_RAD ||
       local.anim !== sent.anim;
     const interval = hasMoved ? 1 / CLIENT_SEND_HZ : 1 / IDLE_HEARTBEAT_HZ;
