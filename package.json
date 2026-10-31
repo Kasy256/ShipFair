@@ -14,6 +14,7 @@
     "lint": "turbo run lint:biome",
     "format": "biome check --write",
     "e2e": "turbo run e2e",
+    "loadtest": "node tools/loadtest/run.ts",
     "lint:biome": "biome ci",
     "db:start": "node tools/db/start.mjs",
     "db:dev-vars": "node tools/db/write-dev-vars.mjs",

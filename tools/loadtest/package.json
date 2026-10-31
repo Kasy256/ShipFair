@@ -1,0 +1,19 @@
+{
+  "name": "@shipfair/loadtest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@shipfair/shared": "workspace:*",
+    "jose": "6.2.13",
+    "partysocket": "1.3.0"
+  },
+  "devDependencies": {
+    "@shipfair/config": "workspace:*",
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
+}

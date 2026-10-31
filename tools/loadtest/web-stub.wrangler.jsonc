@@ -1,0 +1,8 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  // Stands in for the web Worker during load tests, so realtime runs without Supabase.
+  // Started by run.ts next to apps/realtime/wrangler.jsonc in one `wrangler dev` process.
+  "name": "shipfair-web",
+  "main": "./web-stub.ts",
+  "compatibility_date": "2026-08-15"
+}
