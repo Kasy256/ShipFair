@@ -4,9 +4,11 @@ import { appendFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { Worker } from 'node:worker_threads';
 import { rng } from '@shipfair/shared';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
-import { Bot, type BotStats, emptyStats } from './bot.ts';
+import { type BotStats, emptyStats } from './bot.ts';
+import type { BotJob, WorkerReply } from './bot-worker.ts';
 
 // Realtime load test (prompt 10). Spawns `wrangler dev` with the realtime Worker and a stub web
 // Worker (web-stub.ts, so no Supabase is needed), serves a JWKS for the signed-in bots, runs N bot
@@ -26,6 +28,7 @@ const { values: args } = parseArgs({
     'no-spawn': { type: 'boolean', default: false },
     'guests-only': { type: 'boolean', default: false },
     seed: { type: 'string', default: '10' },
+    workers: { type: 'string', default: '3' }, // bot threads
     log: { type: 'string' }, // file that receives everything wrangler dev prints
   },
 });
@@ -261,36 +264,67 @@ async function main(): Promise<void> {
   const sign = await startJwks();
   const wrangler = args['no-spawn'] ? null : await startWrangler();
   const random = rng(Number(args.seed));
-  const bots: Bot[] = [];
-  const stats: BotStats[] = [];
+  const workerCount = Math.max(1, Math.min(Number(args.workers), BOTS));
 
-  console.log(`ramping ${BOTS} bots over ${RAMP_S} s (${Math.round(SIGNED_IN * 100)}% signed in)`);
+  // Bots are split over worker threads; tokens are signed here, where the JWKS key lives.
+  const groups: { guestId: string; token?: string }[][] = Array.from(
+    { length: workerCount },
+    () => [],
+  );
   for (let i = 0; i < BOTS; i++) {
-    const s = emptyStats();
     const isSignedIn = random() < SIGNED_IN;
-    const bot = new Bot({
-      host: HOST,
-      protocol: args.https ? 'https' : 'http',
+    groups[i % workerCount]?.push({
       guestId: randomUUID(),
       ...(isSignedIn ? { token: await sign(randomUUID()) } : {}),
-      random,
-      stats: s,
     });
-    bots.push(bot);
-    stats.push(s);
-    void bot.start();
-    await sleep((RAMP_S * 1000) / BOTS);
   }
+  console.log(
+    `ramping ${BOTS} bots over ${RAMP_S} s on ${workerCount} threads (${Math.round(SIGNED_IN * 100)}% signed in)`,
+  );
+  const workers = groups.map(
+    (bots, i) =>
+      new Worker(new URL('./bot-worker.ts', import.meta.url), {
+        workerData: {
+          host: HOST,
+          protocol: args.https ? 'https' : 'http',
+          seed: Number(args.seed) + i + 1,
+          rampMs: RAMP_S * 1000,
+          bots,
+        } satisfies BotJob,
+      }),
+  );
+  const reply = (worker: Worker, type: WorkerReply['type']) =>
+    new Promise<WorkerReply>((resolve, reject) => {
+      const onMessage = (msg: WorkerReply) => {
+        if (msg.type !== type) return;
+        worker.off('message', onMessage);
+        resolve(msg);
+      };
+      worker.on('message', onMessage);
+      worker.once('error', reject);
+    });
+  await Promise.all(workers.map((w) => reply(w, 'ramped')));
   const steadyFrom = Date.now();
   console.log(`steady state for ${DURATION_S} s`);
-  for (const s of stats) {
-    s.snapTimes.length = 0; // measure intervals in steady state only
-    s.snapServerTimes.length = 0;
-  }
+  for (const w of workers) w.postMessage('steady');
   await sleep(DURATION_S * 1000);
+  const results = await Promise.all(
+    workers.map((w) => {
+      const done = reply(w, 'stats');
+      w.postMessage('stop');
+      return done;
+    }),
+  );
+  const stats: BotStats[] = [];
+  const shardList: string[] = [];
+  for (const r of results) {
+    if (r.type !== 'stats') continue;
+    stats.push(...r.stats);
+    shardList.push(...r.shards);
+  }
   const snapshot = merge(stats);
-  for (const bot of bots) bot.stop();
   await sleep(2000);
+  await Promise.all(workers.map((w) => w.terminate()));
   if (wrangler && metrics.length === 0) await readStoredLogs(startedAt);
   if (wrangler) stopTree(wrangler);
 
@@ -298,7 +332,7 @@ async function main(): Promise<void> {
   const steady = metrics.filter(
     (m) => m.at - m.periodS * 1000 >= steadyFrom - 5000 && m.players > 0,
   );
-  const shards = new Set(bots.map((b) => b.shard).filter(Boolean));
+  const shards = new Set(shardList);
   const perWindow = (pick: (m: ShardMetrics) => number) =>
     steady.reduce((sum, m) => sum + pick(m) / m.periodS, 0) /
     Math.max(1, new Set(steady.map((m) => Math.round(m.at / 60_000))).size);
