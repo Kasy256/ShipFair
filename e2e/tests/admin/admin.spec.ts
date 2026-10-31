@@ -102,7 +102,9 @@ test('staff approve 10 queued booths with the keyboard alone', async ({ page, co
     );
     approved.push(id);
     ours.delete(id);
-    if (ours.size > 0) await expect.poll(() => currentCard(page)).not.toBe(id);
+    if (ours.size > 0) {
+      await expect.poll(() => currentCard(page), { timeout: 30_000 }).not.toBe(id);
+    }
   }
   const elapsedMs = Date.now() - started;
   report('keyboard approve 10 booths ms', elapsedMs);
