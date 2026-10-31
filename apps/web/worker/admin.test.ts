@@ -11,6 +11,7 @@ import {
   resetStub,
   STAFF,
   seed,
+  stub,
   table,
   upload,
 } from './test/helpers.ts';
@@ -40,10 +41,13 @@ const ROUTES: [method: string, path: string, json?: unknown][] = [
 const call = (method: string, path: string, json: unknown, token?: string) =>
   api(path, { method, ...(token ? { token } : {}), ...(json === undefined ? {} : { json }) });
 
-/** A pending booth whose logo and screenshot wait under `pending/` in R2. */
-async function pendingBooth() {
-  const logo = await upload('owner-token', 'logo', fakeWebp(512, 512, 501));
-  const shot = await upload('owner-token', 'screenshot', fakeWebp(1280, 720, 502));
+/**
+ * A pending booth whose logo and screenshot wait under `pending/` in R2. R2 outlives a test, so
+ * a test that checks what is public passes its own `imageSeed`.
+ */
+async function pendingBooth(imageSeed = 501) {
+  const logo = await upload('owner-token', 'logo', fakeWebp(512, 512, imageSeed));
+  const shot = await upload('owner-token', 'screenshot', fakeWebp(1280, 720, imageSeed + 1));
   return {
     id: BOOTH,
     owner_id: OWNER,
@@ -157,6 +161,21 @@ describe('POST /api/admin/booths/:id/approve', () => {
     const res = await api(`/api/admin/booths/${BOOTH}/approve`, { token: 'staff-token', json: {} });
     expect(res.status).toBe(409);
     expect(await errorCode(res)).toBe('not_actionable');
+    expect(await realtimeCalls()).toEqual([]);
+  });
+
+  it('takes the media back if the approval fails', async () => {
+    await stub('/__mode', { method: 'POST', body: 'admin-action-down' });
+    const booth = await pendingBooth(601);
+    await seed({ booths: [booth] });
+    const res = await api(`/api/admin/booths/${BOOTH}/approve`, { token: 'staff-token', json: {} });
+    expect(res.status).toBe(503);
+    const media = (env as Env).MEDIA;
+    for (const key of [booth.logo_key, booth.media[0]?.key ?? '']) {
+      expect(await media.head(key)).toBeNull();
+      expect(await media.head(`pending/${key}`)).not.toBeNull();
+    }
+    expect((await table<{ status: string }>('booths'))[0]?.status).toBe('pending');
     expect(await realtimeCalls()).toEqual([]);
   });
 });

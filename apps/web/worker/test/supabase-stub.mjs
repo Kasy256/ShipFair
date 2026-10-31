@@ -1,7 +1,7 @@
 // Stands in for every outbound fetch of the web Worker in tests (miniflare `outboundService`):
 // Supabase (Auth, anon world reads, and a tiny in-memory PostgREST for the service role),
 // Turnstile's siteverify, and fake booth sites under *.site.test. `/__calls` counts REST reads,
-// `/__mode` makes them fail and resets the store, `/__seed` replaces service-role tables,
+// `/__mode` makes them fail (`fail`, or `admin-action-down` for that RPC alone) and resets the store, `/__seed` replaces service-role tables,
 // `/__table/<name>` reads one back.
 const owner = '00000000-0000-4000-8000-000000000001';
 const staff = '00000000-0000-4000-8000-000000000003';
@@ -261,6 +261,7 @@ export default {
       const table = url.pathname.replace('/rest/v1/', '');
       if (table in store) return postgrest(request, table, url);
       if (url.pathname === '/rest/v1/rpc/admin_action' && request.method === 'POST') {
+        if (mode === 'admin-action-down') return new Response('down', { status: 500 });
         return adminAction(await request.json());
       }
       if (url.pathname === '/rest/v1/rpc/delete_account' && request.method === 'POST') {

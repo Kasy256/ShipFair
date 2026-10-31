@@ -13,7 +13,7 @@ import * as z from 'zod';
 import type { Env } from '../env.ts';
 import { AppError } from '../errors.ts';
 import { forgetFlags } from '../flags.ts';
-import { publishMedia } from '../media-publish.ts';
+import { finishPublish, publishMedia, undoPublish } from '../media-publish.ts';
 import { type ServiceDb, serviceDb } from '../service.ts';
 import { bumpWorldVersion } from '../world.ts';
 import type { Staff } from './staff.ts';
@@ -112,14 +112,44 @@ export async function approveBooth(
   const db = serviceDb(ctx.env);
   const target = await reviewTarget(db, boothId);
   // Media first: a booth must never go live pointing at objects nobody can fetch.
-  if (target.kind === 'booth') {
-    const missingMedia = await publishMedia(ctx.env, mediaKeys(target.booth));
-    await adminAction(ctx, db, 'approve_booth', boothId, { missingMedia });
-  } else {
-    const missingMedia = await publishMedia(ctx.env, mediaKeys(target.revision));
-    await adminAction(ctx, db, 'approve_revision', target.revision.id, { missingMedia });
+  const published = await publishMedia(
+    ctx.env,
+    mediaKeys(target.kind === 'booth' ? target.booth : target.revision),
+  );
+  const payload = { missingMedia: published.missing };
+  try {
+    if (target.kind === 'booth') await adminAction(ctx, db, 'approve_booth', boothId, payload);
+    else await adminAction(ctx, db, 'approve_revision', target.revision.id, payload);
+  } catch (error) {
+    await unpublishUnused(ctx.env, db, boothId, published.copied);
+    throw error;
   }
+  await finishPublish(ctx.env, published);
   return { ok: true, worldVersion: await cityChanged(ctx.env, [boothId]) };
+}
+
+/**
+ * The approval failed, so the images it made public go private again. A key the booth shows now
+ * is kept: a second reviewer's approval of the same booth may have committed in the meantime.
+ */
+async function unpublishUnused(
+  env: Env,
+  db: ServiceDb,
+  boothId: string,
+  copied: readonly string[],
+): Promise<void> {
+  try {
+    const [booth] = z
+      .array(BoothRow)
+      .parse(await db.select('booths', { id: `eq.${boothId}` }, 'id,status,logo_key,media'));
+    const live = new Set(booth?.status === 'approved' ? mediaKeys(booth) : []);
+    await undoPublish(
+      env,
+      copied.filter((key) => !live.has(key)),
+    );
+  } catch (error) {
+    console.error('admin: could not take back media after a failed approval', error);
+  }
 }
 
 export async function rejectBooth(
