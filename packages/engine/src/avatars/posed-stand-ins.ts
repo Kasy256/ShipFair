@@ -4,19 +4,16 @@ import {
   type BufferGeometry,
   CapsuleGeometry,
   DynamicDrawUsage,
-  Euler,
   Float32BufferAttribute,
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
-  Matrix4,
   MeshStandardMaterial,
-  Quaternion,
   SphereGeometry,
-  Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { STAND_IN_CHUNK } from '../config.ts';
+import { createMat, type Mat, setChild, setRoot, writeMat } from './limb-matrix.ts';
 import type { Pose } from './pose.ts';
 
 // Far remote players (ARCHITECTURE.md §4): the prototype's instanced crowd figure, one
@@ -120,22 +117,19 @@ function createMaterial(): MeshStandardMaterial {
   return material;
 }
 
-const root = new Matrix4();
-const local = new Matrix4();
-const rot = new Matrix4();
-const out = new Matrix4();
-const thigh = new Matrix4();
-const q = new Quaternion();
-const e = new Euler();
-const v = new Vector3();
-const one = new Vector3(1, 1, 1);
-const UP = new Vector3(0, 1, 0);
+const root = createMat();
+const out = createMat();
+const thigh = createMat();
 /** The prototype figure's hip height; the pose's hipsY is relative to the procedural rig. */
 const HIP_OFFSET_M = -0.05;
 
 interface PartMesh {
   readonly mesh: InstancedMesh;
   readonly fade: InstancedBufferAttribute;
+  /** The mesh's instance matrix, colour and fade arrays, written directly each frame. */
+  readonly matrices: Float32Array;
+  readonly colors: Float32Array;
+  readonly fades: Float32Array;
   readonly per: number;
   readonly tint: number;
 }
@@ -201,35 +195,24 @@ export class PosedStandIns {
     if (i >= this.#capacity || fade <= 0) return;
     this.#count++;
     const p = this.#parts;
-    root.compose(v.set(x, y, z), q.setFromAxisAngle(UP, yaw), one);
+    setRoot(root, x, y, z, yaw);
     const hipY = pose.hipsY + HIP_OFFSET_M;
     const lean = pose.chestLean;
-    local.makeTranslation(0, hipY + 0.3, 0);
-    out.multiplyMatrices(root, local).multiply(rot.makeRotationX(lean));
+    setChild(out, root, 0, hipY + 0.3, 0, lean, 0);
     this.#put(p.torso, i, 0, out, tints, fade);
-    local.makeTranslation(0, hipY + 0.71, lean * 0.45);
-    out.multiplyMatrices(root, local);
+    setChild(out, root, 0, hipY + 0.71, lean * 0.45, 0, 0);
     this.#put(p.head, i, 0, out, tints, fade);
     this.#put(p.hair, i, 0, out, tints, fade);
     for (let s = 0; s < 2; s++) {
-      const side = s === 0 ? 1 : -1;
-      local.makeTranslation(side * 0.215, hipY + 0.5, lean * 0.3);
-      e.set(
-        s === 0 ? pose.shoulderX0 : pose.shoulderX1,
-        0,
-        s === 0 ? pose.shoulderZ0 : pose.shoulderZ1,
-      );
-      out.multiplyMatrices(root, local).multiply(rot.makeRotationFromEuler(e));
+      const isFirst = s === 0;
+      const side = isFirst ? 1 : -1;
+      const shoulderX = isFirst ? pose.shoulderX0 : pose.shoulderX1;
+      const shoulderZ = isFirst ? pose.shoulderZ0 : pose.shoulderZ1;
+      setChild(out, root, side * 0.215, hipY + 0.5, lean * 0.3, shoulderX, shoulderZ);
       this.#put(p.arm, i, s, out, tints, fade);
-      local.makeTranslation(side * 0.095, hipY, 0);
-      thigh
-        .multiplyMatrices(root, local)
-        .multiply(rot.makeRotationX(s === 0 ? pose.hip0 : pose.hip1));
+      setChild(thigh, root, side * 0.095, hipY, 0, isFirst ? pose.hip0 : pose.hip1, 0);
       this.#put(p.thigh, i, s, thigh, tints, fade);
-      local.makeTranslation(0, -0.45, 0);
-      out
-        .multiplyMatrices(thigh, local)
-        .multiply(rot.makeRotationX(s === 0 ? pose.knee0 : pose.knee1));
+      setChild(out, thigh, 0, -0.45, 0, isFirst ? pose.knee0 : pose.knee1, 0);
       this.#put(p.shin, i, s, out, tints, fade);
     }
   }
@@ -256,19 +239,17 @@ export class PosedStandIns {
     part: PartMesh,
     player: number,
     side: number,
-    matrix: Matrix4,
+    matrix: Mat,
     tints: Float32Array,
     fade: number,
   ) {
     const slot = player * part.per + side;
-    part.mesh.setMatrixAt(slot, matrix);
-    const colors = part.mesh.instanceColor?.array;
-    if (colors) {
-      colors[slot * 3] = tints[part.tint] ?? 1;
-      colors[slot * 3 + 1] = tints[part.tint + 1] ?? 1;
-      colors[slot * 3 + 2] = tints[part.tint + 2] ?? 1;
-    }
-    part.fade.setX(slot, fade);
+    writeMat(part.matrices, slot, matrix);
+    const colors = part.colors;
+    colors[slot * 3] = tints[part.tint] ?? 1;
+    colors[slot * 3 + 1] = tints[part.tint + 1] ?? 1;
+    colors[slot * 3 + 2] = tints[part.tint + 2] ?? 1;
+    part.fades[slot] = fade;
   }
 
   #build(capacity: number): Record<Part, PartMesh> {
@@ -295,7 +276,15 @@ export class PosedStandIns {
       mesh.receiveShadow = true;
       mesh.frustumCulled = false; // instances span the whole crowd
       this.root.add(mesh);
-      parts[name] = { mesh, fade, per, tint: TINT_OF[name] };
+      parts[name] = {
+        mesh,
+        fade,
+        matrices: mesh.instanceMatrix.array as Float32Array,
+        colors: mesh.instanceColor.array as Float32Array,
+        fades: fade.array as Float32Array,
+        per,
+        tint: TINT_OF[name],
+      };
     }
     return parts;
   }

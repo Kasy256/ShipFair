@@ -269,7 +269,11 @@ export class RemotePlayers implements System, RemoteSink {
       this.#evaluate();
     }
     const clock = this.#opts.clock;
-    const renderT = clock.serverNow(this.#now()) - INTERP_DELAY_MS;
+    // Before the first snapshot there is no clock, but then every buffer holds only its join
+    // summary, so sampling "the end" holds it. Computed once, not per player (see net-allocations).
+    const renderT = clock.isReady
+      ? clock.serverNow(this.#now()) - INTERP_DELAY_MS
+      : Number.POSITIVE_INFINITY;
     const v = this.#opts.viewer;
     const fadeStep = dt / JOIN_FADE_S;
     this.#standIns.begin();
@@ -283,7 +287,7 @@ export class RemotePlayers implements System, RemoteSink {
         continue;
       }
       const s = r.sample;
-      r.buffer.sample(clock.isReady ? renderT : r.buffer.newest, s);
+      r.buffer.sample(renderT, s);
       if (r.emote >= 0) {
         r.emoteS += dt;
         const isDone = !isLoopingEmote(r.emote) && r.emoteS > STAND_IN_EMOTE_S;
