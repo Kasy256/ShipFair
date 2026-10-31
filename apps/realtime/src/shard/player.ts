@@ -1,5 +1,5 @@
 import {
-  type AvatarStyle,
+  type AvatarStyleV2,
   type BucketState,
   CHAT_BURST,
   CHAT_INTERVAL_S,
@@ -34,7 +34,7 @@ export interface PlayerState {
   readonly uid?: string;
   /** Profile id or guest id: who a booth visit belongs to. */
   readonly key: string;
-  readonly avatar: AvatarStyle;
+  readonly avatar: AvatarStyleV2;
   /** Account creation (epoch ms); 0 for guests. */
   readonly createdMs: number;
   /** Last accepted position (cm), yaw (uint16) and anim id. */

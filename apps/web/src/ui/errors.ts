@@ -1,3 +1,4 @@
+import type { NetNoticeCode } from '@shipfair/shared';
 import { BoothApiError, type BoothErrorCode } from '../lib/booth-api.ts';
 import { ImageError } from '../lib/images.ts';
 import { ProfileError, type ProfileErrorCode } from '../lib/profile-api.ts';
@@ -100,4 +101,22 @@ export function boothErrorText(error: unknown): string {
     return BOOTH_ERRORS[error.code];
   }
   return BOOTH_ERRORS.network;
+}
+
+/** Multiplayer notices (prompt 11). The world stays explorable after every one of them. */
+export function netNoticeText(code: NetNoticeCode, until: number | null): string {
+  switch (code) {
+    case 'update_required':
+      return 'A new version of ShipFair is out. Refresh to see other visitors again.';
+    case 'banned':
+      return "This account is banned, so other visitors can't see you. You can still look around.";
+    case 'kicked':
+      return 'You were disconnected from other visitors. Refresh to rejoin.';
+    case 'muted': {
+      const time = until
+        ? new Date(until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : null;
+      return time ? `Chat is paused for you until ${time}.` : 'Chat is paused for you for now.';
+    }
+  }
 }

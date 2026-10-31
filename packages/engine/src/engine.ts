@@ -6,15 +6,15 @@ import {
   type EngineEvents,
   type Handler,
 } from '@shipfair/shared';
-import { Art } from './art.ts';
 import { AudioHub } from './audio/audio-hub.ts';
-import { GltfAvatar } from './avatars/gltf-avatar.ts';
+import { type ArtHost, loadArt } from './boot-art.ts';
 import { Loop } from './core/loop.ts';
 import { PerfOverlay } from './debug/perf-overlay.ts';
 import { PhysicsWireframe } from './debug/physics-wireframe.ts';
-import { StressScene } from './debug/stress.ts';
 import { type InputAction, InputManager } from './input/manager.ts';
 import type { JoystickView } from './input/touch.ts';
+import type { NetConnectOptions } from './net/client.ts';
+import { Multiplayer } from './net/multiplayer.ts';
 import { initPhysics, PhysicsWorld } from './physics/world.ts';
 import { PlayerSystem } from './player/player-system.ts';
 import { PerfSystem } from './quality/perf-system.ts';
@@ -33,14 +33,6 @@ import { Environment } from './world/environment.ts';
 import { type BuiltLevel, buildTestLevel } from './world/test-level.ts';
 import { type TestLevelLayout, testLevelLayout } from './world/test-level-layout.ts';
 
-/** Art arrives after `start()`; until then (or without it) placeholders are used. */
-export interface ArtHost {
-  art: Art | null;
-  stress: StressScene | null;
-  /** Resolves once art has loaded and the local avatar is swapped (null if art failed). */
-  ready: Promise<Art | null>;
-}
-
 /** Everything that exists between `start()` and `dispose()`. */
 interface Runtime {
   art: ArtHost;
@@ -56,6 +48,7 @@ interface Runtime {
   layout: TestLevelLayout | null;
   player: PlayerSystem;
   perf: PerfSystem;
+  multiplayer: Multiplayer;
 }
 
 /** Public surface of the 3D runtime (ARCHITECTURE.md §3). */
@@ -73,6 +66,8 @@ export class Engine {
   #playerName: string;
   #isReducedMotion: boolean;
   #isDisposed = false;
+  /** A `connect()` made before `start()` finished; applied once the runtime exists. */
+  #net: NetConnectOptions | null = null;
 
   constructor(options: EngineOptions) {
     this.#options = options;
@@ -158,7 +153,17 @@ export class Engine {
     const perf = loop.add(
       new PerfSystem(loop, renderer, options.bus, this.#quality, onBenchmarkTier),
     );
-    perf.textureBytes = () => city?.textureBytes ?? 0;
+    const multiplayer = new Multiplayer({
+      loop,
+      bus: options.bus,
+      scene: renderer.scene,
+      player,
+      city,
+      viewer: player.camera.camera.position,
+      tier: this.#quality,
+      avatar: () => this.#style,
+    });
+    perf.textureBytes = () => (city?.textureBytes ?? 0) + multiplayer.remotes.textureBytes;
     loop.add({
       update: (dt) => environment.follow(player.renderPosition, dt),
       dispose() {},
@@ -191,8 +196,18 @@ export class Engine {
       layout,
       player,
       perf,
+      multiplayer,
     };
-    art.ready = this.#loadArt(art, renderer, physics, player);
+    art.ready = loadArt(art, {
+      bus: options.bus,
+      renderer,
+      physics,
+      player,
+      runtime: () => this.#runtime,
+      tier: () => this.#quality,
+      style: () => this.#style,
+    });
+    if (this.#net) multiplayer.connect(this.#net);
     input.setEnabled(this.#isInputEnabled);
     this.#listen();
     loop.advance(0);
@@ -284,6 +299,22 @@ export class Engine {
     this.#runtime?.player.setStyle(player.style);
   }
 
+  /**
+   * Joins the realtime world (the coordinator picks a shard, or `options.shard` for a friend's
+   * link). Calling it again reconnects, e.g. after signing in. Connection trouble never stops
+   * exploring: the status goes out on `net:status` and the client keeps retrying.
+   */
+  connect(options: NetConnectOptions): void {
+    this.#net = options;
+    this.#runtime?.multiplayer.connect(options);
+  }
+
+  /** Leaves the realtime world; remote players fade out and the city stays explorable. */
+  disconnect(): void {
+    this.#net = null;
+    this.#runtime?.multiplayer.client.disconnect();
+  }
+
   setInputEnabled(enabled: boolean): void {
     this.#isInputEnabled = enabled;
     this.#runtime?.input.setEnabled(enabled);
@@ -294,6 +325,7 @@ export class Engine {
     this.#runtime?.perf.setTier(tier);
     this.#runtime?.environment.setTier(tier);
     this.#runtime?.city?.setTier(tier);
+    this.#runtime?.multiplayer.setTier(tier);
   }
 
   dispose(): void {
@@ -321,50 +353,6 @@ export class Engine {
     }
   }
 
-  /**
-   * Loads built art in the background. The procedural avatar stays until a real body and its
-   * clips are ready; any failure keeps the placeholders (each piece reports `asset:missing`).
-   */
-  async #loadArt(
-    host: ArtHost,
-    renderer: Renderer,
-    physics: PhysicsWorld,
-    player: PlayerSystem,
-  ): Promise<Art | null> {
-    try {
-      const art = await Art.load(this.#options.bus, renderer.renderer);
-      if (this.#isDisposed) {
-        art.dispose();
-        return null;
-      }
-      host.art = art;
-      this.#runtime?.city?.attachArt(art);
-      host.stress = new StressScene(
-        art,
-        renderer.scene,
-        physics,
-        player.camera.camera.position,
-        () => this.#quality,
-      );
-      const factory = art.factory;
-      const style = this.#style;
-      if (factory && art.canBuildCharacters(`body_${style.body}`)) {
-        const avatar = await GltfAvatar.create(factory, art.animations, style, 0);
-        // After dispose the art (and so this avatar's geometry) is already released.
-        if (this.#isDisposed) avatar.dispose();
-        else {
-          player.setAvatar(avatar);
-          // setLocalPlayer may have run while the character was building.
-          if (this.#style !== style) avatar.setStyle(this.#style);
-        }
-      }
-      return art;
-    } catch (error) {
-      console.error('Art failed to load; the game keeps its placeholders.', error);
-      return null;
-    }
-  }
-
   #reportFrame(player: PlayerSystem): void {
     const listener = this.#onFrame;
     if (!listener) return;
@@ -388,7 +376,7 @@ export class Engine {
     };
     on('input:enabled', ({ enabled }) => this.setInputEnabled(enabled));
     on('quality:set', ({ tier }) => this.setQuality(tier));
-    on('emote', ({ e }) => this.#runtime?.player.avatar.playEmote(e));
+    on('emote', ({ e }) => this.#runtime?.player.emote(e));
     on('teleport', (to) => this.teleport(to));
   }
 }

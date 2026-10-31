@@ -12,6 +12,8 @@ export interface InputState {
   jump: boolean;
   interact: boolean;
   wave: boolean;
+  /** An emote id pressed (keys 1–6, see EMOTE_CLIPS), or −1. Cleared like the presses above. */
+  emote: number;
   /** Camera deltas in radians, summed since the camera last consumed them. */
   lookYaw: number;
   lookPitch: number;
@@ -27,6 +29,7 @@ export function createInputState(): InputState {
     jump: false,
     interact: false,
     wave: false,
+    emote: -1,
     lookYaw: 0,
     lookPitch: 0,
     zoom: 0,
@@ -40,6 +43,7 @@ export function resetInputState(state: InputState): void {
   state.jump = false;
   state.interact = false;
   state.wave = false;
+  state.emote = -1;
   state.lookYaw = 0;
   state.lookPitch = 0;
   state.zoom = 0;

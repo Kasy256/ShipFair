@@ -4,11 +4,13 @@ import { useSession } from '../state/session-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
 import { useWorldStore } from '../state/world-store.ts';
 import { zoneName } from './districts.ts';
+import { InviteButton } from './InviteButton.tsx';
+import { NetPill } from './NetPill.tsx';
 
 /**
- * Top-left: brand, the current district and the live visitor count (a placeholder until the
- * realtime client lands in prompt 11). Top-right: the visitor (sign in, or the handle linking to
- * /me), "Claim a booth" (/submit, or sign-in first), the avatar editor, map and help.
+ * Top-left: brand, the current district, the connection pill and live visitor counts.
+ * Top-right: the visitor (sign in, or the handle linking to /me), "Claim a booth" (/submit, or
+ * sign-in first), invite a friend, the avatar editor, map and help.
  */
 export function Hud() {
   const zone = useWorldStore((s) => zoneName(s.currentDistrictId, s.districtsById));
@@ -32,13 +34,7 @@ export function Hud() {
         <p className="mt-1 font-semibold text-sm" data-testid="hud-district">
           {zone}
         </p>
-        <p className="text-muted text-xs">
-          <span
-            aria-hidden="true"
-            className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400"
-          />
-          <span title="Live visitor counts arrive with multiplayer">— online</span>
-        </p>
+        <NetPill />
         {session.isGuest && session.status !== 'loading' && (
           <p className="text-muted text-xs" data-testid="hud-name">
             You're {session.name}
@@ -73,6 +69,7 @@ export function Hud() {
         >
           Claim a booth
         </button>
+        <InviteButton className={button} />
         <button type="button" className={button} onClick={() => setAvatarOpen(true)}>
           Avatar
         </button>

@@ -7,6 +7,7 @@ import {
   guestName,
   isProtocolSupported,
   MIN_CLIENT_PROTOCOL,
+  migrateAvatarStyle,
   type Notice,
   nearestBooth,
   type PlayerRecord,
@@ -338,8 +339,8 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       isGuest: identity.isGuest,
       ...(identity.uid === undefined ? {} : { uid: identity.uid }),
       key: identity.key,
-      // Protocol v1 carries the v1 look from `hello`; stored v2 styles travel from protocol v2.
-      avatar: msg.avatar,
+      // Protocol v2 sends the v2 look; a v1 client's flat tints are migrated to the nearest v2.
+      avatar: migrateAvatarStyle(msg.avatar),
       createdMs: identity.createdMs,
       p: [toNetPos(spawn.x), 0, toNetPos(spawn.z)],
       r: toNetYaw(spawn.yaw),
@@ -802,5 +803,11 @@ function refusedKicked(message: string): Identity {
 
 /** An attachment is a deserialised copy; give the room its own mutable state. */
 function restore(state: PlayerState): PlayerState {
-  return { ...state, p: [state.p[0], state.p[1], state.p[2]], strikes: [...state.strikes] };
+  return {
+    ...state,
+    // Attachments saved by the protocol-v1 build hold a v1 look.
+    avatar: migrateAvatarStyle(state.avatar),
+    p: [state.p[0], state.p[1], state.p[2]],
+    strikes: [...state.strikes],
+  };
 }

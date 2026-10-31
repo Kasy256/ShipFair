@@ -1,6 +1,10 @@
 import type { Engine, JoystickView } from '@shipfair/engine';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { isCoarsePointer } from '../lib/device.ts';
+import { EmoteMenu } from './EmoteMenu.tsx';
+
+/** Holding the Use button this long opens the emote wheel instead of interacting. */
+const LONG_PRESS_MS = 450;
 
 interface TouchControlsProps {
   engine: Engine;
@@ -9,11 +13,29 @@ interface TouchControlsProps {
 /**
  * On-screen controls for touch screens: the floating joystick's ring and knob (the engine reads
  * the finger; this only draws it) plus jump and interact buttons. The joystick is positioned
- * through refs, so moving a finger never re-renders React.
+ * through refs, so moving a finger never re-renders React. Holding Use opens the emote wheel.
  */
 export function TouchControls({ engine }: TouchControlsProps) {
   const ringRef = useRef<HTMLDivElement>(null);
   const knobRef = useRef<HTMLDivElement>(null);
+  const holdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isEmoteOpen, setEmoteOpen] = useState(false);
+  const closeEmotes = useCallback(() => setEmoteOpen(false), []);
+
+  // A tap uses (on release); a hold opens the emotes instead.
+  const onUseDown = () => {
+    holdRef.current = setTimeout(() => {
+      holdRef.current = null;
+      setEmoteOpen(true);
+    }, LONG_PRESS_MS);
+  };
+  const onUseUp = () => {
+    if (holdRef.current === null) return;
+    clearTimeout(holdRef.current);
+    holdRef.current = null;
+    engine.press('interact');
+  };
+  useEffect(() => () => clearTimeout(holdRef.current ?? undefined), []);
 
   useEffect(() => {
     const draw = (view: Readonly<JoystickView>) => {
@@ -50,11 +72,17 @@ export function TouchControls({ engine }: TouchControlsProps) {
         data-testid="joystick-knob"
         className="absolute top-0 left-0 hidden h-12 w-12 rounded-full bg-paper/60"
       />
+      {isEmoteOpen && <EmoteMenu onClose={closeEmotes} />}
       <div className="absolute right-6 bottom-8 flex flex-col items-end gap-4">
         <button
           type="button"
           className={button}
-          onPointerDown={() => engine.press('interact')}
+          aria-haspopup="menu"
+          aria-expanded={isEmoteOpen}
+          onPointerDown={onUseDown}
+          onPointerUp={onUseUp}
+          onPointerCancel={() => clearTimeout(holdRef.current ?? undefined)}
+          onContextMenu={(e) => e.preventDefault()}
           onClick={(e) => e.detail === 0 && engine.press('interact')}
         >
           Use
