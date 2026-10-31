@@ -42,8 +42,9 @@ select gen_random_uuid(), u.id, u.id::text, 'email',
 from auth.users as u
 where u.email in ('maker1@example.com', 'maker2@example.com', 'admin@example.com');
 
+-- Already onboarded, so signing in as one of them goes straight to the city (or /admin).
 update public.profiles as p
-set handle = v.handle, role = v.role
+set handle = v.handle, role = v.role, onboarded_at = now()
 from (values
   ('00000000-0000-4000-8000-000000000001'::uuid, 'maker1', 'user'),
   ('00000000-0000-4000-8000-000000000002'::uuid, 'maker2', 'user'),
