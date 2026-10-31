@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { adminCall, type Staff } from '../admin/admin-helpers.ts';
 import {
   createTestUser,
   finishOnboarding,
@@ -11,8 +12,8 @@ import {
 import { stripedPng } from '../engine/city-helpers.ts';
 
 // Prompt 08 e2e: a maker fills /submit for real (images go through the browser pipeline, the
-// sign endpoint and the dev upload route into local R2). Staff decisions use the development
-// helpers (`/api/dev/booths/:id/approve|reject`) with the local service-role key, until /admin.
+// sign endpoint and the dev upload route into local R2). Staff decisions go through the admin
+// API as a test staff account.
 
 export interface Maker extends TestUser {
   handle: string;
@@ -122,18 +123,21 @@ export async function boothsOf(ownerId: string): Promise<BoothRow[]> {
   return (await res.json()) as BoothRow[];
 }
 
-/** The development stand-in for a moderator's decision (worker/dev.ts). */
-export async function decide(
+/** A moderator's decision through the admin API (the queue UI itself is tested in admin/). */
+export function decide(
   page: Page,
+  staff: Staff,
   boothId: string,
   decision: 'approve' | 'reject',
-  reason?: string,
+  reject: { reason: string; note?: string } = { reason: 'other', note: 'Rejected by the tests' },
 ): Promise<void> {
-  const res = await page.request.post(`/api/dev/booths/${boothId}/${decision}`, {
-    headers: { authorization: `Bearer ${localSupabase().serviceKey}` },
-    data: reason ? { reason } : {},
-  });
-  expect(res.status(), await res.text()).toBe(200);
+  return adminCall(
+    page.request,
+    staff,
+    'POST',
+    `/api/admin/booths/${boothId}/${decision}`,
+    decision === 'reject' ? reject : {},
+  );
 }
 
 export function median(values: number[]): number {

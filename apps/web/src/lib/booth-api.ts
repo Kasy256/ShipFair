@@ -6,6 +6,7 @@ import {
   type BoothRevisionInput,
   boothSlugBase,
   type District,
+  SubmissionsStatus,
   SubmitBoothResponse,
   SubmitRevisionResponse,
   type UploadKind,
@@ -37,6 +38,7 @@ export type BoothErrorCode =
   | 'media_invalid'
   | 'upload_invalid'
   | 'unavailable'
+  | 'submissions_paused'
   | 'booth_limit'
   | 'no_permission'
   | 'network';
@@ -68,6 +70,7 @@ const KNOWN_CODES = new Set<string>([
   'media_invalid',
   'upload_invalid',
   'unavailable',
+  'submissions_paused',
 ] satisfies BoothErrorCode[]);
 
 async function postApi<T>(
@@ -223,6 +226,17 @@ export async function fetchMyBooths(client: Supabase, userId: string): Promise<B
     .array(z.looseObject({ id: z.string() }))
     .parse(booths.data)
     .map((row) => boothOwnFromRow(row, revisionRows.find((r) => r.booth_id === row.id) ?? null));
+}
+
+/** Whether staff have paused submissions (`SUBMISSIONS_OPEN`); open if the check fails. */
+export async function fetchSubmissionsOpen(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/submissions/status');
+    const status = SubmissionsStatus.safeParse(await res.json());
+    return status.success ? status.data.isOpen : true;
+  } catch {
+    return true; // the submit call says so if it really is paused
+  }
 }
 
 /** Districts for the form's picker, in city order (public read). */

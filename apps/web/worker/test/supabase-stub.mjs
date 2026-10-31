@@ -1,9 +1,10 @@
 // Stands in for every outbound fetch of the web Worker in tests (miniflare `outboundService`):
 // Supabase (Auth, anon world reads, and a tiny in-memory PostgREST for the service role),
 // Turnstile's siteverify, and fake booth sites under *.site.test. `/__calls` counts REST reads,
-// `/__mode` makes them fail and resets the store, `/__seed` replaces service-role tables,
+// `/__mode` makes them fail (`fail`, or `admin-action-down` for that RPC alone) and resets the store, `/__seed` replaces service-role tables,
 // `/__table/<name>` reads one back.
 const owner = '00000000-0000-4000-8000-000000000001';
+const staff = '00000000-0000-4000-8000-000000000003';
 const districts = [
   {
     id: 1,
@@ -60,20 +61,99 @@ const profiles = [
   { id: owner, handle: 'maker1', display_name: 'Maker One', links: { github: 'maker1' } },
 ];
 
-// Service-role tables (the in-memory PostgREST). Profiles carry created_at for the age check.
+// Service-role tables (the in-memory PostgREST). Profiles carry created_at for the age check
+// and role for the staff check. Flags start as seed.sql has them locally.
 const defaultStore = () => ({
   profiles: [
-    { id: owner, handle: 'maker1', created_at: '2026-01-01T00:00:00+00:00' },
+    {
+      id: owner,
+      handle: 'maker1',
+      display_name: 'Maker One',
+      role: 'user',
+      created_at: '2026-01-01T00:00:00+00:00',
+    },
     {
       id: '00000000-0000-4000-8000-000000000002',
       handle: 'newbie',
+      display_name: 'Newbie',
+      role: 'user',
       created_at: new Date().toISOString(),
+    },
+    {
+      id: staff,
+      handle: 'staffer',
+      display_name: 'Staffer',
+      role: 'admin',
+      created_at: '2025-06-01T00:00:00+00:00',
     },
   ],
   booths: [],
   booth_revisions: [],
   moderation_log: [],
+  bans: [],
+  reports: [],
+  guestbook_entries: [],
+  flags: [{ key: 'MIN_ACCOUNT_AGE_MINUTES', value: 0, updated_at: '2026-10-30T00:00:00+00:00' }],
+  admin_review_queue: [],
+  admin_report_targets: [],
 });
+
+// A small stand-in for `admin_action` (supabase/migrations/…_admin_moderation.sql): the staff
+// check, the state changes the Worker tests look at, and the moderation_log row.
+const LOG_NAMES = { approve_booth: 'approve', reject_booth: 'reject' };
+const LOG_TARGETS = {
+  approve_booth: 'booth',
+  reject_booth: 'booth',
+  approve_revision: 'booth_revision',
+  reject_revision: 'booth_revision',
+  hide_booth: 'booth',
+  hide_guestbook: 'guestbook',
+  ban: 'user',
+  unban: 'user',
+  report_status: 'report',
+  set_flag: 'flag',
+};
+
+function adminAction({ actor, action, target_id: targetId, payload = {} }) {
+  const fail = (hint, message) => Response.json({ code: 'P0001', hint, message }, { status: 400 });
+  const me = store.profiles.find((p) => p.id === actor && p.role !== 'user');
+  if (!me) return fail('forbidden', 'only staff can moderate');
+  const booth = store.booths.find((b) => b.id === targetId);
+  let result = {};
+  if (action === 'approve_booth' || action === 'reject_booth') {
+    if (booth?.status !== 'pending') return fail('not_actionable', 'booth is not pending');
+    if (action === 'approve_booth') {
+      Object.assign(booth, { status: 'approved', approved_at: new Date().toISOString() });
+      result = { boothId: targetId };
+    } else Object.assign(booth, { status: 'rejected', reject_reason: payload.reasonText });
+  } else if (action === 'approve_revision') {
+    const rev = store.booth_revisions.find((r) => r.id === targetId && r.status === 'pending');
+    if (!rev) return fail('not_actionable', 'revision is not pending');
+    const live = store.booths.find((b) => b.id === rev.booth_id);
+    Object.assign(live, { tagline: rev.tagline, url: rev.url, logo_key: rev.logo_key });
+    rev.status = 'approved';
+    result = { boothId: rev.booth_id };
+  } else if (action === 'ban') {
+    if (store.profiles.find((p) => p.id === targetId)?.role !== 'user') {
+      return fail('not_actionable', 'staff accounts cannot be banned');
+    }
+    store.bans.push({ user_id: targetId, reason: payload.reason, until: payload.until });
+  } else if (action === 'set_flag') {
+    store.flags = store.flags.filter((f) => f.key !== targetId);
+    store.flags.push({ key: targetId, value: payload.value, updated_by: actor });
+  }
+  store.moderation_log.push({
+    id: store.moderation_log.length + 1,
+    actor_id: actor,
+    actor_handle: me.handle,
+    action: LOG_NAMES[action] ?? action,
+    target_type: LOG_TARGETS[action],
+    target_id: targetId,
+    detail: { ...payload, ...result },
+    created_at: new Date().toISOString(),
+  });
+  return Response.json(result);
+}
 let store = defaultStore();
 
 const matches = (row, params) => {
@@ -143,6 +223,7 @@ const TOKENS = {
   'owner-token': owner,
   'newbie-token': '00000000-0000-4000-8000-000000000002',
   'ghost-token': '00000000-0000-4000-8000-0000000000aa',
+  'staff-token': staff,
 };
 const SERVICE_KEY = 'test-service-key';
 
@@ -179,6 +260,10 @@ export default {
     if (apikey === SERVICE_KEY) {
       const table = url.pathname.replace('/rest/v1/', '');
       if (table in store) return postgrest(request, table, url);
+      if (url.pathname === '/rest/v1/rpc/admin_action' && request.method === 'POST') {
+        if (mode === 'admin-action-down') return new Response('down', { status: 500 });
+        return adminAction(await request.json());
+      }
       if (url.pathname === '/rest/v1/rpc/delete_account' && request.method === 'POST') {
         const { uid } = await request.json();
         deleted.push(uid);

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { deleteStaff, newStaff, type Staff } from '../admin/admin-helpers.ts';
 import { deleteTestUser } from '../auth/auth-helpers.ts';
 import { DT, report } from '../engine/helpers.ts';
 import { openCity } from '../shell/shell-helpers.ts';
@@ -16,13 +17,19 @@ import {
 
 const formTimes: number[] = [];
 let makers: Maker[] = [];
+let staff: Staff;
+
+test.beforeAll(async () => {
+  staff = await newStaff();
+});
 
 test.afterEach(async () => {
   for (const maker of makers) await deleteTestUser(maker.id);
   makers = [];
 });
 
-test.afterAll(() => {
+test.afterAll(async () => {
+  await deleteStaff(staff);
   if (formTimes.length > 0) {
     console.log(
       `METRIC submit form :: median form ms = ${median(formTimes)} of ${formTimes.join(', ')}`,
@@ -58,7 +65,7 @@ test('a maker submits a booth, it is approved, and its logo shows in the city', 
   if (!booth) throw new Error('no booth row');
   const privateRes = await page.request.get(`/${booth.logo_key}`);
   expect(privateRes.status(), 'unreviewed media is not served').toBe(404);
-  await decide(page, booth.id, 'approve');
+  await decide(page, staff, booth.id, 'approve');
   const publicRes = await page.request.get(`/${booth.logo_key}`);
   expect(publicRes.status()).toBe(200);
   expect(publicRes.headers()['content-type']).toBe('image/webp');
@@ -98,7 +105,10 @@ test('a rejected booth shows "Changes needed" with the reason, and resubmits', a
   report('form ms', filled.formMs);
   const [booth] = await boothsOf(maker.id);
   if (!booth) throw new Error('no booth row');
-  await decide(page, booth.id, 'reject', 'Broken link: the page did not load');
+  await decide(page, staff, booth.id, 'reject', {
+    reason: 'broken_link',
+    note: 'the page did not load',
+  });
 
   await page.goto('/me');
   const row = page.getByTestId('my-booth').filter({ hasText: filled.name });

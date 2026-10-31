@@ -71,6 +71,14 @@ export const URL_CHECK_TIMEOUT_MS = 5000;
 export const URL_CHECK_MAX_REDIRECTS = 3;
 export const DRAFT_AUTOSAVE_MS = 5000;
 
+// Staff tools (prompt 09, TRUST_AND_SAFETY.md "Staff tools")
+export const REJECT_NOTE_MAX_CHARS = 300;
+export const BAN_REASON_MAX_CHARS = 300;
+export const FLAG_MINUTES_MAX = 7 * 24 * 60; // a week; minute-valued feature flags stop here
+export const FLAG_CACHE_S = 30; // the web Worker re-reads flags at most this often
+export const ADMIN_PAGE_SIZE = 20; // rows per page on /api/admin list endpoints
+export const ADMIN_SEARCH_MAX_CHARS = 20; // handle search
+
 // World snapshot edge cache (INFRASTRUCTURE.md §6)
 export const WORLD_CACHE_MAX_AGE_S = 30;
 export const WORLD_CACHE_STALE_S = 300; // stale-while-revalidate window after max-age

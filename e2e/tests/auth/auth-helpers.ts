@@ -19,6 +19,7 @@ function readVars(relative: string): Record<string, string> {
 
 interface Supabase {
   url: string;
+  anonKey: string;
   serviceKey: string;
 }
 
@@ -26,11 +27,26 @@ let cached: Supabase | undefined;
 
 export function localSupabase(): Supabase {
   if (cached) return cached;
-  const url = readVars('.env.development.local').VITE_SUPABASE_URL;
+  const { VITE_SUPABASE_URL: url, VITE_SUPABASE_ANON_KEY: anonKey } =
+    readVars('.env.development.local');
   const serviceKey = readVars('.dev.vars').SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) throw new Error('Run `pnpm db:start` first (it writes the local keys)');
-  cached = { url, serviceKey };
+  if (!url || !anonKey || !serviceKey) {
+    throw new Error('Run `pnpm db:start` first (it writes the local keys)');
+  }
+  cached = { url, anonKey, serviceKey };
   return cached;
+}
+
+/** A Supabase access token for a test user (password grant, local only), for `/api` calls. */
+export async function accessTokenFor(user: TestUser): Promise<string> {
+  const { url, anonKey } = localSupabase();
+  const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: anonKey, 'content-type': 'application/json' },
+    body: JSON.stringify({ email: user.email, password: user.password }),
+  });
+  expect(res.status, await res.clone().text()).toBe(200);
+  return ((await res.json()) as { access_token: string }).access_token;
 }
 
 export function serviceHeaders(): Record<string, string> {
