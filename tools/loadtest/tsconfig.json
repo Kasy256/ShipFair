@@ -1,0 +1,10 @@
+{
+  "extends": "@shipfair/config/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM"],
+    "types": ["node"]
+  },
+  // web-stub.ts runs in workerd, not Node; wrangler bundles it.
+  "include": ["*.ts"],
+  "exclude": ["web-stub.ts"]
+}

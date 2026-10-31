@@ -2,10 +2,10 @@ import { exports } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 
 describe('realtime Worker', () => {
-  it('GET /health returns ok', async () => {
+  it('GET /health answers the coordinator health shape', async () => {
     const res = await exports.default.fetch('https://rt.test/health');
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    expect(await res.json()).toMatchObject({ ok: true, shards: expect.any(Array) });
   });
 
   it('unknown paths return the error shape', async () => {
@@ -23,12 +23,13 @@ describe('realtime Worker', () => {
     expect(await exports.RealtimeRpc.ping()).toBe('pong from realtime');
   });
 
-  it('RealtimeRpc.worldUpdate accepts booth ids (stub until prompt 10)', async () => {
+  it('RealtimeRpc.worldUpdate passes on valid booth ids only', async () => {
     const id = '6f1c1e5e-3f7a-4c39-9a51-5d2b8f0d7a10';
     expect(await exports.RealtimeRpc.worldUpdate([id, 'not-an-id'])).toBe(1);
+    expect(await exports.RealtimeRpc.worldUpdate(['nope'])).toBe(0);
   });
 
-  it('RealtimeRpc.kick accepts a user id (stub until prompt 10)', async () => {
+  it('RealtimeRpc.kick accepts only a user id', async () => {
     expect(await exports.RealtimeRpc.kick('00000000-0000-4000-8000-000000000001', 'banned')).toBe(
       true,
     );

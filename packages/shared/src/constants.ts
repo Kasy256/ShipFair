@@ -11,6 +11,7 @@ export const DISTRICT_GROW_AT = 0.8; // add a street once this share of lots is 
 export const DISTRICT_GAP_M = 6; // between neighbouring districts on the same side of the plaza
 export const PLAZA_SIZE_M = 60; // square, centred on the origin
 export const SPAWN_DISTANCE_M = 5; // in front of a booth for /b/:slug deep links
+export const DISTRICT_SPAWN_INSET_M = 4; // district teleports land this far inside the gate
 export const BOOTH_GRID_CELL_M = 8; // spatial grid cell for nearestBooth
 
 // Movement (ARCHITECTURE.md §7 trust model)

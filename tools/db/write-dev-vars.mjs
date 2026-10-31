@@ -4,12 +4,18 @@
 //                                    (/api/me/delete) for the web Worker
 //   apps/web/.env.development.local  VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for the SPA
 //                                    (sign-in, profiles)
+//   apps/realtime/.dev.vars          STATS_INGEST_SECRET, the same random value as web's, so local
+//                                    visit stats reach WebRpc.ingestStats (kept once generated)
 // Other lines in those files are kept.
 import { execFileSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const devVarsPath = fileURLToPath(new URL('../../apps/web/.dev.vars', import.meta.url));
+const realtimeDevVarsPath = fileURLToPath(
+  new URL('../../apps/realtime/.dev.vars', import.meta.url),
+);
 const viteEnvPath = fileURLToPath(
   new URL('../../apps/web/.env.development.local', import.meta.url),
 );
@@ -47,5 +53,22 @@ function writeVars(path, wanted) {
   console.log(`wrote ${Object.keys(wanted).join(', ')} to ${path}`);
 }
 
-writeVars(devVarsPath, { SUPABASE_ANON_KEY: anonKey, SUPABASE_SERVICE_ROLE_KEY: serviceKey });
+/** A KEY=value file's value for `key`, or undefined. */
+function readVar(path, key) {
+  if (!existsSync(path)) return undefined;
+  const line = readFileSync(path, 'utf8')
+    .split(/\r?\n/)
+    .find((l) => l.startsWith(`${key}=`));
+  return line?.slice(key.length + 1) || undefined;
+}
+
+const statsSecret =
+  readVar(devVarsPath, 'STATS_INGEST_SECRET') ?? randomBytes(24).toString('base64url');
+
+writeVars(devVarsPath, {
+  SUPABASE_ANON_KEY: anonKey,
+  SUPABASE_SERVICE_ROLE_KEY: serviceKey,
+  STATS_INGEST_SECRET: statsSecret,
+});
+writeVars(realtimeDevVarsPath, { STATS_INGEST_SECRET: statsSecret });
 writeVars(viteEnvPath, { VITE_SUPABASE_URL: apiUrl, VITE_SUPABASE_ANON_KEY: anonKey });

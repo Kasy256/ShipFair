@@ -5,6 +5,7 @@ import {
   type EventBus,
   type QualityTier,
   spawnForBooth,
+  spawnForDistrict,
   type Teleport,
   type WorldSnapshot,
 } from '@shipfair/shared';
@@ -22,7 +23,6 @@ import {
   createStaticMaterials,
   type StaticMaterials,
 } from './build-city.ts';
-import { spawnForDistrict } from './city-geometry.ts';
 import { type CityDiff, CityModel } from './city-model.ts';
 import type { Environment } from './environment.ts';
 import { Greenery } from './greenery.ts';
@@ -31,8 +31,6 @@ import { buildPlaza, type Plaza } from './plaza.ts';
 import { StaticMerger } from './static-merge.ts';
 import { DEFAULT_THEME, themeFor } from './themes.ts';
 
-/** Teleporting into a district lands this far inside its gate. */
-const DISTRICT_SPAWN_INSET_M = 4;
 const JUST_LAUNCHED_COUNT = 6;
 
 export interface CityOptions {
@@ -194,7 +192,7 @@ export class City {
     }
     const district = this.model.districts.find((d) => d.slug === to.slug);
     const laid = district && this.model.layout.districts.find((d) => d.id === district.id);
-    return laid ? spawnForDistrict(laid, DISTRICT_SPAWN_INSET_M) : null;
+    return laid ? spawnForDistrict(laid) : null;
   }
 
   setTier(tier: QualityTier): void {

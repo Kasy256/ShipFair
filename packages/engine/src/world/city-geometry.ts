@@ -85,16 +85,3 @@ export function ringRoad(layout: CityLayout): Rect[] {
     { minX: -b, maxX: -a, minZ: -a, maxZ: a },
   ];
 }
-
-/** Where `/district/:slug` teleports land: just inside the gate, facing up the spine. */
-export function spawnForDistrict(
-  district: DistrictLayout,
-  insetM: number,
-): { x: number; z: number; yaw: number } {
-  const f = districtFrame(district);
-  return {
-    x: f.entrance.x + f.outward.x * insetM,
-    z: f.entrance.z + f.outward.z * insetM,
-    yaw: f.yaw,
-  };
-}

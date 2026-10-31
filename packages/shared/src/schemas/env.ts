@@ -63,5 +63,7 @@ export const RealtimeEnv = z.object({
   MAX_PLAYERS_PER_SHARD: OptionalInt,
   AOI_RADIUS_M: OptionalInt,
   CHAT_RADIUS_M: OptionalInt,
+  /** `manual` stops the shard's 10 Hz timer so Worker tests can step ticks themselves. */
+  TICK_MODE: z.enum(['interval', 'manual']).default('interval'),
 });
 export type RealtimeEnv = z.infer<typeof RealtimeEnv>;

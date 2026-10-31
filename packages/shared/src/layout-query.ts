@@ -1,4 +1,10 @@
-import { BOOTH_GRID_CELL_M, LOT_D_M, SPAWN_DISTANCE_M } from './constants.ts';
+import {
+  BOOTH_GRID_CELL_M,
+  DISTRICT_SPAWN_INSET_M,
+  LOT_D_M,
+  SPAWN_DISTANCE_M,
+  STREET_W_M,
+} from './constants.ts';
 import type { CityLayout, DistrictLayout, Facing, Lot } from './layout.ts';
 
 /** The point visitors walk up to: the middle of a booth's street-side edge. */
@@ -28,6 +34,13 @@ const FRONT: Readonly<Record<Facing, readonly [number, number]>> = {
   1: [1, 0],
   2: [0, -1],
   3: [-1, 0],
+};
+// A district's local +v (along the plaza) per outward facing, as [dx, dz] (layout.ts `toWorld`).
+const LATERAL: Readonly<Record<Facing, readonly [number, number]>> = {
+  0: [1, 0],
+  1: [0, -1],
+  2: [-1, 0],
+  3: [0, 1],
 };
 const GRID_OFFSET = 32768; // cells per axis either side of the origin (±262 km at 8 m)
 const GRID_STRIDE = 2 * GRID_OFFSET;
@@ -92,6 +105,24 @@ export function spawnForBooth(
   if (!anchor) return null;
   const { x, z } = inFront(anchor.lot, SPAWN_DISTANCE_M);
   return { x, z, yaw: ((anchor.lot.facing + 2) % 4) * QUARTER_TURN };
+}
+
+/**
+ * Where a district teleport lands: `insetM` inside the gate (the spine street's plaza end),
+ * facing up the spine. The client and the realtime server both use it, so they agree.
+ */
+export function spawnForDistrict(
+  district: DistrictLayout,
+  insetM = DISTRICT_SPAWN_INSET_M,
+): { x: number; z: number; yaw: number } {
+  const [ox, oz] = FRONT[district.outward];
+  const [lx, lz] = LATERAL[district.outward];
+  const half = STREET_W_M / 2;
+  return {
+    x: district.origin.x + lx * half + ox * insetM,
+    z: district.origin.z + lz * half + oz * insetM,
+    yaw: district.outward * QUARTER_TURN,
+  };
 }
 
 /** The district whose rect contains the point (min edges inclusive), or null (plaza, streets out of town). */

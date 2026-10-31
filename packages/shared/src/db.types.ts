@@ -699,8 +699,10 @@ export type Database = {
       handle_available: { Args: { candidate: string }; Returns: boolean };
       has_profanity: { Args: { input: string }; Returns: boolean };
       hook_before_user_created: { Args: { event: Json }; Returns: Json };
+      ingest_booth_stats: { Args: { stats: Json }; Returns: number };
       is_not_banned: { Args: { uid: string }; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      realtime_player: { Args: { uid: string; with_profile?: boolean }; Returns: Json };
     };
     Enums: {
       booth_status: 'draft' | 'pending' | 'approved' | 'rejected' | 'hidden' | 'archived';
