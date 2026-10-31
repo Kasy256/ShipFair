@@ -1,17 +1,20 @@
 import { evictDurableObject } from 'cloudflare:test';
 import { exports } from 'cloudflare:workers';
 import {
+  AvatarStyle,
   boothAnchor,
   encodeClient,
   encodeServer,
   guestName,
   layoutCity,
+  migrateAvatarStyle,
   type SnapEntry,
   spawnForBooth,
 } from '@shipfair/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CLOSE } from './limits.ts';
 import {
+  AVATAR,
   at,
   guestId,
   hello,
@@ -84,6 +87,25 @@ describe('hello', () => {
     const join = await watcher.next('join');
     expect(join.player).toMatchObject({ id: welcome.you, name: guestName(id), isGuest: true });
     expect(join.player.uid).toBeUndefined();
+  });
+
+  it('relays the v2 look, and migrates the flat tints of a protocol-v1 client', async () => {
+    await shard('w-109');
+    const { client: watcher } = await placed('w-109', 0, 0);
+    const look = { ...AVATAR, skin: 2, top: { ...AVATAR.top, color: 11 } };
+    const { welcome: v2 } = await TestClient.join('w-109', { guestId: guestId(), avatar: look });
+    await tick('w-109');
+    expect((await watcher.next('join')).player).toMatchObject({ id: v2.you, avatar: look });
+    const v1 = AvatarStyle.parse({ top: '#ef4444' });
+    const { welcome: old } = await TestClient.join('w-109', {
+      v: 1,
+      guestId: guestId(),
+      avatar: v1,
+    });
+    await tick('w-109');
+    const join = await watcher.next('join');
+    expect(join.player.id).toBe(old.you);
+    expect(join.player.avatar).toEqual(migrateAvatarStyle(v1));
   });
 
   it('accepts a valid Supabase JWT and shows the profile name and uid', async () => {
