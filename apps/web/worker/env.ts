@@ -30,4 +30,6 @@ export interface Env {
   /** Text moderation vendor key; none means the pre-screen records `text_unchecked`. */
   MODERATION_API_KEY?: string;
   SAFE_BROWSING_KEY?: string;
+  /** Second layer on `WebRpc.ingestStats` (realtime sends the same value). Unset refuses batches. */
+  STATS_INGEST_SECRET?: string;
 }

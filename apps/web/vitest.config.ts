@@ -50,6 +50,7 @@ export default defineConfig({
                 SUPABASE_URL: 'https://supabase.test',
                 SUPABASE_ANON_KEY: 'test-anon-key',
                 SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+                STATS_INGEST_SECRET: 'test-stats-secret',
               },
               serviceBindings: { ASSETS: 'assets-stub' },
               // Every outbound fetch (the Supabase REST reads) goes to the stub.

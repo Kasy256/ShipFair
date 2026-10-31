@@ -96,7 +96,29 @@ const defaultStore = () => ({
   flags: [{ key: 'MIN_ACCOUNT_AGE_MINUTES', value: 0, updated_at: '2026-10-30T00:00:00+00:00' }],
   admin_review_queue: [],
   admin_report_targets: [],
+  // Batches passed to ingest_booth_stats, newest last.
+  ingested: [],
 });
+
+// A stand-in for `realtime_player` (…_realtime_rpc.sql): the profile row and the bans table.
+function realtimePlayer({ uid, with_profile }) {
+  const row = store.profiles.find((p) => p.id === uid);
+  const profile =
+    row && with_profile !== false
+      ? {
+          id: row.id,
+          handle: row.handle,
+          displayName: row.display_name,
+          avatarStyle: row.avatar_style ?? {},
+          createdAt: row.created_at,
+        }
+      : null;
+  const now = Date.now();
+  const banned = store.bans.some(
+    (b) => b.user_id === uid && (b.until == null || Date.parse(b.until) > now),
+  );
+  return { profile, banned };
+}
 
 // A small stand-in for `admin_action` (supabase/migrations/…_admin_moderation.sql): the staff
 // check, the state changes the Worker tests look at, and the moderation_log row.
@@ -263,6 +285,14 @@ export default {
       if (url.pathname === '/rest/v1/rpc/admin_action' && request.method === 'POST') {
         if (mode === 'admin-action-down') return new Response('down', { status: 500 });
         return adminAction(await request.json());
+      }
+      if (url.pathname === '/rest/v1/rpc/realtime_player' && request.method === 'POST') {
+        return Response.json(realtimePlayer(await request.json()));
+      }
+      if (url.pathname === '/rest/v1/rpc/ingest_booth_stats' && request.method === 'POST') {
+        const { stats } = await request.json();
+        store.ingested.push(stats);
+        return Response.json(stats.length);
       }
       if (url.pathname === '/rest/v1/rpc/delete_account' && request.method === 'POST') {
         const { uid } = await request.json();
