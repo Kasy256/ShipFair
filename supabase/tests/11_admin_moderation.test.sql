@@ -1,6 +1,6 @@
 begin;
 \ir _helpers.psql
-select plan(34);
+select plan(35);
 
 select tests.create_user('mod_one', 'moderator') as mod_id \gset
 select tests.create_user('plain_user') as user_id \gset
@@ -80,6 +80,14 @@ select results_eq(
 );
 
 -- Revisions --------------------------------------------------------------------------------------
+-- The live booth's current images: one only it uses, one another booth shares.
+update public.booths
+set logo_key = 'u/' || :'user_id' || '/old-logo.webp',
+  media = jsonb_build_array(jsonb_build_object('key', 'u/' || :'user_id' || '/shared.webp', 'w', 1280, 'h', 720))
+where id = :'live_id';
+update public.booths
+set logo_key = 'u/' || :'user_id' || '/shared.webp'
+where id = :'pending_id';
 insert into public.booth_revisions (booth_id, owner_id, tagline, url, logo_key)
 values (:'live_id', :'user_id', 'The edited tagline after review', 'https://example.com/v2', 'u/' || :'user_id' || '/new.webp')
 returning id as revision_id \gset
@@ -95,6 +103,11 @@ select results_eq(
 select is(
   (select status::text from public.booth_revisions where id = :'revision_id'), 'approved',
   'the revision is marked approved'
+);
+select is(
+  (select array_agg(key)::text from public.pending_media_deletes where key like 'u/' || :'user_id' || '/%'),
+  format('{u/%s/old-logo.webp}', :'user_id'),
+  'replaced images nothing else uses are queued for purge; shared ones are kept'
 );
 
 insert into public.booth_revisions (booth_id, owner_id, tagline, url, logo_key)

@@ -44,6 +44,7 @@ declare
   log_target text;
   result jsonb := '{}'::jsonb;
   rev public.booth_revisions;
+  old_keys text[];
   is_hidden boolean := coalesce((payload ->> 'hidden')::boolean, true);
   changed integer;
 begin
@@ -74,16 +75,37 @@ begin
       if not found then
         raise exception 'revision is not pending' using errcode = 'P0001', hint = 'not_actionable';
       end if;
-      update public.booths
-      set tagline = rev.tagline, description = rev.description, url = rev.url,
-        logo_key = rev.logo_key, media = rev.media
-      where id = rev.booth_id and status = 'approved';
+      select array_remove(
+          b.logo_key || array(select m ->> 'key' from jsonb_array_elements(b.media) as m), null
+        )
+      into old_keys
+      from public.booths as b
+      where b.id = rev.booth_id and b.status = 'approved'
+      for update;
       if not found then
         raise exception 'booth is not live' using errcode = 'P0001', hint = 'not_actionable';
       end if;
+      update public.booths
+      set tagline = rev.tagline, description = rev.description, url = rev.url,
+        logo_key = rev.logo_key, media = rev.media
+      where id = rev.booth_id;
       update public.booth_revisions set status = 'approved', reject_reason = null, decided_at = now()
       where id = rev.id;
-      result := jsonb_build_object('boothId', rev.booth_id);
+      -- Images the edit replaced join the 30-day purge queue, unless a booth or an open edit still
+      -- uses them (keys are content hashes, so one image can be shared).
+      insert into public.pending_media_deletes (key)
+      select distinct k from unnest(old_keys) as k
+      where not exists (
+          select 1 from public.booths as b
+          where b.logo_key = k or b.media @> jsonb_build_array(jsonb_build_object('key', k))
+        )
+        and not exists (
+          select 1 from public.booth_revisions as r
+          where r.status = 'pending'
+            and (r.logo_key = k or r.media @> jsonb_build_array(jsonb_build_object('key', k)))
+        );
+      get diagnostics changed = row_count;
+      result := jsonb_build_object('boothId', rev.booth_id, 'queuedMedia', changed);
 
     when 'reject_booth' then
       log_action := 'reject';
