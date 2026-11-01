@@ -2,6 +2,8 @@ import {
   JOYSTICK_DEADZONE,
   JOYSTICK_RADIUS_PX,
   JOYSTICK_RUN_AT,
+  TAP_MAX_MOVE_PX,
+  TAP_MAX_MS,
   TOUCH_LOOK_RAD_PER_PX,
 } from '../config.ts';
 import type { InputState } from './state.ts';
@@ -70,6 +72,10 @@ export class TouchSource {
   #lookId = -1;
   #lookX = 0;
   #lookY = 0;
+  /** Where and when the current stick and look touches started, to tell a tap from a drag. */
+  readonly #tapStart = { stickX: 0, stickY: 0, stickT: 0, lookX: 0, lookY: 0, lookT: 0 };
+  /** A tap (a short touch that barely moved) picks a player (prompt 12). */
+  onTap: ((clientX: number, clientY: number) => void) | undefined;
   onJoystick: ((view: Readonly<JoystickView>) => void) | undefined;
 
   constructor(canvas: HTMLCanvasElement, state: InputState, isEnabled: () => boolean) {
@@ -107,6 +113,7 @@ export class TouchSource {
   dispose(): void {
     this.release();
     this.onJoystick = undefined;
+    this.onTap = undefined;
     this.#canvas.removeEventListener('pointerdown', this.#down);
     window.removeEventListener('pointermove', this.#move);
     window.removeEventListener('pointerup', this.#up);
@@ -121,12 +128,18 @@ export class TouchSource {
       this.#stickId = e.pointerId;
       this.#view.baseX = e.clientX;
       this.#view.baseY = e.clientY;
+      this.#tapStart.stickX = e.clientX;
+      this.#tapStart.stickY = e.clientY;
+      this.#tapStart.stickT = e.timeStamp;
       readJoystick(0, 0, this.#reading);
       this.#publish(true, e.clientX, e.clientY);
     } else if (!isLeftHalf && this.#lookId < 0) {
       this.#lookId = e.pointerId;
       this.#lookX = e.clientX;
       this.#lookY = e.clientY;
+      this.#tapStart.lookX = e.clientX;
+      this.#tapStart.lookY = e.clientY;
+      this.#tapStart.lookT = e.timeStamp;
     }
   };
 
@@ -147,14 +160,25 @@ export class TouchSource {
   };
 
   readonly #up = (e: PointerEvent): void => {
+    const start = this.#tapStart;
     if (e.pointerId === this.#stickId) {
       this.#stickId = -1;
       readJoystick(0, 0, this.#reading);
       this.#publish(false);
+      this.#maybeTap(e, start.stickX, start.stickY, start.stickT);
     } else if (e.pointerId === this.#lookId) {
       this.#lookId = -1;
+      this.#maybeTap(e, start.lookX, start.lookY, start.lookT);
     }
   };
+
+  #maybeTap(e: PointerEvent, x: number, y: number, t: number): void {
+    if (e.type !== 'pointerup' || !this.#isEnabled()) return;
+    const dx = e.clientX - x;
+    const dy = e.clientY - y;
+    const isTap = dx * dx + dy * dy <= TAP_MAX_MOVE_PX * TAP_MAX_MOVE_PX;
+    if (isTap && e.timeStamp - t <= TAP_MAX_MS) this.onTap?.(e.clientX, e.clientY);
+  }
 
   #publish(isActive: boolean, knobX = this.#view.baseX, knobY = this.#view.baseY): void {
     const view = this.#view;

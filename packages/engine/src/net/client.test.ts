@@ -13,6 +13,7 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ClockSync } from '../core/clock-sync.ts';
 import {
+  LOCAL_SPEAKER,
   type LocalNetState,
   NetClient,
   type PlayerSummaryLike,
@@ -76,6 +77,7 @@ class FakeRemotes implements RemoteSink {
   readonly players = new Map<number, PlayerSummaryLike>();
   readonly snaps: [number, number, number][] = [];
   readonly emotes: [number, number][] = [];
+  readonly said: [number, string][] = [];
   cleared = 0;
   get size() {
     return this.players.size;
@@ -99,6 +101,9 @@ class FakeRemotes implements RemoteSink {
   nameOf(id: number) {
     return this.players.get(id)?.name ?? null;
   }
+  say(id: number, text: string) {
+    this.said.push([id, text]);
+  }
   clear() {
     this.cleared++;
     this.players.clear();
@@ -115,6 +120,16 @@ const summary = (id: number, name = `Guest-${id}`): PlayerSummaryLike => ({
   a: 0,
 });
 
+const ADA = '00000000-0000-4000-8000-0000000000a1';
+const BOOTH = '00000000-0000-4000-8000-0000000000f1';
+/** A signed-in player summary. */
+const user = (id: number, name: string, uid: string, isMakerOf?: string[]): PlayerSummaryLike => ({
+  ...summary(id, name),
+  isGuest: false,
+  uid,
+  ...(isMakerOf ? { isMakerOf } : {}),
+});
+
 function setup(opts: { token?: string | null; shard?: string | null } = {}) {
   const bus = createBus<EngineEvents>();
   const events: { type: string; payload: unknown }[] = [];
@@ -124,6 +139,7 @@ function setup(opts: { token?: string | null; shard?: string | null } = {}) {
     'net:notice',
     'world:changed',
     'chat:incoming',
+    'net:makers',
   ] as const) {
     bus.on(type, (payload) => events.push({ type, payload: structuredClone(payload) }));
   }
@@ -349,10 +365,74 @@ describe('NetClient', () => {
     s.receive({ type: 'chat', id: 2, text: 'hi', ts: 5 });
     expect(t.events.find((e) => e.type === 'chat:incoming')?.payload).toEqual({
       id: 2,
+      userId: null,
       name: 'Ada',
       text: 'hi',
       ts: 5,
+      isYou: false,
     });
+    expect(t.remotes.said).toEqual([[2, 'hi']]);
+  });
+
+  it('shows your own echo as "You" with a bubble over the local player', async () => {
+    const t = setup();
+    const s = await t.socket();
+    await t.welcome(s);
+    expect(t.client.sendChat('  hello  ')).toBe(true);
+    expect(s.of('chat')).toEqual([{ type: 'chat', text: 'hello' }]);
+    expect(t.client.sendChat('   ')).toBe(false);
+    s.receive({ type: 'chat', id: 1, text: 'hello', ts: 9 });
+    expect(t.events.find((e) => e.type === 'chat:incoming')?.payload).toMatchObject({
+      name: 'You',
+      isYou: true,
+    });
+    expect(t.remotes.said).toEqual([[LOCAL_SPEAKER, 'hello']]);
+  });
+
+  it('mutes on the shard, re-mutes on join, and hides muted chat locally', async () => {
+    const t = setup();
+    const s = await t.socket();
+    t.client.setMutes([ADA]); // before the welcome: sent once Ada is known
+    await t.welcome(s, [user(2, 'Ada', ADA)]);
+    expect(s.of('mute')).toEqual([{ type: 'mute', id: 2 }]);
+    s.receive({ type: 'chat', id: 2, text: 'you cannot see this', ts: 5 });
+    expect(t.events.filter((e) => e.type === 'chat:incoming')).toEqual([]);
+    expect(t.remotes.said).toEqual([]);
+
+    // Ada reconnects with a new net id.
+    s.receive({ type: 'leave', id: 2 });
+    s.receive({ type: 'join', player: user(3, 'Ada', ADA) });
+    expect(s.of('mute')).toEqual([
+      { type: 'mute', id: 2 },
+      { type: 'mute', id: 3 },
+    ]);
+
+    t.client.setMutes([]);
+    expect(s.of('unmute')).toEqual([{ type: 'unmute', id: 3 }]);
+    s.receive({ type: 'chat', id: 3, text: 'back', ts: 6 });
+    expect(t.events.find((e) => e.type === 'chat:incoming')?.payload).toMatchObject({
+      userId: ADA,
+      text: 'back',
+    });
+  });
+
+  it('reports makers among the players shown (net:makers)', async () => {
+    const t = setup();
+    const s = await t.socket();
+    await t.welcome(s, [user(2, 'Ada', ADA, [BOOTH])]);
+    const makers = () => t.events.filter((e) => e.type === 'net:makers').map((e) => e.payload);
+    expect(makers().at(-1)).toEqual({ makers: [{ id: 2, userId: ADA, boothIds: [BOOTH] }] });
+    s.receive({ type: 'leave', id: 2 });
+    expect(makers().at(-1)).toEqual({ makers: [] });
+  });
+
+  it('sends teleports once welcomed', async () => {
+    const t = setup();
+    const s = await t.socket();
+    t.client.sendTeleport({ kind: 'booth', slug: 'early-bird' }); // not welcomed: dropped
+    await t.welcome(s);
+    t.client.sendTeleport({ kind: 'player', id: 4 });
+    expect(s.of('teleport')).toEqual([{ type: 'teleport', to: { kind: 'player', id: 4 } }]);
   });
 
   it('drops invalid frames without throwing', async () => {

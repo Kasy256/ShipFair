@@ -45,6 +45,7 @@ export class Multiplayer {
         viewer: opts.viewer,
         tier: opts.tier,
         isMakerNear: city ? (uid, x, z) => isMakerNear(city, uid, x, z) : undefined,
+        local: player.renderPosition,
       }),
     );
     opts.scene.add(this.remotes.root);

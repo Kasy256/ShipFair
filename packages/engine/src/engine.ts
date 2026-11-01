@@ -1,13 +1,17 @@
 import {
   type AvatarStyleV2,
   BoothChange as BoothChangeSchema,
+  boothAnchor,
   type CityLayout,
   DEFAULT_AVATAR_STYLE,
   type EngineEvents,
   type Handler,
+  spawnBeside,
 } from '@shipfair/shared';
+import { Raycaster, Vector2, Vector3 } from 'three';
 import { AudioHub } from './audio/audio-hub.ts';
 import { type ArtHost, loadArt } from './boot-art.ts';
+import { HEART_Y_M } from './config.ts';
 import { Loop } from './core/loop.ts';
 import { PerfOverlay } from './debug/perf-overlay.ts';
 import { PhysicsWireframe } from './debug/physics-wireframe.ts';
@@ -30,6 +34,7 @@ import type {
 } from './types.ts';
 import { City } from './world/city.ts';
 import { Environment } from './world/environment.ts';
+import { HeartBurst } from './world/heart-burst.ts';
 import { type BuiltLevel, buildTestLevel } from './world/test-level.ts';
 import { type TestLevelLayout, testLevelLayout } from './world/test-level-layout.ts';
 
@@ -49,6 +54,8 @@ interface Runtime {
   player: PlayerSystem;
   perf: PerfSystem;
   multiplayer: Multiplayer;
+  /** The upvote heart burst (prompt 12). */
+  hearts: HeartBurst;
 }
 
 /** Public surface of the 3D runtime (ARCHITECTURE.md §3). */
@@ -68,6 +75,12 @@ export class Engine {
   #isDisposed = false;
   /** A `connect()` made before `start()` finished; applied once the runtime exists. */
   #net: NetConnectOptions | null = null;
+  /** Mutes set before `start()` finished. */
+  #mutes: readonly string[] = [];
+  /** Picking players: reused, clicks are rare but there's no reason to allocate. */
+  readonly #raycaster = new Raycaster();
+  readonly #pointer = new Vector2();
+  readonly #spot = new Vector3();
 
   constructor(options: EngineOptions) {
     this.#options = options;
@@ -164,6 +177,12 @@ export class Engine {
       avatar: () => this.#style,
     });
     perf.textureBytes = () => (city?.textureBytes ?? 0) + multiplayer.remotes.textureBytes;
+    const hearts = loop.add(new HeartBurst());
+    renderer.scene.add(hearts.mesh);
+    input.mouse.onPick = (x, y) => this.#pick(x, y);
+    input.touch.onTap = (x, y) => {
+      this.#pick(x, y);
+    };
     loop.add({
       update: (dt) => environment.follow(player.renderPosition, dt),
       dispose() {},
@@ -197,6 +216,7 @@ export class Engine {
       player,
       perf,
       multiplayer,
+      hearts,
     };
     art.ready = loadArt(art, {
       bus: options.bus,
@@ -207,6 +227,7 @@ export class Engine {
       tier: () => this.#quality,
       style: () => this.#style,
     });
+    multiplayer.client.setMutes(this.#mutes);
     if (this.#net) multiplayer.connect(this.#net);
     input.setEnabled(this.#isInputEnabled);
     this.#listen();
@@ -266,7 +287,93 @@ export class Engine {
     const target = runtime?.city?.spawnFor(to);
     if (!runtime || !target) return false;
     runtime.player.teleport(target.x, 0, target.z, target.yaw);
+    // The shard lands us at the same spot, so the next move isn't corrected back.
+    runtime.multiplayer.client.sendTeleport(to);
     return true;
+  }
+
+  /**
+   * Moves the player next to another player in the shard ("Walk to maker"), on the side they
+   * come from, facing them. Returns false if that player isn't shown.
+   */
+  walkTo(id: number): boolean {
+    const runtime = this.#runtime;
+    if (!runtime?.multiplayer.remotes.positionOf(id, this.#spot)) return false;
+    const from = runtime.player.controller.position;
+    const at = spawnBeside(this.#spot.x, this.#spot.z, from.x, from.z);
+    runtime.multiplayer.client.sendTeleport({ kind: 'player', id });
+    runtime.player.teleport(at.x, this.#spot.y, at.z, at.yaw);
+    return true;
+  }
+
+  /**
+   * Sends a chat line to everyone within 15 m (signed-in players only; the shard refuses guests).
+   * It shows as a bubble and on `chat:incoming` when the shard echoes it back.
+   */
+  sendChat(text: string): boolean {
+    return this.#runtime?.multiplayer.client.sendChat(text) ?? false;
+  }
+
+  /** Everyone the player muted (profile ids): their chat is no longer shown or relayed. */
+  setMutes(userIds: readonly string[]): void {
+    this.#mutes = [...userIds];
+    this.#runtime?.multiplayer.client.setMutes(this.#mutes);
+  }
+
+  /** The upvote heart burst at a booth (or above the player if the booth isn't in the city). */
+  burstHearts(boothId: string): void {
+    const runtime = this.#runtime;
+    if (!runtime) return;
+    const anchor = runtime.city ? boothAnchor(runtime.city.layout, boothId) : null;
+    const p = runtime.player.renderPosition;
+    if (anchor) runtime.hearts.burst(anchor.x, HEART_Y_M, anchor.z);
+    else runtime.hearts.burst(p.x, p.y + HEART_Y_M, p.z);
+  }
+
+  /**
+   * Picks the remote player under a screen point (client px) and emits `player:select`. True
+   * when someone was hit (the click then doesn't lock the pointer or interact).
+   */
+  #pick(clientX: number, clientY: number): boolean {
+    const runtime = this.#runtime;
+    if (!runtime) return false;
+    const rect = this.canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+    this.#pointer.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    // Test mode renders only on request, so the camera's matrices may be a frame old.
+    const camera = runtime.player.camera.camera;
+    camera.updateMatrixWorld();
+    this.#raycaster.setFromCamera(this.#pointer, camera);
+    const { origin, direction } = this.#raycaster.ray;
+    const remotes = runtime.multiplayer.remotes;
+    const id = remotes.pick(origin.x, origin.y, origin.z, direction.x, direction.y, direction.z);
+    const info = id >= 0 ? remotes.infoOf(id) : null;
+    if (!info) return false;
+    this.#options.bus.emit('player:select', {
+      id,
+      userId: info.uid,
+      name: info.name,
+      isGuest: info.isGuest,
+    });
+    return true;
+  }
+
+  /** Where player `id` appears on screen (client px), or null if not shown (tests click there). */
+  screenPositionOf(id: number, heightM = 1.2): { x: number; y: number } | null {
+    const runtime = this.#runtime;
+    if (!runtime?.multiplayer.remotes.positionOf(id, this.#spot)) return null;
+    this.#spot.y += heightM;
+    const camera = runtime.player.camera.camera;
+    camera.updateMatrixWorld();
+    this.#spot.project(camera);
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      x: rect.left + ((this.#spot.x + 1) / 2) * rect.width,
+      y: rect.top + ((1 - this.#spot.y) / 2) * rect.height,
+    };
   }
 
   /**
@@ -378,5 +485,9 @@ export class Engine {
     on('quality:set', ({ tier }) => this.setQuality(tier));
     on('emote', ({ e }) => this.#runtime?.player.emote(e));
     on('teleport', (to) => this.teleport(to));
+    on('chat:send', ({ text }) => this.sendChat(text));
+    on('chat:mutes', ({ userIds }) => this.setMutes(userIds));
+    on('player:walk-to', ({ id }) => this.walkTo(id));
+    on('booth:upvoted', ({ boothId }) => this.burstHearts(boothId));
   }
 }

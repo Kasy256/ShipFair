@@ -74,8 +74,14 @@ export interface ShipfairTestApi {
     readonly stats: { sent: number; received: number; hellos: number; invalid: number };
     /** Every remote player as drawn this frame. */
     remotes(): RemoteView[];
-    /** Stand-ins and name tags drawn last frame. */
-    drawn(): { standIns: number; tags: number };
+    /** Stand-ins, name tags and chat bubbles drawn last frame. */
+    drawn(): { standIns: number; tags: number; bubbles: number };
+    /** Chat bubbles up now (speaker −1 is the local player), prompt 12. */
+    bubbles(): { speaker: number; text: string; ageS: number }[];
+    /** Where remote player `id` appears on screen (client px), to click them. */
+    screenOf(id: number): { x: number; y: number } | null;
+    /** Hearts of the upvote burst in flight. */
+    readonly hearts: number;
     /** Resolves when every remote glTF avatar build started so far is done. */
     settled(): Promise<void>;
     /** `count` fake visitors walking around (x, z), through the real remote path (offline only). */
@@ -226,7 +232,12 @@ export function createTestApi(engine: Engine): ShipfairTestApi {
         return { sent: 0, received: 0, hellos: 0, invalid: 0, ...stats };
       },
       remotes: () => rt()?.multiplayer.remotes.views() ?? [],
-      drawn: () => rt()?.multiplayer.remotes.drawn() ?? { standIns: 0, tags: 0 },
+      drawn: () => rt()?.multiplayer.remotes.drawn() ?? { standIns: 0, tags: 0, bubbles: 0 },
+      bubbles: () => rt()?.multiplayer.remotes.bubbles() ?? [],
+      screenOf: (id) => engine.screenPositionOf(id),
+      get hearts() {
+        return rt()?.hearts.live ?? 0;
+      },
       settled: async () => rt()?.multiplayer.remotes.settled(),
       fake: (count, seed, x, z) => rt()?.multiplayer.fake(count, seed, x, z),
       clearFake: () => rt()?.multiplayer.clearFake(),

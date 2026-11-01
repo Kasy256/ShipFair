@@ -219,3 +219,29 @@ export const NAME_TAG_ATLAS_COLUMNS = 4;
 export const NAME_TAG_ATLAS_ROWS = 32;
 /** A maker standing this close to one of their own booths gets the "maker" badge. */
 export const MAKER_BADGE_RADIUS_M = 8;
+
+// Social (prompt 12): chat bubbles, picking players and the upvote heart burst.
+/** A bubble stays up this long after its message, fading over the last CHAT_BUBBLE_FADE_S. */
+export const CHAT_BUBBLE_S = 6;
+export const CHAT_BUBBLE_FADE_S = 0.4;
+/** Text wraps at this width (atlas px, the bubble's CSS width at its near size) … */
+export const CHAT_BUBBLE_MAX_W_PX = 220;
+/** … and is cut with an ellipsis after this many lines. */
+export const CHAT_BUBBLE_MAX_LINES = 3;
+export const CHAT_BUBBLE_ATLAS_PX = 1024;
+export const CHAT_BUBBLE_ATLAS_COLUMNS = 4;
+export const CHAT_BUBBLE_ATLAS_ROWS = 8;
+/** World height of a bubble at NAME_TAG_NEAR_M (it grows with distance, like name tags). */
+export const CHAT_BUBBLE_HEIGHT_M = 0.62;
+/** A bubble's bottom sits this far above the feet (above the name tag). */
+export const CHAT_BUBBLE_Y_M = 2.35;
+/** Clicking a player hits a vertical cylinder of this radius and height around them. */
+export const PICK_RADIUS_M = 0.45;
+export const PICK_HEIGHT_M = 1.9;
+/** A tap is a touch that moves less than this and lifts within TAP_MAX_MS. */
+export const TAP_MAX_MOVE_PX = 10;
+export const TAP_MAX_MS = 350;
+export const HEART_BURST_COUNT = 14;
+export const HEART_LIFE_S = 1.2;
+/** Hearts start this high above the booth's street edge. */
+export const HEART_Y_M = 2.4;
