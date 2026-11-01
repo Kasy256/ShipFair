@@ -179,7 +179,13 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       this.#byConn.delete(conn.id);
       this.#players.delete(player.id);
       this.#visits.forget(player.id);
-      // Others drop the player from view on the next tick (`leave`).
+      // `leave` goes out now, not on the next tick: a hello before then may reuse the id (a
+      // sign-in swaps sockets), and viewers would keep the old summary instead of seeing a join.
+      for (const other of this.#players.values()) {
+        if (!other.aoi.delete(player.id)) continue;
+        other.sent.delete(player.id);
+        this.#send(other.conn, { type: 'leave', id: player.id });
+      }
     }
     if (!this.#hasConnections()) await this.#emptied();
   }

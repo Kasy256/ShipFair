@@ -86,6 +86,8 @@ async function clickPlayer(page: Page, id: number): Promise<void> {
 }
 
 test.beforeAll(async ({ browser }) => {
+  // Three pages, two sign-ins and a realtime server: slower than the default hook budget on CI.
+  test.setTimeout(300_000);
   await server.start();
   userA = await createTestUser();
   userB = await createTestUser();

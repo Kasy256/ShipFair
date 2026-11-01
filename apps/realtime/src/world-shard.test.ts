@@ -353,6 +353,24 @@ describe('area of interest', () => {
     expect((await a.client.next('leave')).id).toBe(b.id);
   });
 
+  it('sends leave at once, so a net id reused before the next tick arrives as a fresh join', async () => {
+    const name = 'w-139';
+    await shard(name);
+    const a = await placed(name, 0, 0);
+    const b = await placed(name, 1, 0); // a guest, as before signing in
+    await tick(name);
+    expect((await a.client.next('join')).player.isGuest).toBe(true);
+
+    // Signing in swaps the socket: the old one closes and the new hello takes the freed id.
+    b.client.close();
+    expect((await a.client.next('leave')).id).toBe(b.id);
+    const again = await placed(name, 1, 0, { token: await token(USERS.ada) });
+    expect(again.id).toBe(b.id);
+    await tick(name);
+    const join = await a.client.next('join');
+    expect(join.player).toMatchObject({ id: b.id, isGuest: false, uid: USERS.ada });
+  });
+
   it('encodes snaps compactly: cm ints and uint16 yaw, a few bytes per player', async () => {
     const clock = await shard('w-133');
     const watcher = await placed('w-133', 0, 0);
