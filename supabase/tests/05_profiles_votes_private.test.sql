@@ -95,9 +95,12 @@ select is(
 
 -- private tables -------------------------------------------------------------------------------
 select tests.login(:'me_id');
+-- Stamps became public in prompt 13 (/u/:handle shows them).
 select is(
-  (select array_agg(stamp) from public.passport_stamps), array['district:ai-agents'],
-  'a user reads only their own stamps'
+  (select array_agg(stamp order by stamp) from public.passport_stamps
+   where user_id in (:'me_id', :'you_id')),
+  array['district:ai-agents', 'district:dev-tools'],
+  'anyone signed in reads every stamp'
 );
 select is((select count(*)::int from public.booth_stats_daily), 0, 'clients cannot read booth_stats_daily');
 select is((select count(*)::int from public.moderation_log), 0, 'clients cannot read moderation_log');
