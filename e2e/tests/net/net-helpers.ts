@@ -152,14 +152,15 @@ export function startBots(count: number, durationS: number): { stop(): Promise<v
  * 20 s). Remote players still interpolate on the real clock, so stepping one frame before a
  * sample shows them where a real-time page would.
  */
-export async function openConnected(page: Page, opts: { query?: string } = {}) {
+export async function openConnected(page: Page, opts: { query?: string; path?: string } = {}) {
   // Realtime warnings (join failures, dropped frames) explain a page that never comes online.
   page.on('console', (m) => {
     if (m.type() === 'warning' && m.text().startsWith('Realtime'))
       console.log(`[page] ${m.text()}`);
   });
   const extra = opts.query ? `&${opts.query}` : '';
-  await page.goto(`/?test&debug=fake60&quality=low&realtime=${REALTIME_HOST}${extra}`);
+  const path = opts.path ?? '/';
+  await page.goto(`${path}?test&debug=fake60&quality=low&realtime=${REALTIME_HOST}${extra}`);
   await expect(page.getByTestId('world-canvas')).toHaveAttribute('data-status', 'ready', {
     timeout: 60_000,
   });
