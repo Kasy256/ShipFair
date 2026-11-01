@@ -16,6 +16,7 @@ import { useWorldShortcuts } from '../state/use-world-shortcuts.ts';
 import { useWorldStore } from '../state/world-store.ts';
 import { AvatarSheet } from '../ui/avatar/AvatarSheet.tsx';
 import { BoothPanel } from '../ui/BoothPanel.tsx';
+import { ChatPanel } from '../ui/ChatPanel.tsx';
 import { ClaimSheet } from '../ui/ClaimSheet.tsx';
 import { ControlsHelp } from '../ui/ControlsHelp.tsx';
 import { DistrictBanner } from '../ui/DistrictBanner.tsx';
@@ -24,6 +25,7 @@ import { Hud } from '../ui/Hud.tsx';
 import { LoadingScreen, type LoadStage } from '../ui/LoadingScreen.tsx';
 import { MapOverlay } from '../ui/MapOverlay.tsx';
 import { Minimap } from '../ui/Minimap.tsx';
+import { PlayerCard } from '../ui/PlayerCard.tsx';
 import { PromptPill } from '../ui/PromptPill.tsx';
 import { Toasts } from '../ui/Toasts.tsx';
 import { TouchControls } from '../ui/TouchControls.tsx';
@@ -131,7 +133,9 @@ export function WorldRoute() {
           {!isOverlayOpen && <PromptPill engine={engine} />}
           {engine.layout && <Minimap layout={engine.layout} />}
           <ControlsHelp />
+          <ChatPanel />
           <BoothPanel />
+          <PlayerCard />
           <MapOverlay engine={engine} />
           <ClaimSheet />
           <AvatarSheet />

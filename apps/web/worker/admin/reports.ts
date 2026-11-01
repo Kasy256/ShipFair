@@ -1,4 +1,4 @@
-import { AdminReport, ReportGroup, type ReportPage } from '@shipfair/shared';
+import { AdminReport, ReportContext, ReportGroup, type ReportPage } from '@shipfair/shared';
 import * as z from 'zod';
 import type { Env } from '../env.ts';
 import { type ServiceDb, serviceDb } from '../service.ts';
@@ -6,7 +6,8 @@ import { afterFilter, decodeCursor, inList, orderParam, PAGE_FETCH, pageOf } fro
 
 // GET /api/admin/reports: open reports grouped by target (view `admin_report_targets`), the most
 // reported first, then the longest waiting. Each group carries what was reported: the booth, the
-// guestbook entry, or the user. Chat lines arrive with `reports.context` in prompt 12.
+// guestbook entry, or the user, and each report the chat lines its reporter attached
+// (`reports.context`, prompt 12).
 
 const SORT = [
   { column: 'open_reports', isDesc: true },
@@ -24,7 +25,8 @@ const TargetRow = z.object({
   first_at: z.string(),
 });
 
-export const REPORT_COLUMNS = 'id,reporter_id,target_type,target_id,reason,note,status,created_at';
+export const REPORT_COLUMNS =
+  'id,reporter_id,target_type,target_id,reason,note,status,created_at,context';
 export const ReportRow = z.object({
   id: z.int(),
   reporter_id: z.uuid().nullable(),
@@ -34,6 +36,7 @@ export const ReportRow = z.object({
   note: z.string().nullable(),
   status: z.string(),
   created_at: z.string(),
+  context: z.unknown().optional(),
 });
 export type ReportRow = z.infer<typeof ReportRow>;
 
@@ -82,6 +85,8 @@ export async function toReports(db: ServiceDb, rows: readonly ReportRow[]): Prom
       status: r.status,
       createdAt: r.created_at,
       reporter: r.reporter_id ? (who.get(r.reporter_id) ?? null) : null,
+      // The database checks the shape too; anything else shows as no context.
+      context: ReportContext.safeParse(r.context).data ?? null,
     })),
   );
 }

@@ -24,6 +24,7 @@ export function useRealtime(engine: Engine | undefined, hasEntered: boolean, sea
   const status = useSessionStore((s) => s.status);
   const userId = useSessionStore((s) => s.userId);
   const guestId = useSessionStore((s) => s.guest.id);
+  const mutedUserIds = useSessionStore((s) => s.mutedUserIds);
 
   useEffect(() => {
     if (!engine || !hasEntered || status === 'loading') return;
@@ -41,6 +42,11 @@ export function useRealtime(engine: Engine | undefined, hasEntered: boolean, sea
     engine.connect(options);
     return () => engine.disconnect();
   }, [engine, hasEntered, status, userId, guestId, search]);
+
+  // Mutes live in the session store; the engine tells the shard (and re-tells it on reconnects).
+  useEffect(() => {
+    engine?.setMutes(mutedUserIds);
+  }, [engine, mutedUserIds]);
 
   // A booth was approved or changed: refetch the world and build just those booths.
   useEffect(() => {
