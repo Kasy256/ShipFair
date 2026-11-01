@@ -2,6 +2,7 @@ import { pack } from 'msgpackr';
 import { describe, expect, it } from 'vitest';
 import {
   AVATAR_MAX_BYTES,
+  BOOTHS_PER_USER_MAX,
   MAX_CLIENT_MSG_BYTES,
   MAX_PLAYERS_PER_SHARD,
   PROTOCOL_VERSION,
@@ -17,7 +18,7 @@ import {
   fromNetPos,
   fromNetYaw,
   isProtocolSupported,
-  type PlayerSummary,
+  PlayerSummary,
   type ServerMessage,
   type SnapEntry,
   toNetPos,
@@ -46,6 +47,9 @@ const clientMessages: ClientMessage[] = [
   { type: 'chat', text: 'hello from the plaza 👋' },
   { type: 'teleport', to: { kind: 'booth', slug: 'my-cool-app' } },
   { type: 'teleport', to: { kind: 'district', slug: 'dev-tools' } },
+  { type: 'teleport', to: { kind: 'player', id: 12 } },
+  { type: 'mute', id: 12 },
+  { type: 'unmute', id: 12 },
   { type: 'ping', t: 123 },
 ];
 
@@ -53,6 +57,10 @@ const serverMessages: ServerMessage[] = [
   { type: 'welcome', you: 7, shard: 'w-1', players: [player] },
   { type: 'snap', t: 1_793_000_000_000, s: [[7, 120, 0, -340, 1024, 2]] },
   { type: 'join', player: { ...player, isGuest: false, uid: uuid, name: 'Ada' } },
+  {
+    type: 'join',
+    player: { ...player, isGuest: false, uid: uuid, name: 'Ada', isMakerOf: [uuid] },
+  },
   { type: 'leave', id: 7 },
   { type: 'emote', id: 7, e: 1 },
   { type: 'chat', id: 7, text: 'hi', ts: 99 },
@@ -203,6 +211,25 @@ describe('hello avatar (protocol v2)', () => {
       longest = Math.max(longest, JSON.stringify(randomAvatarStyle(random)).length);
     }
     expect(longest).toBeLessThan(AVATAR_MAX_BYTES);
+  });
+});
+
+describe('protocol v3 (prompt 12)', () => {
+  it('lets a v2 client decode a v3 summary: the unknown isMakerOf is dropped', () => {
+    const v2Summary = PlayerSummary.omit({ isMakerOf: true });
+    const parsed = v2Summary.parse({ ...player, isMakerOf: [uuid] });
+    expect(parsed).toEqual(player);
+  });
+
+  it('caps isMakerOf at the per-user booth limit', () => {
+    const many = Array.from({ length: BOOTHS_PER_USER_MAX + 1 }, () => uuid);
+    const bytes = encodeServer({ type: 'join', player: { ...player, isMakerOf: many } });
+    expect(decodeServer(bytes)).toMatchObject({ ok: false, error: { code: 'invalid' } });
+  });
+
+  it('refuses a mute without a valid net id', () => {
+    expect(decodeClient(pack({ type: 'mute', id: -1 }))).toMatchObject({ ok: false });
+    expect(decodeClient(pack({ type: 'unmute' }))).toMatchObject({ ok: false });
   });
 });
 

@@ -15,7 +15,25 @@ export interface EngineEvents {
   'booth:open': { boothId: string };
   /** A remote player came within range (`isNear`) or left it. `userId` is null for guests. */
   'player:near': { id: number; userId: string | null; isNear: boolean };
-  'chat:incoming': { id: number; name: string; text: string; ts: number };
+  /**
+   * A chat line from a player within 15 m (`isYou` for your own echo). `userId` is the sender's
+   * profile id (chat is signed-in only), kept for report attachments.
+   */
+  'chat:incoming': {
+    id: number;
+    userId: string | null;
+    name: string;
+    text: string;
+    ts: number;
+    isYou: boolean;
+  };
+  /** A remote player was clicked or tapped (the mini profile card). */
+  'player:select': { id: number; userId: string | null; name: string; isGuest: boolean };
+  /**
+   * Makers of live booths among the players you see (`isMakerOf` in their summaries), sent when
+   * the list changes. Powers the booth panel's "Maker is here".
+   */
+  'net:makers': { makers: readonly { id: number; userId: string; boothIds: readonly string[] }[] };
   'net:status': { status: NetStatus; shard: string | null };
   /**
    * Visitors: `nearby` counts you plus everyone the shard shows you (within its 60 m area of
@@ -39,7 +57,13 @@ export interface EngineEvents {
   // UI → Engine
   emote: { e: number };
   'chat:send': { text: string };
+  /** Everyone you muted (profile ids): the shard stops relaying their chat to you. */
+  'chat:mutes': { userIds: readonly string[] };
   teleport: Teleport;
+  /** Teleport next to a player in your shard ("Walk to maker"). */
+  'player:walk-to': { id: number };
+  /** You upvoted a booth: a small heart burst at it. */
+  'booth:upvoted': { boothId: string };
   'input:enabled': { enabled: boolean };
   'quality:set': { tier: QualityTier };
 }
