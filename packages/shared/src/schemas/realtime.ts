@@ -6,6 +6,10 @@ import { Handle, Timestamp, Uuid } from './common.ts';
 // argument crosses a Worker boundary, so it is external input like any other.
 
 const DISPLAY_NAME_MAX_CHARS = 32;
+
+/** `GET /parties/coordinator/main/join`: the shard the client should connect to. */
+export const CoordinatorJoin = z.object({ shard: ShardId });
+export type CoordinatorJoin = z.infer<typeof CoordinatorJoin>;
 const STATS_ROWS_MAX = 5000;
 const STATS_COUNT_MAX = 1_000_000;
 

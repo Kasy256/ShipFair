@@ -10,6 +10,7 @@ import { useDeepLinks } from '../state/use-deep-links.ts';
 import { useEngineBridge } from '../state/use-engine-bridge.ts';
 import { useInputLock } from '../state/use-input-lock.ts';
 import { useLocalPlayer } from '../state/use-local-player.ts';
+import { useRealtime } from '../state/use-realtime.ts';
 import { useWorldQuery } from '../state/use-world-query.ts';
 import { useWorldShortcuts } from '../state/use-world-shortcuts.ts';
 import { useWorldStore } from '../state/world-store.ts';
@@ -26,6 +27,7 @@ import { Minimap } from '../ui/Minimap.tsx';
 import { PromptPill } from '../ui/PromptPill.tsx';
 import { Toasts } from '../ui/Toasts.tsx';
 import { TouchControls } from '../ui/TouchControls.tsx';
+import { UpdateBanner } from '../ui/UpdateBanner.tsx';
 import { WorldCanvas } from '../ui/WorldCanvas.tsx';
 
 const DEV_HINT =
@@ -55,6 +57,7 @@ export function WorldRoute() {
   useDeepLinks(engine, hasEntered);
   useWorldShortcuts(hasEntered);
   useBoothNotices(hasEntered);
+  useRealtime(engine, hasEntered, search);
   // Nothing behind the loading screen may move the avatar.
   useInputLock(!hasEntered);
 
@@ -123,6 +126,7 @@ export function WorldRoute() {
         <>
           <TouchControls engine={engine} />
           <Hud />
+          <UpdateBanner />
           <DistrictBanner />
           {!isOverlayOpen && <PromptPill engine={engine} />}
           {engine.layout && <Minimap layout={engine.layout} />}

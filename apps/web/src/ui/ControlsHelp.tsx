@@ -13,6 +13,7 @@ const KEYS: readonly (readonly [string, string])[] = [
   ['Zoom', 'Mouse wheel'],
   ['Visit a booth', 'E when the prompt shows'],
   ['Wave', 'F'],
+  ['Emotes', '1 wave · 2 clap · 3 dance · 4 cheer · 5 point · 6 sit'],
   ['Map and search', 'M'],
   ['This help', '?'],
 ];
@@ -22,6 +23,7 @@ const TOUCH: readonly (readonly [string, string])[] = [
   ['Look', 'Drag with your right thumb'],
   ['Jump', 'Jump button'],
   ['Visit a booth', 'Tap the prompt or the Use button'],
+  ['Emotes', 'Hold the Use button'],
   ['Map and search', 'Map button'],
 ];
 

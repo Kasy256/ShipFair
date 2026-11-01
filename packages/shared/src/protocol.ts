@@ -1,13 +1,14 @@
 import { Packr } from 'msgpackr';
 import * as z from 'zod';
 import {
+  AVATAR_MAX_BYTES,
   CHAT_MAX_CHARS,
   MAX_CLIENT_MSG_BYTES,
   MIN_CLIENT_PROTOCOL,
   PROTOCOL_VERSION,
 } from './constants.ts';
 import { err, ok, type Result } from './result.ts';
-import { AvatarStyle } from './schemas/avatar.ts';
+import { AvatarStyle, AvatarStyleV2 } from './schemas/avatar.ts';
 import { Slug, Uuid } from './schemas/common.ts';
 
 // Realtime wire protocol (ARCHITECTURE.md §7). Positions travel as integer centimetres and yaw as
@@ -58,6 +59,24 @@ const TimeMs = z.int().nonnegative();
 export const ShardId = z.string().regex(/^w-\d{1,4}$/);
 const PlayerName = z.string().min(1).max(32);
 
+/**
+ * The `a` field of `move` and `snap`: what the body is doing, so remote players animate without
+ * guessing from speed alone. Emotes travel separately (`emote`).
+ */
+export const NET_ANIM = { idle: 0, walk: 1, run: 2, air: 3 } as const;
+export type NetAnim = (typeof NET_ANIM)[keyof typeof NET_ANIM];
+
+/**
+ * The look in `hello`: v2 (protocol v2), or a v1 look from a protocol-v1 client, which the shard
+ * migrates. At most AVATAR_MAX_BYTES as JSON.
+ */
+export const HelloAvatar = z
+  .union([AvatarStyleV2, AvatarStyle])
+  .refine((style) => JSON.stringify(style).length <= AVATAR_MAX_BYTES, {
+    message: `avatar is over ${AVATAR_MAX_BYTES} bytes`,
+  });
+export type HelloAvatar = z.infer<typeof HelloAvatar>;
+
 export const Teleport = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('booth'), slug: Slug }),
   z.object({ kind: z.literal('district'), slug: Slug }),
@@ -70,7 +89,7 @@ export const PlayerSummary = z.object({
   isGuest: z.boolean(),
   /** Profile id for signed-in players (powers "Maker is here"); absent for guests. */
   uid: Uuid.optional(),
-  avatar: AvatarStyle,
+  avatar: AvatarStyleV2,
   p: NetPos,
   r: NetYaw,
   a: Uint8,
@@ -90,7 +109,7 @@ export const ClientMessage = z.discriminatedUnion('type', [
       v: z.int().nonnegative(),
       token: z.string().min(1).max(TOKEN_MAX_CHARS).optional(),
       guestId: Uuid.optional(),
-      avatar: AvatarStyle,
+      avatar: HelloAvatar,
     })
     .refine((m) => m.token !== undefined || m.guestId !== undefined, {
       message: 'hello needs a token or a guestId',

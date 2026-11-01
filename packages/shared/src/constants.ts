@@ -29,6 +29,7 @@ export const PING_HZ = 0.2;
 export const INTERP_DELAY_MS = 180; // ~2 snapshot intervals plus margin
 export const EXTRAP_MAX_MS = 250;
 export const MAX_CLIENT_MSG_BYTES = 2048; // decodeClient rejects larger frames before parsing
+export const AVATAR_MAX_BYTES = 1024; // the look in `hello`, as JSON
 
 // Shards and areas of interest
 export const AOI_RADIUS_M = 60;
@@ -88,6 +89,7 @@ export const SHARE_PANEL_DELAY_S = 1.5; // /b/:slug opens the booth panel this l
 // Art (prompt 04b): written by `pnpm assets:build`, read by the engine and the avatar editor.
 export const ASSET_MANIFEST_URL = '/assets/assets-manifest.generated.json';
 
-// Protocol versioning (CODING_STANDARDS.md §6)
-export const PROTOCOL_VERSION = 1;
+// Protocol versioning (CODING_STANDARDS.md §6). v2 (prompt 11): `hello` and player summaries
+// carry the v2 avatar style; v1 hellos (v1 look) are still accepted and migrated.
+export const PROTOCOL_VERSION = 2;
 export const MIN_CLIENT_PROTOCOL = 1;

@@ -29,7 +29,7 @@ export class InputManager implements System {
 
   constructor(canvas: HTMLCanvasElement) {
     const isEnabled = () => this.#isEnabled;
-    this.keyboard = new KeyboardSource(window, this.press);
+    this.keyboard = new KeyboardSource(window, this.press, this.emote);
     this.mouse = new MouseSource(canvas, this.state, isEnabled);
     this.touch = new TouchSource(canvas, this.state, isEnabled);
     this.gamepad = new GamepadSource(this.press);
@@ -52,6 +52,12 @@ export class InputManager implements System {
   readonly press = (action: InputAction): void => {
     if (!this.#isEnabled) return;
     this.state[action] = true;
+  };
+
+  /** An emote from keys 1–6. The bus `emote` event (touch menu) goes straight to the engine. */
+  readonly emote = (emote: number): void => {
+    if (!this.#isEnabled) return;
+    this.state.emote = emote;
   };
 
   fixedUpdate(dt: number): void {

@@ -2,6 +2,8 @@ import type { Teleport } from './protocol.ts';
 
 export type QualityTier = 'high' | 'low';
 export type NetStatus = 'connecting' | 'online' | 'reconnecting' | 'offline';
+/** Server notices the UI acts on (the rest are handled inside the engine). */
+export type NetNoticeCode = 'update_required' | 'banned' | 'kicked' | 'muted';
 
 /** Engine ↔ UI events (ARCHITECTURE.md §3). Payload `undefined` means "no payload". */
 export interface EngineEvents {
@@ -15,6 +17,15 @@ export interface EngineEvents {
   'player:near': { id: number; userId: string | null; isNear: boolean };
   'chat:incoming': { id: number; name: string; text: string; ts: number };
   'net:status': { status: NetStatus; shard: string | null };
+  /**
+   * Visitors: `nearby` counts you plus everyone the shard shows you (within its 60 m area of
+   * interest); `total` is every shard together (pushed by the shard, null until the first push).
+   */
+  'net:population': { nearby: number; total: number | null };
+  /** `until` (epoch ms) is set for `muted` only. */
+  'net:notice': { code: NetNoticeCode; message: string; until: number | null };
+  /** Booths were approved or changed (`notice:world_update`): refetch the world, then update. */
+  'world:changed': { boothIds: string[] };
   'perf:sample': {
     fps: number;
     drawCalls: number;

@@ -1,7 +1,7 @@
 import { parseArgs } from 'node:util';
 import {
-  AvatarStyle,
   BOOTH_VISIT_RADIUS_M,
+  DEFAULT_AVATAR_STYLE,
   encodeServer,
   layoutCity,
   nearestBooth,
@@ -34,7 +34,7 @@ const STEP_M = 0.45; // 4.5 m/s at 10 Hz
 
 const world = fakeWorld(60, 7);
 const layout = layoutCity(world.districts, world.booths);
-const avatar = AvatarStyle.parse({});
+const avatar = DEFAULT_AVATAR_STYLE;
 const fakeConn = { id: '', state: null, isOpen: true, setState() {}, send() {}, close() {} };
 
 function makePlayer(id: number, x: number, z: number): Player {

@@ -147,3 +147,51 @@ export function advancePose(
   }
   return hasStepped;
 }
+
+/** How long a stand-in holds an emote (the glTF clips have their own lengths); dance loops. */
+export const STAND_IN_EMOTE_S = 2.2;
+/** Emote ids that loop until the player moves (EMOTE_CLIPS order: dance). */
+export const isLoopingEmote = (emote: number): boolean => emote === 2;
+
+/**
+ * Procedural stand-ins for the emote clips (EMOTE_CLIPS order: wave, clap, dance, cheer, point,
+ * sit), applied over the locomotion pose. `t` is seconds since the emote started.
+ */
+export function applyEmotePose(emote: number, t: number, out: Pose): void {
+  const beat = Math.sin(t * 10);
+  switch (emote) {
+    case 0: // wave
+      out.shoulderX0 = -0.3;
+      out.shoulderZ0 = 2.6;
+      out.elbowZ0 = Math.sin(t * 14) * 0.5;
+      return;
+    case 1: // clap
+      out.shoulderX0 = -1.25;
+      out.shoulderX1 = -1.25;
+      out.shoulderZ0 = -0.15 - Math.abs(beat) * 0.2;
+      out.shoulderZ1 = 0.15 + Math.abs(beat) * 0.2;
+      return;
+    case 2: // dance
+      out.shoulderZ0 = 2.1 + beat * 0.4;
+      out.shoulderZ1 = -2.1 + beat * 0.4;
+      out.hipsY -= Math.abs(beat) * 0.06;
+      out.chestLean = beat * 0.08;
+      return;
+    case 3: // cheer
+      out.shoulderZ0 = 2.8;
+      out.shoulderZ1 = -2.8;
+      out.hipsY += Math.max(0, beat) * 0.05;
+      return;
+    case 4: // point
+      out.shoulderX0 = -1.5;
+      out.shoulderZ0 = 0.05;
+      return;
+    case 5: // sit
+      out.hipsY = HIPS_HEIGHT_M * 0.5;
+      out.hip0 = -1.45;
+      out.hip1 = -1.45;
+      out.knee0 = 1.45;
+      out.knee1 = 1.45;
+      return;
+  }
+}

@@ -8,6 +8,7 @@ export { CharacterFactory } from './avatars/character-factory.ts';
 export { GltfAvatar } from './avatars/gltf-avatar.ts';
 export type { LodLevel } from './avatars/lod.ts';
 export { assignLods, countLods, createLodScratch } from './avatars/lod.ts';
+export type { RemoteView } from './avatars/remote.ts';
 export {
   BoothPreview,
   type BoothPreviewContent,
@@ -23,6 +24,7 @@ export { Engine } from './engine.ts';
 export type { InputAction } from './input/manager.ts';
 export type { JoystickView } from './input/touch.ts';
 export { readJoystick } from './input/touch.ts';
+export type { NetConnectOptions, NetIdentity } from './net/client.ts';
 export type { AvatarView } from './player/avatar.ts';
 export { EMOTE_WAVE } from './player/avatar.ts';
 export { guessTier, readDeviceInfo, tierFromQuery } from './quality/detect.ts';

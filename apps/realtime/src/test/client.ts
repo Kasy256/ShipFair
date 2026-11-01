@@ -1,8 +1,8 @@
 import { runInDurableObject } from 'cloudflare:test';
 import { env, exports } from 'cloudflare:workers';
 import {
-  AvatarStyle,
   type ClientMessage,
+  DEFAULT_AVATAR_STYLE,
   decodeServer,
   encodeClient,
   PROTOCOL_VERSION,
@@ -18,7 +18,7 @@ import { AUTH_URL, TEST_JWK } from './fixtures.ts';
 
 export const testEnv = env as unknown as Env;
 
-export const AVATAR = AvatarStyle.parse({});
+export const AVATAR = DEFAULT_AVATAR_STYLE;
 const WAIT_MS = 3000;
 
 export function hello(extra: Partial<Extract<ClientMessage, { type: 'hello' }>>): ClientMessage {

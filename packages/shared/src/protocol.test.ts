@@ -1,6 +1,11 @@
 import { pack } from 'msgpackr';
 import { describe, expect, it } from 'vitest';
-import { MAX_CLIENT_MSG_BYTES, MAX_PLAYERS_PER_SHARD, PROTOCOL_VERSION } from './constants.ts';
+import {
+  AVATAR_MAX_BYTES,
+  MAX_CLIENT_MSG_BYTES,
+  MAX_PLAYERS_PER_SHARD,
+  PROTOCOL_VERSION,
+} from './constants.ts';
 import {
   type ClientMessage,
   decodeClient,
@@ -19,9 +24,9 @@ import {
   toNetYaw,
 } from './protocol.ts';
 import { rangeInt, rng } from './rng.ts';
-import { AvatarStyle } from './schemas/avatar.ts';
+import { AvatarStyle, DEFAULT_AVATAR_STYLE, randomAvatarStyle } from './schemas/avatar.ts';
 
-const avatar = AvatarStyle.parse({});
+const avatar = DEFAULT_AVATAR_STYLE;
 const uuid = '5f0c6c0e-3a8b-4c55-9a51-0b7e2f1e9d10';
 const player: PlayerSummary = {
   id: 7,
@@ -106,6 +111,11 @@ describe('invalid input returns an error, never throws', () => {
     ['chat too long', pack({ type: 'chat', text: 'x'.repeat(161) }), 'invalid'],
     ['empty chat', pack({ type: 'chat', text: '' }), 'invalid'],
     ['hello without identity', pack({ type: 'hello', v: 1, avatar: {} }), 'invalid'],
+    [
+      'hello with an unknown v2 item',
+      pack({ type: 'hello', v: 2, guestId: uuid, avatar: { ...avatar, body: 'dragon' } }),
+      'invalid',
+    ],
     ['bad teleport', pack({ type: 'teleport', to: 'dev-tools' }), 'invalid'],
     ['too large', new Uint8Array(MAX_CLIENT_MSG_BYTES + 1), 'too_large'],
   ];
@@ -176,6 +186,23 @@ describe('net unit helpers', () => {
     expect(isProtocolSupported(PROTOCOL_VERSION)).toBe(true);
     expect(isProtocolSupported(0)).toBe(false);
     expect(isProtocolSupported(PROTOCOL_VERSION + 1)).toBe(false);
+  });
+});
+
+describe('hello avatar (protocol v2)', () => {
+  it('still accepts a v1 look from a protocol-v1 client (N-1)', () => {
+    const v1 = AvatarStyle.parse({ top: '#ff0000' });
+    const result = decodeClient(encodeClient({ type: 'hello', v: 1, guestId: uuid, avatar: v1 }));
+    expect(result).toMatchObject({ ok: true, value: { avatar: { top: '#ff0000' } } });
+  });
+
+  it(`keeps every v2 look under ${AVATAR_MAX_BYTES} bytes`, () => {
+    const random = rng(3);
+    let longest = 0;
+    for (let i = 0; i < 500; i++) {
+      longest = Math.max(longest, JSON.stringify(randomAvatarStyle(random)).length);
+    }
+    expect(longest).toBeLessThan(AVATAR_MAX_BYTES);
   });
 });
 

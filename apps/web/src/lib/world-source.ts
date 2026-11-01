@@ -48,7 +48,8 @@ async function fakeWorld(count: number): Promise<WorldSource> {
   return { snapshot: fake.fakeWorld(count), mediaHost: FAKE_MEDIA_HOST };
 }
 
-async function fetchWorld(): Promise<WorldSource> {
+/** `GET /api/world`, validated. Also refetched after `notice:world_update`. */
+export async function fetchWorld(): Promise<WorldSource> {
   let response: Response;
   try {
     response = await fetch('/api/world', { headers: { accept: 'application/json' } });

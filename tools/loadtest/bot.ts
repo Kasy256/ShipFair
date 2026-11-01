@@ -1,9 +1,10 @@
 import {
-  AvatarStyle,
+  type AvatarStyleV2,
   type ClientMessage,
   encodeClient,
   layoutCity,
   PROTOCOL_VERSION,
+  randomAvatarStyle,
   type ServerMessage,
   toNetPos,
   toNetYaw,
@@ -78,6 +79,7 @@ export class Bot {
   #idleUntil = 0;
   #lastSend = 0;
   #stopped = false;
+  readonly #look: AvatarStyleV2;
   shard = '';
 
   constructor(options: BotOptions) {
@@ -85,6 +87,7 @@ export class Bot {
     const r = options.random;
     this.#x = between(r, -20, 20);
     this.#z = between(r, -20, 20);
+    this.#look = randomAvatarStyle(r);
   }
 
   async start(): Promise<void> {
@@ -132,7 +135,7 @@ export class Bot {
     this.#send({
       type: 'hello',
       v: PROTOCOL_VERSION,
-      avatar: AvatarStyle.parse({}),
+      avatar: this.#look,
       ...(token ? { token } : { guestId }),
     });
   }

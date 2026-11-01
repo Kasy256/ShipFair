@@ -171,3 +171,51 @@ export const FOG_RANGE_M = { high: [90, 420], low: [50, 125] } as const;
 export const GROUND_MARGIN_M = 240;
 export const TREE_BELT_M = [10, 70] as const;
 export const TREE_COUNT = 220;
+
+// Client netcode (prompt 11, ARCHITECTURE.md §7). Rates and interpolation delays are shared
+// constants (SNAPSHOT_HZ, CLIENT_SEND_HZ, INTERP_DELAY_MS, EXTRAP_MAX_MS).
+/** A move is sent at CLIENT_SEND_HZ only while the player moved this far or turned this much. */
+export const NET_SEND_MIN_MOVE_M = 0.02;
+export const NET_SEND_MIN_TURN_RAD = (1 * Math.PI) / 180;
+/** Snapshots kept per remote player. */
+export const SNAPSHOT_BUFFER_SIZE = 8;
+/** Extrapolate only when the last two snapshots are at most this far apart (else hold). */
+export const EXTRAP_MAX_GAP_MS = 250;
+/** Clock offset: the max of this many recent (server time − arrival) samples, plus RTT / 2. */
+export const CLOCK_WINDOW = 32;
+/** A new offset estimate further than this from the current one is taken at once… */
+export const CLOCK_SNAP_MS = 250;
+/** …otherwise the offset eases toward it by this share per snapshot (no visible jumps). */
+export const CLOCK_SLEW = 0.1;
+/** RTT smoothing: weight of each new ping sample. */
+export const RTT_SMOOTHING = 0.25;
+/** A server `correct` blends the local player to the server position over this long. */
+export const CORRECTION_BLEND_S = 0.15;
+/** Remote players fade in on `join` and out on `leave` over this long. */
+export const JOIN_FADE_S = 0.3;
+/** Instanced stand-in capacity grows in chunks of this many players. */
+export const STAND_IN_CHUNK = 32;
+/** Without a socket (or after a failed join), retry the coordinator after this long, doubling. */
+export const NET_RETRY_MIN_S = 2;
+export const NET_RETRY_MAX_S = 30;
+/** partysocket's reconnect backoff, and how long one attempt (or the join call) may take. */
+export const NET_RECONNECT_MIN_MS = 1000;
+export const NET_RECONNECT_MAX_MS = 10_000;
+export const NET_CONNECT_TIMEOUT_MS = 8000;
+/** After this many failed reconnects the pill says "Offline, exploring solo" (it keeps trying). */
+export const NET_OFFLINE_AFTER_RETRIES = 4;
+
+// Name tags (prompt 11): one shared canvas atlas, billboarded, one draw call.
+export const NAME_TAG_MAX_DISTANCE_M = 25;
+/** World height of a tag at NAME_TAG_NEAR_M; farther tags grow so text stays readable. */
+export const NAME_TAG_HEIGHT_M = 0.22;
+export const NAME_TAG_NEAR_M = 4;
+/** Growth is capped at this multiple of NAME_TAG_HEIGHT_M. */
+export const NAME_TAG_MAX_SCALE = 2.5;
+/** Tags sit this far above an avatar's feet. */
+export const NAME_TAG_Y_M = 2.15;
+export const NAME_TAG_ATLAS_PX = 1024;
+export const NAME_TAG_ATLAS_COLUMNS = 4;
+export const NAME_TAG_ATLAS_ROWS = 32;
+/** A maker standing this close to one of their own booths gets the "maker" badge. */
+export const MAKER_BADGE_RADIUS_M = 8;
