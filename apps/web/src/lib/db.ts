@@ -2,6 +2,7 @@ import {
   BoothOwn,
   BoothPublic,
   BoothRevisionOwn,
+  BoothStatsDay,
   type BoothTier,
   District,
   type Enums,
@@ -10,6 +11,7 @@ import {
   MakerPublic,
   OwnProfile,
   ProfilePublic,
+  Stamp,
   type Tables,
 } from '@shipfair/shared';
 import * as z from 'zod';
@@ -261,3 +263,27 @@ type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 true satisfies Same<Enums<'booth_tier'>, BoothTier>;
 true satisfies Same<Enums<'booth_status'>, BoothOwn['status']>;
 true satisfies Same<Enums<'revision_status'>, BoothRevisionOwn['status']>;
+
+/** A passport stamp (`passport_stamps`, public since prompt 13). */
+export const StampFromRow = z
+  .custom<Pick<Tables<'passport_stamps'>, 'stamp' | 'created_at'>>(isRow)
+  .transform(
+    (row): unknown => ({ stamp: row.stamp, createdAt: row.created_at }) satisfies FieldsOf<Stamp>,
+  )
+  .pipe(Stamp);
+
+/** One day of the owner's booth stats (`booth_stats_daily`, owner RLS). */
+export const BoothStatsDayFromRow = z
+  .custom<Pick<Tables<'booth_stats_daily'>, 'booth_id' | 'day' | 'unique_visitors' | 'try_clicks'>>(
+    isRow,
+  )
+  .transform(
+    (row): unknown =>
+      ({
+        boothId: row.booth_id,
+        day: row.day,
+        visitors: row.unique_visitors,
+        tryClicks: row.try_clicks,
+      }) satisfies FieldsOf<BoothStatsDay>,
+  )
+  .pipe(BoothStatsDay);

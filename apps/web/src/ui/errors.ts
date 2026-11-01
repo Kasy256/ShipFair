@@ -54,6 +54,7 @@ export function authToastText(key: keyof typeof AUTH_TOASTS): string {
 
 const PROFILE_ERRORS: Record<ProfileErrorCode, string> = {
   handle_taken: 'That handle was just taken. Pick another one.',
+  item_locked: "One of those items isn't unlocked yet. Earn its passport stamp first.",
   name_not_allowed: 'Name tags are public, so pick a handle and display name without rude words.',
   no_permission: "You can't change that. If your account was restricted, check your email.",
   not_found: 'Your account no longer exists. Sign in again to start over.',

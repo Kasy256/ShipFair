@@ -1,5 +1,6 @@
 import { APP_NAME } from '@shipfair/shared';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { usePassportStore } from '../state/passport-store.ts';
 import { useSession } from '../state/session-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
 import { useWorldStore } from '../state/world-store.ts';
@@ -19,6 +20,8 @@ export function Hud() {
   const isHelpOpen = useUiStore((s) => s.isHelpOpen);
   const openSignIn = useUiStore((s) => s.openSignIn);
   const setAvatarOpen = useUiStore((s) => s.setAvatarOpen);
+  const setPassportOpen = useUiStore((s) => s.setPassportOpen);
+  const stampCount = usePassportStore((s) => s.stamps.size);
   const session = useSession();
   const location = useLocation();
   const navigate = useNavigate();
@@ -72,6 +75,15 @@ export function Hud() {
         <InviteButton className={button} />
         <button type="button" className={button} onClick={() => setAvatarOpen(true)}>
           Avatar
+        </button>
+        <button
+          type="button"
+          className={button}
+          data-testid="hud-passport"
+          onClick={() => setPassportOpen(true)}
+        >
+          Passport <span className="text-accent tabular-nums">{stampCount}</span>{' '}
+          <kbd className="ml-1 text-muted text-xs">P</kbd>
         </button>
         <button type="button" className={button} onClick={() => setMapOpen(true)}>
           Map <kbd className="ml-1 text-muted text-xs">M</kbd>

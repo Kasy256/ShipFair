@@ -23,6 +23,8 @@ export function useEngineBridge(): void {
         track({ name: 'booth_open', props: { boothId, source: 'walk' } });
       }),
       engineBus.on('ui:open-submit', () => ui().setClaimOpen(true)),
+      engineBus.on('ui:open-launches', () => ui().setLaunchesOpen(true)),
+      engineBus.on('launches:near', ({ isNear }) => world().setAtWall(isNear)),
       engineBus.on('net:status', ({ status, shard }) => world().setNet(status, shard)),
       engineBus.on('net:population', ({ nearby, total }) => world().setPopulation(nearby, total)),
       engineBus.on('net:notice', ({ code, until }) => {

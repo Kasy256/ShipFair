@@ -1,4 +1,5 @@
 import { type AvatarStyleV2, type CatalogItem, PALETTE_HEX } from '@shipfair/shared';
+import { unlockHint } from '../../state/use-unlocks.ts';
 import { gridOptions, ItemGrid } from './ItemGrid.tsx';
 import { Swatches } from './Swatches.tsx';
 import { type ItemSlot, setColor, setItem } from './style-edits.ts';
@@ -13,12 +14,12 @@ interface SlotPanelProps {
   /** Colours to pick from (the clothing palette unless given). */
   palette?: readonly string[];
   disabledReason?: (item: CatalogItem) => string | null;
+  /** Passport unlock rules met so far (prompt 13); locked items can't be picked. */
+  isUnlocked: (rule: string) => boolean;
   /** Extra controls under the grid (e.g. facial hair's "match hair colour"). */
   colorControls?: React.ReactNode;
   onChange: (style: AvatarStyleV2) => void;
 }
-
-const LOCKED = 'Unlocks with a passport stamp';
 
 /** An item grid plus one or two colour pickers, as many as the chosen item has (catalog `colors`). */
 export function SlotPanel({
@@ -29,6 +30,7 @@ export function SlotPanel({
   allowNone,
   palette = PALETTE_HEX,
   disabledReason,
+  isUnlocked,
   colorControls,
   onChange,
 }: SlotPanelProps) {
@@ -37,7 +39,8 @@ export function SlotPanel({
   const colors = current.item === 'none' ? 0 : (item?.colors ?? 1);
   const options = gridOptions(items, {
     allowNone,
-    disabledReason: (i) => (i.unlock ? LOCKED : (disabledReason?.(i) ?? null)),
+    disabledReason: (i) =>
+      i.unlock && !isUnlocked(i.unlock) ? unlockHint(i.unlock) : (disabledReason?.(i) ?? null),
   });
   const second = 'color2' in current ? current.color2 : undefined;
 

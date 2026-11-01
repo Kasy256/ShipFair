@@ -1,6 +1,7 @@
-import { env, exports } from 'cloudflare:workers';
+import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Env } from './env.ts';
+import worker from './index.ts';
 import { runNightly } from './passport.ts';
 import { api, errorCode, OWNER, realtimeCalls, resetStub, seed, table } from './test/helpers.ts';
 import { readWorldVersion } from './world.ts';
@@ -145,11 +146,8 @@ describe('nightly cron', () => {
 
   it('runs from the scheduled handler', async () => {
     await seed({ tier_changes: [{ booth_id: BOOTH, old_tier: 'booth', new_tier: 'pavilion' }] });
-    await exports.default.scheduled({
-      scheduledTime: Date.now(),
-      cron: '0 3 * * *',
-      noRetry() {},
-    } as ScheduledController);
+    const controller = { scheduledTime: Date.now(), cron: '0 3 * * *', noRetry() {} };
+    await worker.scheduled(controller, env as Env);
     expect(await realtimeCalls()).toEqual([['worldUpdate', [BOOTH]]]);
   });
 });

@@ -14,6 +14,7 @@ import {
 } from '../../lib/social-api.ts';
 import { useSessionStore } from '../../state/session-store.ts';
 import { useUiStore } from '../../state/ui-store.ts';
+import { earnStamp } from '../../state/use-passport.ts';
 import { socialErrorText } from '../errors.ts';
 import { ReportForm } from '../social/ReportForm.tsx';
 
@@ -120,6 +121,7 @@ function Composer({
     try {
       await postGuestbook(await socialClient(), userId, { boothId, body });
       setBody('');
+      earnStamp('first:note');
       onPosted();
     } catch (failure) {
       setError(socialErrorText(failure));
