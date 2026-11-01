@@ -127,7 +127,7 @@ begin
   from public.passport_evidence as e where e.player_key = gkey
   on conflict do nothing;
   delete from public.passport_evidence as e where e.player_key = gkey;
-  held := public.award_stamps(uid);
+  held := public.award_stamps(uid, claims);
   return jsonb_build_object(
     'awarded', to_jsonb(array(select c from unnest(claims) as c where c = any (held))),
     'pending', to_jsonb(array(select c from unnest(claims) as c where not (c = any (held))))
@@ -137,7 +137,9 @@ $$;
 
 -- A shard batch's evidence (zod-checked by the Worker first). Linked guests' rows go to their
 -- account. Then every signed-in player in the batch is awarded what they now have, so stamps
--- arrive even if the browser never asks. Returns the number of new evidence rows.
+-- arrive even if the browser never asks, except `squad`: the shard can only see that someone
+-- joined a shard that wasn't empty, so that one also needs the browser's claim (it came through
+-- a friend's `?with=` link). Returns the number of new evidence rows.
 create function public.ingest_passport_evidence(evidence jsonb)
 returns integer
 language plpgsql
@@ -165,7 +167,9 @@ begin
   select array_agg(distinct coalesce(l.user_id::text, e ->> 'player')) into players
   from jsonb_array_elements(coalesce(evidence, '[]'::jsonb)) as e
   left join public.passport_guest_links as l on l.guest_key = e ->> 'player';
-  perform public.award_stamps(p.id)
+  perform public.award_stamps(
+    p.id, array(select s from public.passport_earned(p.id) as s where s <> 'squad')
+  )
   from public.profiles as p
   where p.id::text = any (coalesce(players, '{}'));
   return written;

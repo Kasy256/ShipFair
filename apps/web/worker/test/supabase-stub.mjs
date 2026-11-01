@@ -131,7 +131,7 @@ function mergeGuest({ uid, guest, claims }) {
   }
   if (link.user_id !== uid) return { awarded: [], pending: [] };
   for (const row of store.passport_backed) if (row.player === key) row.player = uid;
-  const held = awardStamps({ uid });
+  const held = awardStamps({ uid, claims });
   return {
     awarded: claims.filter((c) => held.includes(c)),
     pending: claims.filter((c) => !held.includes(c)),

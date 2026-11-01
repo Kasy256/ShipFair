@@ -1,6 +1,6 @@
 begin;
 \ir _helpers.psql
-select plan(44);
+select plan(46);
 
 select tests.create_user('walker') as walker_id \gset
 select tests.create_user('second') as second_id \gset
@@ -84,7 +84,19 @@ select is(
 );
 
 select public.ingest_passport_evidence(jsonb_build_array(
-  jsonb_build_object('player', :'banned_id', 'kind', 'fact', 'key', 'squad')
+  jsonb_build_object('player', :'walker_id', 'kind', 'fact', 'key', 'squad')
+));
+select ok(
+  not exists (select 1 from public.passport_stamps where user_id = :'walker_id' and stamp = 'squad'),
+  'squad evidence alone is not awarded at ingest'
+);
+select is(
+  public.award_stamps(:'walker_id', array['squad']), array['squad'],
+  'squad is awarded when the browser claims it and the shard backs it'
+);
+
+select public.ingest_passport_evidence(jsonb_build_array(
+  jsonb_build_object('player', :'banned_id', 'kind', 'fact', 'key', 'first:chat')
 ));
 select is(
   (select count(*)::int from public.passport_stamps where user_id = :'banned_id'), 0,
