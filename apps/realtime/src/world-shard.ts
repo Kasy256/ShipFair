@@ -2,6 +2,7 @@ import {
   BOOTH_VISIT_RADIUS_M,
   type ClientMessage,
   decodeClient,
+  districtAt,
   encodeServer,
   fromNetPos,
   guestName,
@@ -43,11 +44,12 @@ import { AoiGrid } from './shard/aoi-grid.ts';
 import { addStrike, prepareChat } from './shard/chat.ts';
 import { ShardMetrics } from './shard/metrics.ts';
 import { isInBounds, isReachable, type Vec3 } from './shard/movement.ts';
+import { DistrictDwell } from './shard/passport.ts';
 import { type ConnState, Player, type PlayerState } from './shard/player.ts';
 import { horizontalDistSq, stepViews, type ViewSink } from './shard/view.ts';
-import { utcDay, VisitTracker } from './shard/visits.ts';
+import { utcDay, type VisitSink, VisitTracker } from './shard/visits.ts';
 import { WorldView } from './shard/world-view.ts';
-import { VisitLedger } from './stats.ts';
+import { EvidenceLedger, VisitLedger } from './stats.ts';
 
 // One room of up to MAX_PLAYERS_PER_SHARD players (ARCHITECTURE.md §7). Movement, emotes and chat
 // are validated here and relayed within an area of interest by a 10 Hz loop that runs only while
@@ -78,6 +80,8 @@ export class WorldShard extends RoomServer<Env, ConnState> {
   readonly #grid = new AoiGrid<Player>(AOI_CELL_M);
   readonly #visits = new VisitTracker();
   readonly #ledger: VisitLedger;
+  readonly #districtDwell = new DistrictDwell();
+  readonly #evidence: EvidenceLedger;
   readonly #metrics: ShardMetrics;
   /** Invalid-message counts per socket: losing them to an eviction only forgives a few. */
   readonly #invalid = new Map<string, { count: number; since: number }>();
@@ -106,6 +110,7 @@ export class WorldShard extends RoomServer<Env, ConnState> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.#ledger = new VisitLedger(ctx.storage.sql);
+    this.#evidence = new EvidenceLedger(ctx.storage.sql);
     this.#metrics = new ShardMetrics(Date.now());
   }
 
@@ -179,6 +184,7 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       this.#byConn.delete(conn.id);
       this.#players.delete(player.id);
       this.#visits.forget(player.id);
+      this.#districtDwell.forget(player.id);
       // `leave` goes out now, not on the next tick: a hello before then may reuse the id (a
       // sign-in swaps sockets), and viewers would keep the old summary instead of seeing a join.
       for (const other of this.#players.values()) {
@@ -199,7 +205,7 @@ export class WorldShard extends RoomServer<Env, ConnState> {
     this.#stopLoop();
     await this.#report(this.now());
     // Visits counted since the last report are flushed by an alarm rather than kept awake for.
-    if (this.#ledger.pending().length > 0) {
+    if (this.#ledger.pending().length > 0 || this.#evidence.pending().length > 0) {
       await this.ctx.storage.setAlarm(this.#lastFlush + STATS_FLUSH_MS);
     }
   }
@@ -380,6 +386,9 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       player.sent.set(other.id, other.version);
     }
     this.#send(conn, { type: 'welcome', you: player.id, shard: this.name, players });
+    // Passport `squad`: joined a shard someone was already in. The browser only claims it after a
+    // friend's `?with=` link, and only claims are awarded for it (ARCHITECTURE.md §7).
+    if (this.#players.size > 1) this.#evidence.add(player.state.key, 'fact', 'squad');
     this.#startLoop();
   }
 
@@ -572,6 +581,7 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       }
     }
     player.save();
+    this.#evidence.add(state.key, 'fact', 'first:chat');
     const bytes = encodeServer({ type: 'chat', id: player.id, text: prepared.text, ts: now });
     const { chatRadiusM } = this.#config().limits;
     for (const other of this.#players.values()) {
@@ -681,9 +691,30 @@ export class WorldShard extends RoomServer<Env, ConnState> {
         booth?.boothId ?? null,
         dtS,
         day,
-        this.#ledger,
+        this.#visitSink,
       );
+      const district = districtAt(layout, player.x, player.z);
+      const slug = district ? (this.#world.districtSlug(district.id) ?? null) : null;
+      this.#districtDwell.update(player.id, player.state.key, slug, dtS, this.#evidence);
     }
+  }
+
+  /** A completed visit: the day's counts, plus passport evidence (booth, and maker if here). */
+  readonly #visitSink: VisitSink = {
+    record: (day, playerKey, boothId) => {
+      this.#ledger.record(day, playerKey, boothId);
+      this.#evidence.add(playerKey, 'booth', boothId);
+      const owner = this.#world.ownerOf(boothId);
+      if (owner && owner !== playerKey && this.#isOnline(owner)) {
+        this.#evidence.add(playerKey, 'fact', 'met-a-maker');
+      }
+    },
+  };
+
+  /** Whether a signed-in user is in this shard (visits are rare, so a scan is fine). */
+  #isOnline(uid: string): boolean {
+    for (const player of this.#players.values()) if (player.state.uid === uid) return true;
+    return false;
   }
 
   // --- periodic jobs -----------------------------------------------------------------------
@@ -720,16 +751,20 @@ export class WorldShard extends RoomServer<Env, ConnState> {
     this.#ledger.prune(now);
     if (this.#isFlushing) return;
     const rows = this.#ledger.pending();
-    if (rows.length === 0) return;
+    const evidence = this.#evidence.pending();
+    if (rows.length === 0 && evidence.length === 0) return;
     this.#isFlushing = true;
     try {
       const result = await this.env.WEB.ingestStats({
         shard: this.name,
         secret: this.#config().statsSecret,
         rows,
+        evidence,
       });
-      if (result.ok) this.#ledger.settle(rows);
-      else console.error('shard: stats refused', result.error);
+      if (result.ok) {
+        this.#ledger.settle(rows);
+        this.#evidence.settle(evidence);
+      } else console.error('shard: stats refused', result.error);
     } catch (error) {
       console.error('shard: stats flush failed', error);
     } finally {

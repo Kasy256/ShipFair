@@ -681,6 +681,8 @@ describe('visit tracking', () => {
           shard: 'w-171',
           secret: 'test-stats-secret',
           rows: [{ boothId: BOOTH.id, day: '2026-10-31', visits: 1, uniqueVisitors: 1 }],
+          // Passport evidence rides along (prompt 13; passport.test.ts covers it).
+          evidence: expect.any(Array),
         },
       ],
     ]);
