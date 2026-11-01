@@ -14,6 +14,14 @@ export interface Toast {
   text: string;
 }
 
+/** A clicked player (the mini profile card, prompt 12). */
+export interface SelectedPlayer {
+  id: number;
+  userId: string | null;
+  name: string;
+  isGuest: boolean;
+}
+
 interface UiState {
   /** The booth whose panel is open. */
   openBoothId: string | null;
@@ -29,6 +37,7 @@ interface UiState {
   isOnboardingOpen: boolean;
   /** The avatar editor over the world (guests and signed-in users). */
   isAvatarOpen: boolean;
+  selectedPlayer: SelectedPlayer | null;
   isReducedMotion: boolean;
   toasts: readonly Toast[];
   openBooth(id: string): void;
@@ -40,6 +49,7 @@ interface UiState {
   closeSignIn(): void;
   setOnboardingOpen(isOpen: boolean): void;
   setAvatarOpen(isOpen: boolean): void;
+  selectPlayer(player: SelectedPlayer | null): void;
   setReducedMotion(isReduced: boolean): void;
   showToast(text: string): void;
   dismissToast(id: number): void;
@@ -71,10 +81,12 @@ export const useUiStore = create<UiState>()((set, get) => ({
   authError: null,
   isOnboardingOpen: false,
   isAvatarOpen: false,
+  selectedPlayer: null,
   isReducedMotion: initialReducedMotion(),
   toasts: [],
   // One overlay at a time: opening a booth closes the map, and the other way round.
-  openBooth: (id) => set({ openBoothId: id, isMapOpen: false, isClaimOpen: false }),
+  openBooth: (id) =>
+    set({ openBoothId: id, isMapOpen: false, isClaimOpen: false, selectedPlayer: null }),
   closeBooth: () => set({ openBoothId: null }),
   setMapOpen: (isOpen) =>
     set(isOpen ? { isMapOpen: true, openBoothId: null, isClaimOpen: false } : { isMapOpen: false }),
@@ -106,6 +118,12 @@ export const useUiStore = create<UiState>()((set, get) => ({
         ? { isAvatarOpen: true, openBoothId: null, isMapOpen: false }
         : { isAvatarOpen: false },
     ),
+  selectPlayer: (player) =>
+    set(
+      player
+        ? { selectedPlayer: player, openBoothId: null, isMapOpen: false, isClaimOpen: false }
+        : { selectedPlayer: null },
+    ),
   setReducedMotion(isReduced) {
     set({ isReducedMotion: isReduced });
     try {
@@ -129,4 +147,5 @@ export const selectIsOverlayOpen = (s: UiState): boolean =>
   s.isClaimOpen ||
   s.isSignInOpen ||
   s.isOnboardingOpen ||
-  s.isAvatarOpen;
+  s.isAvatarOpen ||
+  s.selectedPlayer !== null;

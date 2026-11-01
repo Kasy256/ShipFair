@@ -1,5 +1,6 @@
 import {
   type AvatarStyleV2,
+  CHAT_MAX_CHARS,
   CLIENT_SEND_HZ,
   type ClientMessage,
   decodeServer,
@@ -13,6 +14,7 @@ import {
   PROTOCOL_VERSION,
   type ServerMessage,
   ShardId,
+  type TeleportTarget,
   toNetPos,
   toNetYaw,
 } from '@shipfair/shared';
@@ -34,6 +36,9 @@ import { joinShard, openSocket, type SocketLike, TERMINAL_CLOSES } from './socke
 // receives to the remote-player view, the local player and the bus. It never blocks the world:
 // every failure only changes the status pill, and exploring solo keeps working.
 
+/** The speaker id `RemoteSink.say` uses for the local player's own bubble. */
+export const LOCAL_SPEAKER = -1;
+
 /** Where remote players go. Implemented by `RemotePlayers`. */
 export interface RemoteSink {
   welcome(players: readonly PlayerSummaryLike[]): void;
@@ -42,6 +47,8 @@ export interface RemoteSink {
   snap(id: number, t: number, x: number, y: number, z: number, yaw: number, anim: number): void;
   emote(id: number, e: number): void;
   nameOf(id: number): string | null;
+  /** A speech bubble above player `id`, or above the local player for LOCAL_SPEAKER. */
+  say(id: number, text: string): void;
   /** Players currently shown (for the visitor count). */
   readonly size: number;
   /** Fade everyone out (the connection dropped). */
@@ -110,6 +117,12 @@ export class NetClient implements System {
   #retryS = NET_RETRY_MIN_S;
   #retryTimer: ReturnType<typeof setTimeout> | undefined;
   #session = 0;
+  /** Profile ids of the players shown, by net id (guests have none). */
+  readonly #uids = new Map<number, string>();
+  /** Makers of live booths among them (`isMakerOf`), for "Maker is here". */
+  readonly #makers = new Map<number, { userId: string; boothIds: readonly string[] }>();
+  /** Profiles this player muted: their chat is never shown, and the shard stops relaying it. */
+  #muted: ReadonlySet<string> = new Set();
   readonly #sent = { x: Number.NaN, y: 0, z: 0, yaw: 0, anim: -1 };
   readonly #move = {
     type: 'move' as const,
@@ -163,6 +176,43 @@ export class NetClient implements System {
 
   sendEmote(e: number): void {
     if (this.#isWelcomed) this.#send({ type: 'emote', e });
+  }
+
+  /**
+   * Sends a chat line (trimmed, at most CHAT_MAX_CHARS). The shard filters, rate-limits and
+   * relays it, and echoes it back, which is when the bubble and log line appear. Returns false
+   * when there is nothing to send or no connection.
+   */
+  sendChat(text: string): boolean {
+    const trimmed = Array.from(text.trim()).slice(0, CHAT_MAX_CHARS).join('');
+    if (!this.#isWelcomed || trimmed === '') return false;
+    this.#send({ type: 'chat', text: trimmed });
+    return true;
+  }
+
+  /** Tells the shard where a local teleport went, so the next move isn't corrected back. */
+  sendTeleport(to: TeleportTarget): void {
+    if (this.#isWelcomed) this.#send({ type: 'teleport', to });
+  }
+
+  /**
+   * Everyone the player muted (profile ids, from the session store). Players shown now are muted
+   * or unmuted on the shard at once; anyone who joins later is muted as they arrive.
+   */
+  setMutes(userIds: readonly string[]): void {
+    const next = new Set(userIds);
+    const before = this.#muted;
+    this.#muted = next;
+    if (!this.#isWelcomed) return;
+    for (const [id, uid] of this.#uids) {
+      const isMuted = next.has(uid);
+      if (isMuted !== before.has(uid)) this.#send({ type: isMuted ? 'mute' : 'unmute', id });
+    }
+  }
+
+  /** True when the player with this profile id is muted. */
+  isMuted(userId: string): boolean {
+    return this.#muted.has(userId);
   }
 
   update(dt: number): void {
@@ -267,7 +317,27 @@ export class NetClient implements System {
     this.#sent.x = Number.NaN;
     this.#deps.clock.reset();
     this.#deps.remotes.clear();
+    this.#uids.clear();
     this.#population();
+    if (this.#makers.size > 0) {
+      this.#makers.clear();
+      this.#emitMakers();
+    }
+  }
+
+  /** Notes a newly shown player's profile id and booths, and re-sends a mute if they're muted. */
+  #known(player: PlayerSummaryLike): void {
+    if (!player.uid) return;
+    this.#uids.set(player.id, player.uid);
+    if (this.#muted.has(player.uid)) this.#send({ type: 'mute', id: player.id });
+    if (player.isMakerOf && player.isMakerOf.length > 0) {
+      this.#makers.set(player.id, { userId: player.uid, boothIds: player.isMakerOf });
+    }
+  }
+
+  #emitMakers(): void {
+    const makers = [...this.#makers].map(([id, m]) => ({ id, ...m }));
+    this.#deps.bus.emit('net:makers', { makers });
   }
 
   #receive(data: ArrayBuffer): void {
@@ -292,8 +362,13 @@ export class NetClient implements System {
         this.#sincePing = Number.POSITIVE_INFINITY;
         this.#retryS = NET_RETRY_MIN_S;
         remotes.welcome(msg.players.filter((p) => p.id !== msg.you));
+        this.#uids.clear();
+        this.#makers.clear();
+        for (const player of msg.players) if (player.id !== msg.you) this.#known(player);
         this.#setStatus('online');
         this.#population();
+        // #lost() already announced "no makers" when the last connection dropped.
+        if (this.#makers.size > 0) this.#emitMakers();
         return;
       case 'snap':
         clock.onServerTime(msg.t, this.#now());
@@ -305,23 +380,35 @@ export class NetClient implements System {
       case 'join':
         if (msg.player.id === this.#you) return;
         remotes.join(msg.player);
+        this.#known(msg.player);
         this.#population();
+        if (msg.player.isMakerOf) this.#emitMakers();
         return;
       case 'leave':
         remotes.leave(msg.id);
+        this.#uids.delete(msg.id);
         this.#population();
+        if (this.#makers.delete(msg.id)) this.#emitMakers();
         return;
       case 'emote':
         remotes.emote(msg.id, msg.e);
         return;
-      case 'chat':
+      case 'chat': {
+        const isYou = msg.id === this.#you;
+        const userId = isYou ? null : (this.#uids.get(msg.id) ?? null);
+        // The shard stops relaying muted players; this covers the moment before it knows.
+        if (userId !== null && this.#muted.has(userId)) return;
+        remotes.say(isYou ? LOCAL_SPEAKER : msg.id, msg.text);
         bus.emit('chat:incoming', {
           id: msg.id,
-          name: msg.id === this.#you ? 'You' : (remotes.nameOf(msg.id) ?? 'Someone'),
+          userId,
+          name: isYou ? 'You' : (remotes.nameOf(msg.id) ?? 'Someone'),
           text: msg.text,
           ts: msg.ts,
+          isYou,
         });
         return;
+      }
       case 'pong':
         clock.onPong(msg.t, this.#now());
         return;

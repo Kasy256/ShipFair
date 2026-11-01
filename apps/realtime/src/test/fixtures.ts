@@ -27,5 +27,12 @@ export const USERS = {
   noProfile: '00000000-0000-4000-8000-0000000000d1',
 } as const;
 
-/** The city every test shard loads: 12 booths over the launch districts. */
-export const WORLD = fakeWorld(12, 1);
+/**
+ * The city every test shard loads: 12 booths over the launch districts. Ada owns the first booth
+ * (`isMakerOf` in her summary).
+ */
+const world = fakeWorld(12, 1);
+export const WORLD = {
+  ...world,
+  booths: world.booths.map((b, i) => (i === 0 ? { ...b, ownerId: USERS.ada } : b)),
+};

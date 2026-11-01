@@ -75,13 +75,13 @@ select lives_ok(
   'an expired ban no longer blocks writes'
 );
 
--- Owners hide entries through the API for now (see the PR follow-ups), not by direct update.
-select tests.login(:'owner_id');
+-- Only the booth owner may hide entries (13_social.test.sql); anyone else's update changes nothing.
+select tests.login(:'writer_id');
 update public.guestbook_entries set hidden = true where booth_id = :'booth_id';
 select tests.logout_anon();
 select is(
   (select count(*)::int from public.guestbook_entries where booth_id = :'booth_id'), 7,
-  'clients cannot update guestbook entries'
+  'other users cannot hide guestbook entries'
 );
 
 select * from finish();

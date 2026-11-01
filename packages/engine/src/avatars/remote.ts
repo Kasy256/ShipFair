@@ -12,23 +12,28 @@ import {
 import { Color, Group, type Vector3 } from 'three';
 import {
   ANIM_IDLE_MPS,
+  CHAT_BUBBLE_Y_M,
   JOIN_FADE_S,
   LOD_REEVALUATE_S,
   LOD_SWAP_FADE_S,
   LOD1_ANIMATION_EVERY,
   NAME_TAG_MAX_DISTANCE_M,
   NAME_TAG_Y_M,
+  PICK_HEIGHT_M,
+  PICK_RADIUS_M,
   STAND_IN_CHUNK,
 } from '../config.ts';
 import type { ClockSync } from '../core/clock-sync.ts';
 import type { System } from '../core/loop.ts';
 import { createSample, type RemoteSample, SnapshotBuffer } from '../core/snapshot-buffer.ts';
-import type { PlayerSummaryLike, RemoteSink } from '../net/client.ts';
+import { LOCAL_SPEAKER, type PlayerSummaryLike, type RemoteSink } from '../net/client.ts';
 import type { AnimationSet } from './animation-set.ts';
 import type { CharacterFactory } from './character-factory.ts';
+import { ChatBubbles } from './chat-bubbles.ts';
 import { GltfAvatar } from './gltf-avatar.ts';
 import { assignLods, createLodScratch, type LodLevel, type LodScratch, STAND_IN } from './lod.ts';
 import { NameTags } from './name-tags.ts';
+import { rayHitsCylinder } from './pick.ts';
 import {
   advancePose,
   applyEmotePose,
@@ -44,7 +49,8 @@ import { PosedStandIns, TINT_FLOATS } from './posed-stand-ins.ts';
 // its snapshot buffer. LODs follow the 04b policy, re-evaluated 4× a second: the nearest get a
 // glTF character (LOD0, then LOD1), everyone else the instanced, posed stand-in in their own
 // colours. Joins and leaves fade over JOIN_FADE_S; LOD swaps cross-fade over LOD_SWAP_FADE_S.
-// Nothing here allocates per frame.
+// Chat bubbles (prompt 12) float above whoever spoke, the local player included. Nothing here
+// allocates per frame.
 
 interface Remote {
   readonly id: number;
@@ -84,6 +90,8 @@ export interface RemotePlayersOptions {
   tier: QualityTier;
   /** Is this profile the maker of a live booth near (x, z)? For the "maker" badge. */
   isMakerNear?: ((uid: string, x: number, z: number) => boolean) | undefined;
+  /** The local player's drawn position, for their own chat bubble. */
+  local?: Vector3 | undefined;
   now?: () => number;
 }
 
@@ -136,6 +144,7 @@ export class RemotePlayers implements System, RemoteSink {
   readonly #list: Remote[] = [];
   readonly #standIns: PosedStandIns;
   readonly #tags: NameTags;
+  readonly #bubbles = new ChatBubbles();
   readonly #pending = new Set<Promise<unknown>>();
   #factory: CharacterFactory | null = null;
   #animations: AnimationSet | null = null;
@@ -155,7 +164,7 @@ export class RemotePlayers implements System, RemoteSink {
     // Up to two tags per player (name and badge), for a full shard and then some.
     this.#tags = new NameTags(STAND_IN_CHUNK * 4);
     this.root.name = 'remote-players';
-    this.root.add(this.#standIns.root, this.#tags.mesh);
+    this.root.add(this.#standIns.root, this.#tags.mesh, this.#bubbles.mesh);
   }
 
   /** Players shown and not leaving. */
@@ -163,9 +172,9 @@ export class RemotePlayers implements System, RemoteSink {
     return this.#active;
   }
 
-  /** GPU bytes of the name tag atlas (for the texture budget). */
+  /** GPU bytes of the name tag and chat bubble atlases (for the texture budget). */
   get textureBytes(): number {
-    return this.#tags.bytes;
+    return this.#tags.bytes + this.#bubbles.bytes;
   }
 
   /** Art has loaded: from the next LOD pass the nearest players become glTF characters. */
@@ -255,6 +264,59 @@ export class RemotePlayers implements System, RemoteSink {
     return this.#byId.get(id)?.name ?? null;
   }
 
+  /** A speech bubble above player `id` (LOCAL_SPEAKER: the local player) for CHAT_BUBBLE_S. */
+  say(id: number, text: string): void {
+    if (id !== LOCAL_SPEAKER && !this.#byId.has(id)) return;
+    this.#bubbles.say(id, text);
+  }
+
+  /** Who a shown player is (the mini profile card), or null. */
+  infoOf(id: number): { name: string; uid: string | null; isGuest: boolean } | null {
+    const r = this.#byId.get(id);
+    return r && !r.isLeaving ? { name: r.name, uid: r.uid, isGuest: r.isGuest } : null;
+  }
+
+  /** Where player `id` is drawn now, into `out`; false if they aren't shown. */
+  positionOf(id: number, out: { x: number; y: number; z: number }): boolean {
+    const r = this.#byId.get(id);
+    if (!r || r.isLeaving) return false;
+    out.x = r.sample.x;
+    out.y = r.sample.y;
+    out.z = r.sample.z;
+    return true;
+  }
+
+  /**
+   * The nearest player a ray (origin o, unit direction d) hits, or −1. Each player is a vertical
+   * cylinder around where they are drawn, whatever their LOD.
+   */
+  pick(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number): number {
+    let best = -1;
+    let bestT = Number.POSITIVE_INFINITY;
+    for (const r of this.#list) {
+      if (r.isLeaving) continue;
+      const s = r.sample;
+      const t = rayHitsCylinder(
+        ox,
+        oy,
+        oz,
+        dx,
+        dy,
+        dz,
+        s.x,
+        s.y,
+        s.z,
+        PICK_RADIUS_M,
+        PICK_HEIGHT_M,
+      );
+      if (t < bestT) {
+        bestT = t;
+        best = r.id;
+      }
+    }
+    return best;
+  }
+
   clear(): void {
     for (const id of this.#byId.keys()) this.leave(id);
   }
@@ -278,6 +340,7 @@ export class RemotePlayers implements System, RemoteSink {
     const fadeStep = dt / JOIN_FADE_S;
     this.#standIns.begin();
     this.#tags.begin();
+    this.#bubbles.begin(dt);
     for (let i = this.#list.length - 1; i >= 0; i--) {
       const r = this.#list[i];
       if (!r) continue;
@@ -311,10 +374,22 @@ export class RemotePlayers implements System, RemoteSink {
           distance,
           r.fade,
         );
+        if (this.#bubbles.has(r.id)) {
+          this.#bubbles.add(r.id, s.x, s.y + CHAT_BUBBLE_Y_M, s.z, distance, r.fade);
+        }
       }
+    }
+    const local = this.#opts.local;
+    if (local && this.#bubbles.has(LOCAL_SPEAKER)) {
+      const dx = local.x - v.x;
+      const dy = local.y + CHAT_BUBBLE_Y_M - v.y;
+      const dz = local.z - v.z;
+      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      this.#bubbles.add(LOCAL_SPEAKER, local.x, local.y + CHAT_BUBBLE_Y_M, local.z, distance, 1);
     }
     this.#standIns.end();
     this.#tags.end();
+    this.#bubbles.end();
   }
 
   /** Moves and fades the glTF avatars; returns how solid the stand-in should be. */
@@ -423,6 +498,7 @@ export class RemotePlayers implements System, RemoteSink {
     r.avatar = null;
     this.#dropRetired(r);
     this.#tags.release(r.tag);
+    this.#bubbles.forget(r.id);
     if (!r.isLeaving) this.#active--;
     this.#byId.delete(r.id);
     const i = this.#list.indexOf(r);
@@ -451,9 +527,14 @@ export class RemotePlayers implements System, RemoteSink {
     }));
   }
 
-  /** Stand-ins and name tags drawn last frame. */
-  drawn(): { standIns: number; tags: number } {
-    return { standIns: this.#standIns.count, tags: this.#tags.count };
+  /** Stand-ins, name tags and chat bubbles drawn last frame. */
+  drawn(): { standIns: number; tags: number; bubbles: number } {
+    return { standIns: this.#standIns.count, tags: this.#tags.count, bubbles: this.#bubbles.count };
+  }
+
+  /** Bubbles up now: speaker id (LOCAL_SPEAKER for you), text and age (the test API). */
+  bubbles(): { speaker: number; text: string; ageS: number }[] {
+    return this.#bubbles.views();
   }
 
   /** Resolves once every avatar build started so far has finished. */
@@ -465,6 +546,7 @@ export class RemotePlayers implements System, RemoteSink {
     for (const r of [...this.#list]) this.#remove(r);
     this.#standIns.dispose();
     this.#tags.dispose();
+    this.#bubbles.dispose();
     this.root.removeFromParent();
   }
 }

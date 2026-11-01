@@ -19,11 +19,17 @@ interface SessionState {
   guest: GuestIdentity;
   /** The avatar editor's unsaved look, shown live in the world while the editor is open. */
   draftStyle: AvatarStyleV2 | null;
+  /**
+   * Players this visitor muted (profile ids), for this session only (prompt 12). The engine tells
+   * the shard, which stops relaying their chat to us.
+   */
+  mutedUserIds: readonly string[];
   setSignedIn(userId: string, profile: OwnProfile): void;
   setGuest(): void;
   setProfile(profile: OwnProfile): void;
   setGuestStyle(style: AvatarStyleV2): void;
   setDraftStyle(style: AvatarStyleV2 | null): void;
+  setMuted(userId: string, isMuted: boolean): void;
 }
 
 /** Who is playing: a guest or a signed-in user (CODING_STANDARDS.md §5, one store per domain). */
@@ -33,11 +39,17 @@ export const useSessionStore = create<SessionState>()((set) => ({
   profile: null,
   guest: loadGuest(),
   draftStyle: null,
+  mutedUserIds: [],
   setSignedIn: (userId, profile) => set({ status: 'signed-in', userId, profile }),
   setGuest: () => set({ status: 'guest', userId: null, profile: null, draftStyle: null }),
   setProfile: (profile) => set({ profile }),
   setGuestStyle: (style) => set({ guest: saveGuestStyle(style) }),
   setDraftStyle: (style) => set({ draftStyle: style }),
+  setMuted: (userId, isMuted) =>
+    set((s) => {
+      const others = s.mutedUserIds.filter((id) => id !== userId);
+      return { mutedUserIds: isMuted ? [...others, userId] : others };
+    }),
 }));
 
 /** The saved look: the profile's when signed in, else the guest's. */

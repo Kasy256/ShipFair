@@ -12,6 +12,7 @@ export const DISTRICT_GAP_M = 6; // between neighbouring districts on the same s
 export const PLAZA_SIZE_M = 60; // square, centred on the origin
 export const SPAWN_DISTANCE_M = 5; // in front of a booth for /b/:slug deep links
 export const DISTRICT_SPAWN_INSET_M = 4; // district teleports land this far inside the gate
+export const MAKER_VISIT_DISTANCE_M = 1.5; // "Walk to maker" lands this far from them
 export const BOOTH_GRID_CELL_M = 8; // spatial grid cell for nearestBooth
 
 // Movement (ARCHITECTURE.md §7 trust model)
@@ -45,6 +46,9 @@ export const EMOTE_PER_S = 1;
 export const TELEPORT_PER_S = 1;
 export const GUESTBOOK_MAX_CHARS = 200;
 export const REPORT_NOTE_MAX_CHARS = 300;
+export const REPORT_CONTEXT_LINES = 20; // chat lines from the reported player attached to a report
+export const GUESTBOOK_PAGE_SIZE = 20; // entries per page in the booth panel
+export const CHAT_LOG_LINES = 30; // lines kept in the chat log panel
 
 // Booths
 export const BOOTH_FOCUS_RADIUS_M = 3;
@@ -90,6 +94,8 @@ export const SHARE_PANEL_DELAY_S = 1.5; // /b/:slug opens the booth panel this l
 export const ASSET_MANIFEST_URL = '/assets/assets-manifest.generated.json';
 
 // Protocol versioning (CODING_STANDARDS.md §6). v2 (prompt 11): `hello` and player summaries
-// carry the v2 avatar style; v1 hellos (v1 look) are still accepted and migrated.
-export const PROTOCOL_VERSION = 2;
+// carry the v2 avatar style; v1 hellos (v1 look) are still accepted and migrated. v3 (prompt 12):
+// `mute`/`unmute`, `teleport` to a player, and `isMakerOf` in player summaries. Older clients
+// never send the new messages, and their decoders drop the new summary field.
+export const PROTOCOL_VERSION = 3;
 export const MIN_CLIENT_PROTOCOL = 1;

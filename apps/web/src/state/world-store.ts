@@ -29,12 +29,18 @@ interface WorldState {
   onlineCount: number | null;
   /** The shard refused this client's protocol version: the refresh banner. */
   isUpdateRequired: boolean;
+  /**
+   * Booth makers among the players we see, by booth id: their net id for "Walk to maker"
+   * (`net:makers`, prompt 12).
+   */
+  makersHere: ReadonlyMap<string, number>;
   setWorld(source: WorldSource): void;
   /** A newer snapshot of the same world (after `world_update`): the lookups change, the view doesn't. */
   refreshWorld(snapshot: WorldSnapshot): void;
   setNet(status: NetStatus, shard: string | null): void;
   setPopulation(nearby: number, online: number | null): void;
   setUpdateRequired(): void;
+  setMakersHere(makers: readonly { id: number; boothIds: readonly string[] }[]): void;
   setDistrict(id: number | null): void;
   setFocusedBooth(id: string | null): void;
 }
@@ -56,6 +62,7 @@ export const useWorldStore = create<WorldState>()((set) => ({
   nearbyCount: 1,
   onlineCount: null,
   isUpdateRequired: false,
+  makersHere: empty,
   setWorld({ snapshot, mediaHost }) {
     const booths = snapshot?.booths ?? [];
     set({
@@ -81,6 +88,11 @@ export const useWorldStore = create<WorldState>()((set) => ({
   setNet: (status, shard) => set({ netStatus: status, shard }),
   setPopulation: (nearby, online) => set({ nearbyCount: nearby, onlineCount: online }),
   setUpdateRequired: () => set({ isUpdateRequired: true }),
+  setMakersHere(makers) {
+    const here = new Map<string, number>();
+    for (const maker of makers) for (const boothId of maker.boothIds) here.set(boothId, maker.id);
+    set({ makersHere: here });
+  },
   setDistrict: (id) => set({ currentDistrictId: id }),
   setFocusedBooth: (id) => set({ focusedBoothId: id }),
 }));

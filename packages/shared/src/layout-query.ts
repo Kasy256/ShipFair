@@ -2,6 +2,7 @@ import {
   BOOTH_GRID_CELL_M,
   DISTRICT_SPAWN_INSET_M,
   LOT_D_M,
+  MAKER_VISIT_DISTANCE_M,
   SPAWN_DISTANCE_M,
   STREET_W_M,
 } from './constants.ts';
@@ -171,4 +172,30 @@ export function nearestBooth(
     }
   }
   return best;
+}
+
+/**
+ * Where "Walk to maker" lands: `distanceM` from the player at (tx, tz), on the side the visitor
+ * comes from (fromX, fromZ), facing them. Forward for a yaw θ is (−sin θ, −cos θ), as the player
+ * controller moves. The client and the realtime server both use it.
+ */
+export function spawnBeside(
+  tx: number,
+  tz: number,
+  fromX: number,
+  fromZ: number,
+  distanceM = MAKER_VISIT_DISTANCE_M,
+): { x: number; z: number; yaw: number } {
+  let dx = fromX - tx;
+  let dz = fromZ - tz;
+  const length = Math.sqrt(dx * dx + dz * dz);
+  if (length < 1e-3) {
+    dx = 0;
+    dz = 1;
+  } else {
+    dx /= length;
+    dz /= length;
+  }
+  // Face the target: forward (−sin θ, −cos θ) = −(dx, dz).
+  return { x: tx + dx * distanceM, z: tz + dz * distanceM, yaw: Math.atan2(dx, dz) };
 }

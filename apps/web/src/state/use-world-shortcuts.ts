@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
 import { isTypingTarget } from '../lib/device.ts';
-import { useUiStore } from './ui-store.ts';
+import { useChatStore } from './chat-store.ts';
+import { selectIsOverlayOpen, useUiStore } from './ui-store.ts';
 
-/** `M` toggles the map and `?` the controls help, unless the user is typing in a field. */
+/**
+ * `M` toggles the map, `?` the controls help and Enter opens the chat composer (when no panel is
+ * open), unless the user is typing in a field.
+ */
 export function useWorldShortcuts(isActive: boolean): void {
   useEffect(() => {
     if (!isActive) return;
@@ -16,6 +20,11 @@ export function useWorldShortcuts(isActive: boolean): void {
         ui.setMapOpen(!ui.isMapOpen);
       } else if (e.key === '?') {
         ui.setHelpOpen(!ui.isHelpOpen);
+      } else if (e.key === 'Enter' && !e.shiftKey) {
+        // Enter on a focused button or link is that control's own click.
+        const onControl = e.target instanceof Element && e.target.closest('button, a') !== null;
+        if (onControl || selectIsOverlayOpen(ui)) return;
+        useChatStore.getState().setComposing(true);
       } else {
         return;
       }

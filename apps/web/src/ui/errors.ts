@@ -2,6 +2,7 @@ import type { NetNoticeCode } from '@shipfair/shared';
 import { BoothApiError, type BoothErrorCode } from '../lib/booth-api.ts';
 import { ImageError } from '../lib/images.ts';
 import { ProfileError, type ProfileErrorCode } from '../lib/profile-api.ts';
+import { SocialError, type SocialErrorCode } from '../lib/social-api.ts';
 import type { WorldErrorCode } from '../lib/world-source.ts';
 import type { AuthErrorCode } from '../state/ui-store.ts';
 
@@ -119,4 +120,24 @@ export function netNoticeText(code: NetNoticeCode, until: number | null): string
       return time ? `Chat is paused for you until ${time}.` : 'Chat is paused for you for now.';
     }
   }
+}
+
+const SOCIAL_ERRORS: Record<SocialErrorCode, string> = {
+  rate_limited: 'You can sign 5 guestbooks every 10 minutes. Try again in a little while.',
+  not_allowed: "That has words we don't allow. Reword it and try again.",
+  already_reported: 'You already reported this. A moderator will look at it soon.',
+  no_permission: "You can't do that. If your account was restricted, check your email.",
+  invalid: 'That is too long or empty. Check it and try again.',
+  network: "We couldn't reach the server. Check your connection and try again.",
+};
+
+/** Votes, guestbook entries and reports (prompt 12). */
+export function socialErrorText(error: unknown): string {
+  return error instanceof SocialError ? SOCIAL_ERRORS[error.code] : SOCIAL_ERRORS.network;
+}
+
+/** "4:05" until `until` (epoch ms), for the muted chat input. */
+export function countdownText(until: number, now: number): string {
+  const s = Math.max(0, Math.ceil((until - now) / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }

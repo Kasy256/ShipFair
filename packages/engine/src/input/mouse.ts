@@ -10,6 +10,11 @@ export class MouseSource {
   readonly #canvas: HTMLCanvasElement;
   readonly #state: InputState;
   readonly #isEnabled: () => boolean;
+  /**
+   * Picking a player under the pointer (prompt 12): returns true when the click hit someone, so it
+   * neither locks the pointer nor interacts. Locked, the crosshair (canvas centre) picks.
+   */
+  onPick: ((clientX: number, clientY: number) => boolean) | undefined;
   #dragId = -1;
   #lastX = 0;
   #lastY = 0;
@@ -50,9 +55,12 @@ export class MouseSource {
     if (!this.#isEnabled() || (e as PointerEvent).pointerType === 'touch') return;
     // Locked, a click is the interact action (open the focused booth); unlocked, it locks.
     if (this.isLocked) {
+      const rect = this.#canvas.getBoundingClientRect();
+      if (this.onPick?.(rect.left + rect.width / 2, rect.top + rect.height / 2)) return;
       this.#state.interact = true;
       return;
     }
+    if (this.onPick?.(e.clientX, e.clientY)) return;
     // Promise-returning in modern browsers; a refusal (e.g. right after Esc) just keeps drag-look.
     const request = this.#canvas.requestPointerLock?.() as Promise<void> | undefined;
     request?.catch?.(() => undefined);

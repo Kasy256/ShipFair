@@ -1,4 +1,5 @@
 import {
+  BOOTHS_PER_USER_MAX,
   type CityLayout,
   type DistrictLayout,
   layoutCity,
@@ -13,6 +14,7 @@ import {
 // teleports. Rebuilt from `/api/world` every WORLD_REFRESH_MS or on `worldUpdate`.
 
 /** Used until the first snapshot arrives: generous, so nobody is snapped back for it. */
+const NO_BOOTHS: readonly string[] = [];
 const FALLBACK_BOUNDS: Rect = { minX: -1000, minZ: -1000, maxX: 1000, maxZ: 1000 };
 
 export interface Spawn {
@@ -27,12 +29,18 @@ export class WorldView {
   readonly bounds: Rect;
   readonly #boothBySlug: Map<string, string>;
   readonly #districtBySlug: Map<string, DistrictLayout>;
+  readonly #boothsByOwner = new Map<string, string[]>();
 
   private constructor(version: number, layout: CityLayout | null, snapshot?: WorldSnapshot) {
     this.version = version;
     this.layout = layout;
     this.bounds = layout?.bounds ?? FALLBACK_BOUNDS;
     this.#boothBySlug = new Map(snapshot?.booths.map((b) => [b.slug, b.id]) ?? []);
+    for (const booth of snapshot?.booths ?? []) {
+      const owned = this.#boothsByOwner.get(booth.ownerId);
+      if (!owned) this.#boothsByOwner.set(booth.ownerId, [booth.id]);
+      else if (owned.length < BOOTHS_PER_USER_MAX) owned.push(booth.id);
+    }
     const laid = new Map(layout?.districts.map((d) => [d.id, d]) ?? []);
     this.#districtBySlug = new Map();
     for (const d of snapshot?.districts ?? []) {
@@ -55,6 +63,11 @@ export class WorldView {
 
   get isLoaded(): boolean {
     return this.layout !== null;
+  }
+
+  /** Live booths owned by this profile (the snapshot holds approved booths only). */
+  boothsOf(uid: string | undefined): readonly string[] {
+    return (uid && this.#boothsByOwner.get(uid)) || NO_BOOTHS;
   }
 
   /** Where a teleport lands (same helpers as the client), or null for an unknown target. */

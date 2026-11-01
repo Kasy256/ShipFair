@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { track } from '../lib/analytics.ts';
 import { netNoticeText } from '../ui/errors.ts';
+import { useChatStore } from './chat-store.ts';
 import { engineBus } from './engine-bus.ts';
 import { useUiStore } from './ui-store.ts';
 import { useWorldStore } from './world-store.ts';
@@ -13,6 +14,7 @@ export function useEngineBridge(): void {
   useEffect(() => {
     const world = useWorldStore.getState;
     const ui = useUiStore.getState;
+    const chat = useChatStore.getState;
     const offs = [
       engineBus.on('zone:entered', ({ districtId }) => world().setDistrict(districtId)),
       engineBus.on('booth:focus', ({ boothId }) => world().setFocusedBooth(boothId)),
@@ -26,7 +28,15 @@ export function useEngineBridge(): void {
       engineBus.on('net:notice', ({ code, until }) => {
         if (code === 'update_required') world().setUpdateRequired();
         else ui().showToast(netNoticeText(code, until));
+        if (code === 'muted' && until !== null) chat().setMutedUntil(until);
       }),
+      engineBus.on('chat:incoming', ({ id, userId, name, text, ts, isYou }) =>
+        chat().addLine({ id, userId, name, text, ts, isYou }),
+      ),
+      engineBus.on('player:select', ({ id, userId, name, isGuest }) =>
+        ui().selectPlayer({ id, userId, name, isGuest }),
+      ),
+      engineBus.on('net:makers', ({ makers }) => world().setMakersHere(makers)),
     ];
     return () => {
       for (const off of offs) off();

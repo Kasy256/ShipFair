@@ -11,6 +11,7 @@ import {
   boothAnchor,
   districtAt,
   nearestBooth,
+  spawnBeside,
   spawnForBooth,
   spawnForDistrict,
 } from './layout-query.ts';
@@ -51,6 +52,22 @@ describe('spawnForBooth', () => {
       const d = districtAt(small, spawn?.x ?? 0, spawn?.z ?? 0);
       expect(d).not.toBeNull();
     }
+  });
+});
+
+describe('spawnBeside', () => {
+  it("lands 1.5 m from the target on the visitor's side, facing the target", () => {
+    const at = spawnBeside(10, 10, 10, 30);
+    expect(at.x).toBeCloseTo(10);
+    expect(at.z).toBeCloseTo(11.5);
+    // Forward (−sin θ, −cos θ) points back at the target.
+    expect(-Math.sin(at.yaw)).toBeCloseTo(0);
+    expect(-Math.cos(at.yaw)).toBeCloseTo(-1);
+  });
+
+  it('picks a side when the visitor stands on the target', () => {
+    const at = spawnBeside(4, -2, 4, -2);
+    expect(Math.hypot(at.x - 4, at.z + 2)).toBeCloseTo(1.5);
   });
 });
 

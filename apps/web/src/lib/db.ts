@@ -6,6 +6,7 @@ import {
   District,
   type Enums,
   GuestbookEntry,
+  GuestbookEntryPublic,
   MakerPublic,
   OwnProfile,
   ProfilePublic,
@@ -227,6 +228,33 @@ export const GuestbookEntryFromRow = z
       }) satisfies FieldsOf<GuestbookEntry>,
   )
   .pipe(GuestbookEntry);
+
+/** Columns of the `guestbook_public` view (visible entries with their author's names). */
+export const GUESTBOOK_PUBLIC_COLUMNS = [
+  'id',
+  'booth_id',
+  'author_id',
+  'author_handle',
+  'author_name',
+  'body',
+  'created_at',
+] as const satisfies readonly (keyof Tables<'guestbook_public'>)[];
+
+export const GuestbookEntryPublicFromRow = z
+  .custom<Tables<'guestbook_public'>>(isRow)
+  .transform(
+    (row): unknown =>
+      ({
+        id: row.id,
+        boothId: row.booth_id,
+        authorId: row.author_id,
+        authorHandle: row.author_handle,
+        authorName: row.author_name,
+        body: row.body,
+        createdAt: row.created_at,
+      }) satisfies FieldsOf<GuestbookEntryPublic>,
+  )
+  .pipe(GuestbookEntryPublic);
 
 // Compile-time drift check: the DB enum and the shared zod enum must list the same tiers.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;

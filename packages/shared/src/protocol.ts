@@ -2,6 +2,7 @@ import { Packr } from 'msgpackr';
 import * as z from 'zod';
 import {
   AVATAR_MAX_BYTES,
+  BOOTHS_PER_USER_MAX,
   CHAT_MAX_CHARS,
   MAX_CLIENT_MSG_BYTES,
   MIN_CLIENT_PROTOCOL,
@@ -83,12 +84,24 @@ export const Teleport = z.discriminatedUnion('kind', [
 ]);
 export type Teleport = z.infer<typeof Teleport>;
 
+/**
+ * Where a `teleport` message goes: a booth or district (the UI's `Teleport`), or next to another
+ * player in the shard (protocol v3, the booth panel's "Walk to maker").
+ */
+export const TeleportTarget = z.discriminatedUnion('kind', [
+  ...Teleport.options,
+  z.object({ kind: z.literal('player'), id: NetId }),
+]);
+export type TeleportTarget = z.infer<typeof TeleportTarget>;
+
 export const PlayerSummary = z.object({
   id: NetId,
   name: PlayerName,
   isGuest: z.boolean(),
   /** Profile id for signed-in players (powers "Maker is here"); absent for guests. */
   uid: Uuid.optional(),
+  /** Live booths this player owns (protocol v3; absent when none). Powers "Maker is here". */
+  isMakerOf: z.array(Uuid).max(BOOTHS_PER_USER_MAX).optional(),
   avatar: AvatarStyleV2,
   p: NetPos,
   r: NetYaw,
@@ -117,7 +130,10 @@ export const ClientMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('move'), p: NetPos, r: NetYaw, a: Uint8, t: TimeMs }),
   z.object({ type: z.literal('emote'), e: Uint8 }),
   z.object({ type: z.literal('chat'), text: z.string().min(1).max(CHAT_MAX_CHARS) }),
-  z.object({ type: z.literal('teleport'), to: Teleport }),
+  z.object({ type: z.literal('teleport'), to: TeleportTarget }),
+  /** Protocol v3: stop (or start again) relaying this player's chat to the sender. */
+  z.object({ type: z.literal('mute'), id: NetId }),
+  z.object({ type: z.literal('unmute'), id: NetId }),
   z.object({ type: z.literal('ping'), t: TimeMs }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;

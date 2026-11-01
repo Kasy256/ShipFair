@@ -2,7 +2,7 @@ import * as z from 'zod';
 import { ADMIN_SEARCH_MAX_CHARS } from '../constants.ts';
 import { BoothMedia, BoothPricing, BoothStatus } from './booth.ts';
 import { HttpsUrl, MediaKey, Slug, Timestamp, Uuid } from './common.ts';
-import { ReportReason, ReportStatus, ReportTargetType } from './report.ts';
+import { ReportContext, ReportReason, ReportStatus, ReportTargetType } from './report.ts';
 
 // What `GET /api/admin/*` returns (prompt 09). The SPA parses every response with these.
 
@@ -75,6 +75,8 @@ export const AdminReport = z.object({
   status: ReportStatus,
   createdAt: Timestamp,
   reporter: UserRef.nullable(),
+  /** Chat lines the reporter attached (prompt 12); null for other reports and after 30 days. */
+  context: ReportContext.nullable().default(null),
 });
 export type AdminReport = z.infer<typeof AdminReport>;
 

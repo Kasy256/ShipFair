@@ -12,6 +12,7 @@ import {
   nearestBooth,
   type PlayerRecord,
   type ServerMessage,
+  spawnBeside,
   toNetPos,
   toNetYaw,
   WorldSnapshot,
@@ -28,6 +29,7 @@ import {
   INVALID_LIMIT,
   INVALID_WINDOW_MS,
   METRICS_MS,
+  MUTES_MAX,
   POPULATION_PUSH_MS,
   PROFILE_CACHE_MS,
   REPORT_MS,
@@ -177,7 +179,13 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       this.#byConn.delete(conn.id);
       this.#players.delete(player.id);
       this.#visits.forget(player.id);
-      // Others drop the player from view on the next tick (`leave`).
+      // `leave` goes out now, not on the next tick: a hello before then may reuse the id (a
+      // sign-in swaps sockets), and viewers would keep the old summary instead of seeing a join.
+      for (const other of this.#players.values()) {
+        if (!other.aoi.delete(player.id)) continue;
+        other.sent.delete(player.id);
+        this.#send(other.conn, { type: 'leave', id: player.id });
+      }
     }
     if (!this.#hasConnections()) await this.#emptied();
   }
@@ -240,6 +248,10 @@ export class WorldShard extends RoomServer<Env, ConnState> {
         return;
       case 'teleport':
         this.#teleport(player, msg, now);
+        return;
+      case 'mute':
+      case 'unmute':
+        this.#mute(player, msg.id, msg.type === 'mute', now);
         return;
       case 'ping':
         this.#send(player.conn, { type: 'pong', t: msg.t });
@@ -350,8 +362,10 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       buckets: null,
       mutedUntil: 0,
       strikes: [],
+      mutes: [],
     };
     const player = new Player(conn, state);
+    player.isMakerOf = this.#world.boothsOf(identity.uid);
     this.#pending.delete(conn.id);
     this.#addPlayer(player);
     player.save();
@@ -473,7 +487,10 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       this.#metrics.dropped++;
       return;
     }
-    const target = this.#world.teleportTarget(msg.to);
+    const target =
+      msg.to.kind === 'player'
+        ? this.#besidePlayer(player, msg.to.id)
+        : this.#world.teleportTarget(msg.to);
     if (!target) {
       this.#metrics.dropped++;
       return;
@@ -488,7 +505,15 @@ export class WorldShard extends RoomServer<Env, ConnState> {
     player.save();
   }
 
-  // --- emotes and chat ---------------------------------------------------------------------
+  /** "Walk to maker": next to another player of this shard, on the visitor's side, in bounds. */
+  #besidePlayer(player: Player, id: number): { x: number; z: number; yaw: number } | null {
+    const other = this.#players.get(id);
+    if (!other || other === player) return null;
+    const spot = spawnBeside(other.x, other.z, player.x, player.z);
+    return isInBounds(this.#world.bounds, { x: spot.x, y: 0, z: spot.z }) ? spot : null;
+  }
+
+  // --- emotes, chat and mutes ----------------------------------------------------------------
 
   #emote(player: Player, e: number, now: number): void {
     if (!player.emote.take(now)) {
@@ -551,9 +576,34 @@ export class WorldShard extends RoomServer<Env, ConnState> {
     const { chatRadiusM } = this.#config().limits;
     for (const other of this.#players.values()) {
       if (horizontalDistSq(player, other) > chatRadiusM * chatRadiusM) continue;
+      if (other.hasMuted(state.key)) continue;
       other.conn.send(bytes);
       this.#metrics.recordSend(bytes.byteLength);
     }
+  }
+
+  /**
+   * A per-recipient mute (protocol v3): the muted player's chat is no longer relayed to `player`.
+   * Stored by player key (profile or guest id), so it holds while the muted player reconnects
+   * with a new net id. Clients resend their mutes after every welcome.
+   */
+  #mute(player: Player, id: number, isMuted: boolean, now: number): void {
+    const target = this.#players.get(id);
+    if (!target || target === player || !player.mute.take(now)) {
+      this.#metrics.dropped++;
+      return;
+    }
+    const mutes = player.state.mutes ?? [];
+    const key = target.state.key;
+    const at = mutes.indexOf(key);
+    if (isMuted && at < 0) {
+      mutes.push(key);
+      if (mutes.length > MUTES_MAX) mutes.shift();
+    } else if (!isMuted && at >= 0) {
+      mutes.splice(at, 1);
+    }
+    player.state.mutes = mutes;
+    player.save();
   }
 
   // --- the loop ----------------------------------------------------------------------------
@@ -716,8 +766,13 @@ export class WorldShard extends RoomServer<Env, ConnState> {
           console.error('shard: world unavailable or invalid');
           return;
         }
-        if (snapshot.data.version !== this.#world.version)
+        if (snapshot.data.version !== this.#world.version) {
           this.#world = WorldView.from(snapshot.data);
+          // Booths approved or hidden since: summaries sent from now on say so.
+          for (const player of this.#players.values()) {
+            player.isMakerOf = this.#world.boothsOf(player.state.uid);
+          }
+        }
       } catch (error) {
         console.error('shard: world load failed', error);
       } finally {
@@ -809,5 +864,6 @@ function restore(state: PlayerState): PlayerState {
     avatar: migrateAvatarStyle(state.avatar),
     p: [state.p[0], state.p[1], state.p[2]],
     strikes: [...state.strikes],
+    mutes: [...(state.mutes ?? [])],
   };
 }

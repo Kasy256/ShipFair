@@ -1,4 +1,4 @@
-import type { ReportGroup, ReportStatus } from '@shipfair/shared';
+import type { AdminReport, ReportGroup, ReportStatus } from '@shipfair/shared';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { StatusChip } from '../ui/booths/StatusChip.tsx';
@@ -44,10 +44,29 @@ function Context({ group }: { group: ReportGroup }) {
     );
   }
   if (group.user) return <UserLink user={group.user} />;
-  if (group.targetType === 'chat') {
-    return <p className="text-muted text-sm">Chat report. The attached lines arrive with chat.</p>;
-  }
+  if (group.targetType === 'chat') return <p className="text-muted text-sm">Chat report.</p>;
   return <p className="text-muted text-sm">The reported item no longer exists.</p>;
+}
+
+/** The reported player's chat lines the reporter attached, oldest first (plain text only). */
+function ChatContext({ lines }: { lines: NonNullable<AdminReport['context']> }) {
+  return (
+    <details className="mt-1" data-testid="report-context">
+      <summary className="cursor-pointer text-muted">
+        {lines.length} chat {lines.length === 1 ? 'line' : 'lines'} attached
+      </summary>
+      <ol className="mt-1 grid gap-0.5 rounded-lg bg-ink p-2">
+        {lines.map((line) => (
+          <li key={`${line.ts}:${line.text}`} data-testid="report-context-line">
+            <time className="mr-2 text-muted text-xs" dateTime={new Date(line.ts).toISOString()}>
+              {new Date(line.ts).toLocaleTimeString()}
+            </time>
+            {line.text}
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
 }
 
 function UserLink({ user }: { user: { id: string; handle: string } }) {
@@ -114,6 +133,7 @@ export function ReportCard({ group, onChanged }: { group: ReportGroup; onChanged
             <span className="text-muted">
               by {r.reporter ? `@${r.reporter.handle}` : 'a deleted account'}, {when(r.createdAt)}
             </span>
+            {r.context && r.context.length > 0 && <ChatContext lines={r.context} />}
           </li>
         ))}
       </ul>

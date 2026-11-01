@@ -6,7 +6,7 @@ import {
   InstancedMesh,
   LinearFilter,
   Matrix4,
-  MeshBasicMaterial,
+  type MeshBasicMaterial,
   PlaneGeometry,
   Quaternion,
   SRGBColorSpace,
@@ -21,6 +21,7 @@ import {
   NAME_TAG_MAX_SCALE,
   NAME_TAG_NEAR_M,
 } from '../config.ts';
+import { cellUv, createBillboardMaterial } from '../render/billboard-material.ts';
 import { context2d, createCanvas } from '../world/textures.ts';
 
 // Remote players' name tags: names are drawn once into one shared canvas atlas (like booth
@@ -44,23 +45,11 @@ const BADGE_TINT = new Color(1, 0.8, 0.3);
 /** The badge sits this many tag heights above the name. */
 const BADGE_RISE = 1.15;
 
-const VERTEX_HEAD = /* glsl */ `#include <common>
-attribute vec2 aCell;
-attribute float aFade;
-uniform vec2 uCellSize;
-uniform float uAspect;
-varying float vFade;`;
-// Billboard: the instance origin goes through the model-view matrix, the quad is laid out in view
-// space, so it always faces the camera. Scale comes from the instance matrix.
-const BILLBOARD = /* glsl */ `vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-float tagScale = length(instanceMatrix[1].xyz);
-mvPosition.xy += position.xy * vec2(uAspect, 1.0) * tagScale;
-gl_Position = projectionMatrix * mvPosition;`;
-
 const scratch = new Matrix4();
 const pos = new Vector3();
 const size = new Vector3();
 const noRotation = new Quaternion();
+const uv = new Vector2();
 
 export class NameTags {
   readonly mesh: InstancedMesh;
@@ -90,33 +79,14 @@ export class NameTags {
     this.#fades.setUsage(DynamicDrawUsage);
     geometry.setAttribute('aCell', this.#cells);
     geometry.setAttribute('aFade', this.#fades);
-    const material = new MeshBasicMaterial({
+    const material = createBillboardMaterial({
       map: this.#texture,
-      transparent: true,
-      depthWrite: false,
-      toneMapped: false,
-      fog: false,
+      name: 'name-tags',
+      columns: NAME_TAG_ATLAS_COLUMNS,
+      rows: NAME_TAG_ATLAS_ROWS,
+      aspect: ASPECT,
+      cacheKey: 'shipfair-name-tags-1',
     });
-    material.name = 'name-tags';
-    const cellSize = new Vector2(1 / NAME_TAG_ATLAS_COLUMNS, 1 / NAME_TAG_ATLAS_ROWS);
-    material.onBeforeCompile = (shader) => {
-      shader.uniforms.uCellSize = { value: cellSize };
-      shader.uniforms.uAspect = { value: ASPECT };
-      shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', VERTEX_HEAD)
-        .replace(
-          '#include <uv_vertex>',
-          '#include <uv_vertex>\nvMapUv = aCell + uv * uCellSize;\nvFade = aFade;',
-        )
-        .replace('#include <project_vertex>', BILLBOARD);
-      shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying float vFade;')
-        .replace(
-          '#include <alphatest_fragment>',
-          'diffuseColor.a *= vFade;\nif (diffuseColor.a < 0.02) discard;',
-        );
-    };
-    material.customProgramCacheKey = () => 'shipfair-name-tags-1';
     this.mesh = new InstancedMesh(geometry, material, capacity);
     this.mesh.name = 'name-tags';
     this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
@@ -204,10 +174,8 @@ export class NameTags {
     this.#count++;
     this.mesh.setMatrixAt(i, scratch.compose(pos.set(x, y, z), noRotation, size.setScalar(scale)));
     this.mesh.setColorAt(i, tint);
-    // The canvas has y down, texture v up: row r is at the top, so its v starts near 1.
-    const column = cell % NAME_TAG_ATLAS_COLUMNS;
-    const row = Math.floor(cell / NAME_TAG_ATLAS_COLUMNS);
-    this.#cells.setXY(i, column / NAME_TAG_ATLAS_COLUMNS, 1 - (row + 1) / NAME_TAG_ATLAS_ROWS);
+    cellUv(cell, NAME_TAG_ATLAS_COLUMNS, NAME_TAG_ATLAS_ROWS, uv);
+    this.#cells.setXY(i, uv.x, uv.y);
     this.#fades.setX(i, fade);
   }
 

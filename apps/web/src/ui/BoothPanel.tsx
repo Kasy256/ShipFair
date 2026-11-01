@@ -1,11 +1,18 @@
-import type { BoothPricing, BoothPublic } from '@shipfair/shared';
+import type { BoothPricing, BoothPublic, ReportReason } from '@shipfair/shared';
+import { useState } from 'react';
+import { useLocation } from 'react-router';
 import { track } from '../lib/analytics.ts';
 import { makerLinks, mediaUrl, shareUrl, tryItUrl } from '../lib/booth-links.ts';
+import { socialClient, submitReport } from '../lib/social-api.ts';
 import { useSessionStore } from '../state/session-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
 import { useWorldStore } from '../state/world-store.ts';
+import { Guestbook } from './booth/Guestbook.tsx';
+import { MakerHere } from './booth/MakerHere.tsx';
+import { VoteButton } from './booth/VoteButton.tsx';
 import { ScreenshotCarousel } from './ScreenshotCarousel.tsx';
 import { Sheet } from './Sheet.tsx';
+import { ReportForm } from './social/ReportForm.tsx';
 
 const PRICING_LABEL: Record<BoothPricing, string> = {
   free: 'Free',
@@ -41,14 +48,26 @@ interface BoothDetailsProps {
 function BoothDetails({ booth, onClose }: BoothDetailsProps) {
   const district = useWorldStore((s) => s.districtsById.get(booth.districtId));
   const maker = useWorldStore((s) => s.makersById.get(booth.ownerId));
-  const isGuest = useSessionStore((s) => s.status !== 'signed-in');
+  const userId = useSessionStore((s) => s.userId);
   const openSignIn = useUiStore((s) => s.openSignIn);
+  const location = useLocation();
+  const [isReporting, setIsReporting] = useState(false);
   const mediaHost = useWorldStore((s) => s.mediaHost);
   const showToast = useUiStore((s) => s.showToast);
   const tryHref = tryItUrl(booth.url);
   const logo = booth.logoKey ? mediaUrl(mediaHost, booth.logoKey) : null;
   const badge =
     'inline-flex items-center gap-1.5 rounded-full bg-ink-3 px-2.5 py-0.5 text-xs font-semibold';
+
+  const report = async (reason: ReportReason, note: string) => {
+    if (!userId) return;
+    await submitReport(await socialClient(), userId, {
+      targetType: 'booth',
+      targetId: booth.id,
+      reason,
+      ...(note ? { note } : {}),
+    });
+  };
 
   const copyLink = async () => {
     const link = shareUrl(window.location.origin, booth.slug);
@@ -108,7 +127,10 @@ function BoothDetails({ booth, onClose }: BoothDetailsProps) {
         <p className="mt-4 whitespace-pre-line leading-relaxed">{booth.description}</p>
       )}
 
+      <MakerHere boothId={booth.id} />
+
       <div className="mt-5 flex flex-wrap gap-2">
+        <VoteButton boothId={booth.id} slug={booth.slug} />
         {tryHref && (
           <a
             href={tryHref}
@@ -156,38 +178,32 @@ function BoothDetails({ booth, onClose }: BoothDetailsProps) {
         </section>
       )}
 
-      {/* Upvotes and the guestbook arrive in prompt 12; signing in from here returns to this booth. */}
-      <section aria-labelledby="booth-social" className="mt-6 border-paper/10 border-t pt-4">
-        <h3 id="booth-social" className="sr-only">
-          Votes and guestbook
-        </h3>
-        {isGuest ? (
+      <Guestbook boothId={booth.id} ownerId={booth.ownerId} slug={booth.slug} />
+
+      <div className="mt-6 border-paper/10 border-t pt-3">
+        {userId ? (
           <button
             type="button"
-            onClick={() => openSignIn(`/b/${booth.slug}`)}
-            className="rounded-xl bg-ink-3 px-4 py-2 font-semibold hover:bg-ink"
+            onClick={() => setIsReporting((v) => !v)}
+            aria-expanded={isReporting}
+            className="font-semibold text-muted text-sm hover:text-paper"
+            data-testid="booth-report"
           >
-            ▲ Sign in to vote
+            Report booth
           </button>
         ) : (
           <button
             type="button"
-            disabled
-            className="rounded-xl bg-ink-3 px-4 py-2 font-semibold opacity-60"
+            onClick={() => openSignIn(location.pathname)}
+            className="font-semibold text-muted text-sm hover:text-paper"
           >
-            ▲ Voting opens soon
+            Sign in to report this booth
           </button>
         )}
-        <label className="mt-3 block text-sm">
-          <span className="mb-1 block text-muted">Guestbook</span>
-          <textarea
-            disabled
-            rows={2}
-            placeholder={isGuest ? 'Sign in to sign the guestbook' : 'The guestbook opens soon'}
-            className="w-full resize-none rounded-lg border border-paper/15 bg-transparent px-3 py-2 opacity-60"
-          />
-        </label>
-      </section>
+        {isReporting && (
+          <ReportForm what="this booth" submit={report} onClose={() => setIsReporting(false)} />
+        )}
+      </div>
     </article>
   );
 }
