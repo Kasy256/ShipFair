@@ -566,6 +566,7 @@ export type Database = {
       };
       reports: {
         Row: {
+          context: Json | null;
           created_at: string;
           id: number;
           note: string | null;
@@ -577,6 +578,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          context?: Json | null;
           created_at?: string;
           id?: never;
           note?: string | null;
@@ -587,6 +589,7 @@ export type Database = {
           target_type: string;
         };
         Update: {
+          context?: Json | null;
           created_at?: string;
           id?: never;
           note?: string | null;
@@ -657,6 +660,41 @@ export type Database = {
           },
         ];
       };
+      guestbook_public: {
+        Row: {
+          author_handle: string;
+          author_id: string;
+          author_name: string;
+          body: string;
+          booth_id: string;
+          created_at: string;
+          id: number;
+        };
+        ComputedFields: never;
+        Relationships: [
+          {
+            foreignKeyName: 'guestbook_entries_author_id_fkey';
+            columns: ['author_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'guestbook_entries_author_id_fkey';
+            columns: ['author_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'guestbook_entries_booth_id_fkey';
+            columns: ['booth_id'];
+            isOneToOne: false;
+            referencedRelation: 'booths';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       public_profiles: {
         Row: {
           avatar_style: NonNullable<Json>;
@@ -695,6 +733,7 @@ export type Database = {
         Args: { logo_key: string; media: Json; owner: string };
         Returns: boolean;
       };
+      censor_profanity: { Args: { input: string }; Returns: string };
       delete_account: { Args: { uid: string }; Returns: number };
       handle_available: { Args: { candidate: string }; Returns: boolean };
       has_profanity: { Args: { input: string }; Returns: boolean };
@@ -703,6 +742,7 @@ export type Database = {
       is_not_banned: { Args: { uid: string }; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
       realtime_player: { Args: { uid: string; with_profile?: boolean }; Returns: Json };
+      report_context_valid: { Args: { context: Json }; Returns: boolean };
     };
     Enums: {
       booth_status: 'draft' | 'pending' | 'approved' | 'rejected' | 'hidden' | 'archived';
