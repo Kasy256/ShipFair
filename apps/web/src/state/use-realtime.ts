@@ -53,7 +53,7 @@ export function useRealtime(engine: Engine | undefined, hasEntered: boolean, sea
     if (!engine) return;
     return engineBus.on('world:changed', ({ boothIds }) => {
       const ids = [...boothIds];
-      fetchWorld()
+      fetchWorld({ isRefresh: true })
         .then(({ snapshot }) => {
           if (!snapshot || engine.isDisposed) return;
           engine.updateBooths(boothChangesFor(snapshot, ids));

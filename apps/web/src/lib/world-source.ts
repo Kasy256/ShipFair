@@ -48,11 +48,19 @@ async function fakeWorld(count: number): Promise<WorldSource> {
   return { snapshot: fake.fakeWorld(count), mediaHost: FAKE_MEDIA_HOST };
 }
 
-/** `GET /api/world`, validated. Also refetched after `notice:world_update`. */
-export async function fetchWorld(): Promise<WorldSource> {
+/**
+ * `GET /api/world`, validated. Also refetched after `notice:world_update`: then `isRefresh`
+ * revalidates, because the browser may hold the page-load copy for its 30 s max-age, which
+ * wouldn't have the booths the notice is about. The edge cache is keyed by world version, so the
+ * revalidation reaches the new snapshot.
+ */
+export async function fetchWorld(opts: { isRefresh?: boolean } = {}): Promise<WorldSource> {
   let response: Response;
   try {
-    response = await fetch('/api/world', { headers: { accept: 'application/json' } });
+    response = await fetch('/api/world', {
+      headers: { accept: 'application/json' },
+      ...(opts.isRefresh ? { cache: 'no-cache' as const } : {}),
+    });
   } catch (error) {
     throw new WorldLoadError('network', 'The world request failed', { cause: error });
   }
