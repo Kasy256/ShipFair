@@ -1,4 +1,4 @@
-import type { SubmissionsStatus } from '@shipfair/shared';
+import { type SubmissionsStatus, Uuid } from '@shipfair/shared';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import pkg from '../package.json';
@@ -8,8 +8,11 @@ import { dev } from './dev.ts';
 import type { Env } from './env.ts';
 import { AppError } from './errors.ts';
 import { readFlags } from './flags.ts';
+import { claimStamps, mergeGuestPassport } from './passport.ts';
+import { profilePage } from './profile-page.ts';
 import { rateLimit } from './rate-limits.ts';
 import { securityHeaders } from './security-headers.ts';
+import { serviceDb } from './service.ts';
 import { sharePage } from './share.ts';
 import { checkBoothUrl, type SubmitContext, submitBooth, submitRevision } from './submissions.ts';
 import { localUpload, signUpload } from './uploads.ts';
@@ -40,6 +43,7 @@ app.get('/api/world', async (c) => {
 });
 
 app.get('/b/:slug', sharePage);
+app.get('/u/:handle', profilePage);
 
 app.post('/api/me/delete', async (c) => {
   const userId = await requireUser(c.env, c.req.header('authorization'));
@@ -85,6 +89,28 @@ app.post('/api/booths/:id/submit', async (c) => {
 app.post('/api/booths/:id/revision', async (c) => {
   const ctx = await submitContext(c);
   return c.json(await submitRevision(ctx, c.req.param('id'), await jsonBody(c)), 200, NO_STORE);
+});
+
+// Passport (prompt 13): the browser asks, SQL decides from evidence (passport.ts).
+app.post('/api/passport/stamp', async (c) => {
+  const userId = await requireUser(c.env, c.req.header('authorization'));
+  rateLimit('stamp', userId);
+  return c.json(await claimStamps(c.env, userId, await jsonBody(c)), 200, NO_STORE);
+});
+
+app.post('/api/passport/merge', async (c) => {
+  const userId = await requireUser(c.env, c.req.header('authorization'));
+  rateLimit('merge', userId);
+  return c.json(await mergeGuestPassport(c.env, userId, await jsonBody(c)), 200, NO_STORE);
+});
+
+/** A "Try it" click for the owner's chart. Anyone may send it; it is limited per IP. */
+app.post('/api/booths/:id/try', async (c) => {
+  const id = Uuid.safeParse(c.req.param('id'));
+  if (!id.success) throw new AppError('bad_request', 400, 'Not a booth id');
+  rateLimit('tryClick', c.req.header('cf-connecting-ip') ?? 'unknown');
+  await serviceDb(c.env).rpc('record_try_click', { booth: id.data });
+  return c.body(null, 204, NO_STORE);
 });
 
 /** The submit form's "Submissions are paused" notice (flag `SUBMISSIONS_OPEN`). */

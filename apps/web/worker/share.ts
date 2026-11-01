@@ -6,9 +6,9 @@ import { worldOrNull } from './world.ts';
 /** Until prompt 16 renders real share cards, every booth uses this image. */
 export const OG_PLACEHOLDER_PATH = '/og-placeholder.png';
 
-type AppContext = Context<{ Bindings: Env }>;
+export type AppContext = Context<{ Bindings: Env }>;
 
-interface ShareMeta {
+export interface ShareMeta {
   title: string;
   description: string;
   url: string;
@@ -23,7 +23,7 @@ const attr = (value: string) =>
   value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
 /** Booth text is data: attributes go through `attr`, the title through `setInnerContent` (escaped). */
-function injectMeta(page: Response, meta: ShareMeta): Response {
+export function injectMeta(page: Response, meta: ShareMeta): Response {
   const content = (value: string) => ({
     element(el: Element) {
       el.setAttribute('content', attr(value));
@@ -55,8 +55,11 @@ function injectMeta(page: Response, meta: ShareMeta): Response {
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
-/** A small standalone page: the SPA isn't needed to say "not here". */
-export function notFoundPage(slug: string): string {
+/** Element text needs only `& < >` escaped (quotes matter in attributes). */
+const escapeText = (text: string) => text.replace(/[&<>]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+
+/** A small standalone page: the SPA isn't needed to say "not here". Every argument is escaped. */
+export function missingPage(title: string, heading: string, body: string): string {
   const name = escapeHtml(APP_NAME);
   return `<!doctype html>
 <html lang="en">
@@ -64,20 +67,28 @@ export function notFoundPage(slug: string): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Booth not found · ${name}</title>
+<title>${escapeText(title)} · ${name}</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;color:#f5f3ee;font:16px system-ui,sans-serif;text-align:center;padding:1rem}a{color:#ffb547;font-weight:600}a:focus-visible{outline:2px solid #f5f3ee;outline-offset:3px}</style>
 </head>
 <body>
 <main>
-<h1>That booth isn't in the city</h1>
-<p>No approved booth is called “${escapeHtml(slug)}”. It may have been renamed or taken down.</p>
+<h1>${escapeText(heading)}</h1>
+<p>${escapeText(body)}</p>
 <p><a href="/">Walk around ${name}</a></p>
 </main>
 </body>
 </html>`;
 }
 
-async function spaShell(c: AppContext): Promise<Response> {
+export function notFoundPage(slug: string): string {
+  return missingPage(
+    'Booth not found',
+    "That booth isn't in the city",
+    `No approved booth is called “${slug}”. It may have been renamed or taken down.`,
+  );
+}
+
+export async function spaShell(c: AppContext): Promise<Response> {
   const index = await c.env.ASSETS.fetch(new Request(new URL('/', c.req.url)));
   // A fresh Response so headers are mutable and the HTML always revalidates.
   const page = new Response(index.body, index);

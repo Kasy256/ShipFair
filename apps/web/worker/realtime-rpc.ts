@@ -48,8 +48,14 @@ export async function ingestStats(env: Env, batch: unknown): Promise<IngestResul
   const parsed = StatsBatch.safeParse(batch);
   if (!parsed.success) return { ok: false, error: 'invalid' };
   if (!sameSecret(parsed.data.secret, expected)) return { ok: false, error: 'forbidden' };
+  const db = serviceDb(env);
+  // Evidence first: it is idempotent, so if the counts below fail and the shard resends both,
+  // nothing is counted twice (prompt 13).
+  if (parsed.data.evidence.length > 0) {
+    await db.rpc('ingest_passport_evidence', { evidence: parsed.data.evidence });
+  }
   if (parsed.data.rows.length === 0) return { ok: true, written: 0 };
-  const written = await serviceDb(env).rpc('ingest_booth_stats', { stats: parsed.data.rows });
+  const written = await db.rpc('ingest_booth_stats', { stats: parsed.data.rows });
   return { ok: true, written: typeof written === 'number' ? written : 0 };
 }
 

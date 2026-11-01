@@ -15,6 +15,11 @@ export const ROUTE_LIMITS = {
   sign: { capacity: 30, refillPerSec: 0.5 },
   checkUrl: { capacity: 10, refillPerSec: 0.2 },
   submit: { capacity: 5, refillPerSec: 0.05 },
+  // Passport (prompt 13): a burst of stamps on a busy walk, and a merge once per sign-in.
+  stamp: { capacity: 20, refillPerSec: 0.2 },
+  merge: { capacity: 3, refillPerSec: 0.01 },
+  // "Try it" clicks, per IP: a person clicks a few booths a minute at most.
+  tryClick: { capacity: 10, refillPerSec: 0.2 },
 } as const satisfies Record<string, RouteLimit>;
 
 const MAX_BUCKETS = 10_000;
