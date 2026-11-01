@@ -19,6 +19,9 @@ export const INVALID_WINDOW_MS = 10_000;
 export const CHAT_STRIKES = 3; // filtered messages within the window mean a mute
 export const CHAT_STRIKE_WINDOW_MS = 5 * 60_000;
 export const CHAT_MUTE_MS = 10 * 60_000;
+export const MUTES_MAX = 200; // per player; the oldest mute is dropped past this
+export const MUTE_BURST = 20; // mute/unmute bucket (a reconnect resends every mute at once)
+export const MUTE_PER_S = 2;
 
 export const RESERVATION_MS = 15_000; // a coordinator assignment counts as a player this long
 export const REPORT_MS = 10_000; // shard → coordinator population report

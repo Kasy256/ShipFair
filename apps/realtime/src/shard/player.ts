@@ -12,7 +12,7 @@ import {
   TELEPORT_PER_S,
   type TokenBucket,
 } from '@shipfair/shared';
-import { MOVE_BURST } from '../limits.ts';
+import { MOVE_BURST, MUTE_BURST, MUTE_PER_S } from '../limits.ts';
 import type { RoomConnection } from '../room-connection.ts';
 
 // Per-connection state. `PlayerState` is the whole truth about a player and lives in the
@@ -49,6 +49,11 @@ export interface PlayerState {
   buckets: Buckets | null;
   mutedUntil: number;
   strikes: number[];
+  /**
+   * Keys of the players this one muted (protocol v3): their chat isn't relayed to it. Optional
+   * because attachments saved by the v2 build have none.
+   */
+  mutes?: string[];
 }
 
 export type ConnState = PendingState | PlayerState;
@@ -58,6 +63,8 @@ export interface Buckets {
   emote: BucketState;
   chat: BucketState;
   teleport: BucketState;
+  /** Absent in attachments saved by the v2 build; the bucket then starts full. */
+  mute?: BucketState;
 }
 
 export class Player {
@@ -67,6 +74,9 @@ export class Player {
   readonly emote: TokenBucket;
   readonly chat: TokenBucket;
   readonly teleport: TokenBucket;
+  readonly mute: TokenBucket;
+  /** Live booths this player owns (from the world view), sent in summaries as `isMakerOf`. */
+  isMakerOf: readonly string[] = [];
   /** Metres, mirrored from `state.p` for the AOI grid and distance checks. */
   x = 0;
   y = 0;
@@ -88,6 +98,7 @@ export class Player {
     this.emote = createBucket(1, EMOTE_PER_S, saved?.emote);
     this.chat = createBucket(CHAT_BURST, 1 / CHAT_INTERVAL_S, saved?.chat);
     this.teleport = createBucket(1, TELEPORT_PER_S, saved?.teleport);
+    this.mute = createBucket(MUTE_BURST, MUTE_PER_S, saved?.mute);
     this.syncMetres();
   }
 
@@ -108,6 +119,7 @@ export class Player {
       emote: this.emote.state(),
       chat: this.chat.state(),
       teleport: this.teleport.state(),
+      mute: this.mute.state(),
     };
     this.conn.setState(this.state);
   }
@@ -124,9 +136,15 @@ export class Player {
 
   summary(): PlayerSummary {
     const { id, name, isGuest, uid, avatar, p, r, a } = this.state;
-    // `uid` is left out for guests rather than sent as nil, which the schema would refuse.
-    return uid === undefined
-      ? { id, name, isGuest, avatar, p: [p[0], p[1], p[2]], r, a }
-      : { id, name, isGuest, uid, avatar, p: [p[0], p[1], p[2]], r, a };
+    // `uid` and `isMakerOf` are left out rather than sent as nil, which the schema would refuse.
+    const summary: PlayerSummary = { id, name, isGuest, avatar, p: [p[0], p[1], p[2]], r, a };
+    if (uid !== undefined) summary.uid = uid;
+    if (this.isMakerOf.length > 0) summary.isMakerOf = [...this.isMakerOf];
+    return summary;
+  }
+
+  /** True when this player muted the player with `key`. */
+  hasMuted(key: string): boolean {
+    return this.state.mutes?.includes(key) ?? false;
   }
 }

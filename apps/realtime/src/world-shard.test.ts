@@ -486,6 +486,113 @@ describe('chat', () => {
   });
 });
 
+describe('mute (protocol v3)', () => {
+  async function trio(name: string) {
+    const clock = await shard(name);
+    const ada = await placed(name, 0, 0, { token: await token(USERS.ada) });
+    const bob = await placed(name, 5, 0, { token: await token(USERS.bob) });
+    const cat = await placed(name, 0, 5, { token: await token(USERS.newbie) });
+    return { clock, ada, bob, cat };
+  }
+
+  it('stops relaying the muted player to that recipient only', async () => {
+    const { clock, ada, bob, cat } = await trio('w-191');
+    bob.client.send({ type: 'mute', id: ada.id });
+    await bob.client.barrier();
+    ada.client.send({ type: 'chat', text: 'hello all' });
+    expect((await cat.client.next('chat')).text).toBe('hello all');
+    expect((await ada.client.next('chat')).text).toBe('hello all'); // the sender's own echo
+    await bob.client.barrier();
+    expect(bob.client.take('chat')).toEqual([]);
+
+    // Bob's own messages still reach Ada: a mute is one way.
+    bob.client.send({ type: 'chat', text: 'can you hear me' });
+    expect((await ada.client.next('chat')).text).toBe('can you hear me');
+    await bob.client.next('chat'); // Bob's own echo
+
+    bob.client.send({ type: 'unmute', id: ada.id });
+    await bob.client.barrier();
+    clock.advance(2000);
+    ada.client.send({ type: 'chat', text: 'back' });
+    expect((await bob.client.next('chat')).text).toBe('back');
+  });
+
+  it('keeps the mute when the muted player reconnects with a new id', async () => {
+    const name = 'w-192';
+    const { ada, bob } = await trio(name);
+    bob.client.send({ type: 'mute', id: ada.id });
+    await bob.client.barrier();
+    ada.client.close();
+    const again = await placed(name, 1, 0, { token: await token(USERS.ada) });
+    again.client.send({ type: 'chat', text: 'it is me again' });
+    await again.client.next('chat');
+    await bob.client.barrier();
+    expect(bob.client.take('chat')).toEqual([]);
+  });
+
+  it('keeps mutes across an eviction (socket attachment)', async () => {
+    const name = 'w-193';
+    const { clock, ada, bob, cat } = await trio(name);
+    bob.client.send({ type: 'mute', id: ada.id });
+    await bob.client.barrier();
+    await evictDurableObject(shardStub(name));
+    await useClock(name, clock);
+    ada.client.send({ type: 'chat', text: 'after eviction' });
+    expect((await cat.client.next('chat')).text).toBe('after eviction');
+    await bob.client.barrier();
+    expect(bob.client.take('chat')).toEqual([]);
+  });
+
+  it('drops a mute of an unknown player or of yourself', async () => {
+    const { ada, bob } = await trio('w-194');
+    bob.client.send({ type: 'mute', id: 999 });
+    bob.client.send({ type: 'mute', id: bob.id });
+    await bob.client.barrier();
+    ada.client.send({ type: 'chat', text: 'still heard' });
+    expect((await bob.client.next('chat')).text).toBe('still heard');
+    expect(bob.client.closed).toBeNull();
+  });
+});
+
+describe('protocol v3 summaries and compatibility', () => {
+  it('lists the live booths a maker owns in their summary (isMakerOf)', async () => {
+    await shard('w-195');
+    const { client: watcher } = await placed('w-195', 0, 0);
+    const { welcome } = await TestClient.join('w-195', { token: await token(USERS.ada) });
+    await TestClient.join('w-195', { token: await token(USERS.bob) });
+    await tick('w-195');
+    const joins = watcher.take('join');
+    expect(joins.find((j) => j.player.id === welcome.you)?.player.isMakerOf).toEqual([BOOTH.id]);
+    expect(joins.find((j) => j.player.uid === USERS.bob)?.player.isMakerOf).toBeUndefined();
+  });
+
+  it('still accepts a protocol-v2 client, which never sends mutes', async () => {
+    await shard('w-196');
+    const { client: watcher } = await placed('w-196', 0, 0);
+    const { welcome } = await TestClient.join('w-196', { guestId: guestId(), v: 2 });
+    await tick('w-196');
+    expect((await watcher.next('join')).player.id).toBe(welcome.you);
+  });
+
+  it('teleports next to another player ("Walk to maker")', async () => {
+    const clock = await shard('w-197');
+    const maker = await placed('w-197', 10, 10, { token: await token(USERS.ada) });
+    const visitor = await placed('w-197', 10, 40);
+    await tick('w-197');
+    maker.client.take('join');
+    visitor.client.send({ type: 'teleport', to: { kind: 'player', id: maker.id } });
+    await visitor.client.barrier();
+    await tick('w-197');
+    const snap = await maker.client.next('snap');
+    // 1.5 m from the maker, on the side the visitor came from.
+    expect(snap.s.find((e) => e[0] === visitor.id)?.slice(1, 4)).toEqual(at(10, 11.5));
+    clock.advance(100);
+    visitor.client.send({ type: 'move', p: at(10, 11.6), r: 0, a: 0, t: 0 });
+    await visitor.client.barrier();
+    expect(visitor.client.take('notice')).toEqual([]);
+  });
+});
+
 describe('hibernation', () => {
   it('rebuilds every player from socket attachments after the object is evicted', async () => {
     const clock = await shard('w-161');
