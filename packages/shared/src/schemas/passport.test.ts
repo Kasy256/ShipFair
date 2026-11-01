@@ -43,9 +43,9 @@ describe('requests', () => {
   it('caps stamp and merge batches', () => {
     expect(StampRequest.safeParse({ stamps: [] }).success).toBe(false);
     expect(StampRequest.safeParse({ stamps: Array(9).fill('squad') }).success).toBe(false);
-    expect(
-      MergeRequest.safeParse({ guestId: USER, stamps: Array(65).fill('squad') }).success,
-    ).toBe(false);
+    expect(MergeRequest.safeParse({ guestId: USER, stamps: Array(65).fill('squad') }).success).toBe(
+      false,
+    );
     expect(MergeRequest.safeParse({ guestId: 'nope', stamps: [] }).success).toBe(false);
     expect(MergeRequest.safeParse({ guestId: USER, stamps: ['district:dev-tools'] }).success).toBe(
       true,

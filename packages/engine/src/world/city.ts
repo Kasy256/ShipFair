@@ -3,6 +3,7 @@ import {
   type BoothChange,
   type CityLayout,
   type EventBus,
+  JUST_LAUNCHED_COUNT,
   type QualityTier,
   spawnForBooth,
   spawnForDistrict,
@@ -13,6 +14,7 @@ import { Group, type Mesh, type Vector3 } from 'three';
 import type { Art } from '../art.ts';
 import { BoothLayer } from '../booths/booth-layer.ts';
 import { BoothInteraction } from '../booths/interaction.ts';
+import { mediaUrl } from '../booths/media.ts';
 import { bitmapSource, type ImageSource } from '../booths/texture-cache.ts';
 import { DRAW_DISTANCE_M, LOD_REEVALUATE_S } from '../config.ts';
 import type { PhysicsWorld } from '../physics/world.ts';
@@ -26,12 +28,11 @@ import {
 import { type CityDiff, CityModel } from './city-model.ts';
 import type { Environment } from './environment.ts';
 import { Greenery } from './greenery.ts';
+import { fetchLogo, type LogoLoader, type WallEntry } from './just-launched.ts';
 import { LabelAtlas } from './labels.ts';
 import { buildPlaza, type Plaza } from './plaza.ts';
 import { StaticMerger } from './static-merge.ts';
 import { DEFAULT_THEME, themeFor } from './themes.ts';
-
-const JUST_LAUNCHED_COUNT = 6;
 
 export interface CityOptions {
   readonly snapshot: WorldSnapshot;
@@ -47,6 +48,8 @@ export interface CityOptions {
   readonly mediaHost: string | null;
   /** Image loader (tests inject one); defaults to ImageBitmapLoader. */
   readonly load?: ImageSource;
+  /** Logos for the Just Launched wall (tests inject one); defaults to fetch. */
+  readonly loadLogo?: LogoLoader;
 }
 
 /**
@@ -110,11 +113,12 @@ export class City {
       layout,
       { atlas: this.#labels, districts: labelIndex, kiosk: model.districts.length },
       physics,
+      opts.mediaHost === null ? null : (opts.loadLogo ?? fetchLogo),
     );
     this.#static = merger.build(this.root, 'city-static');
     this.greenery = new Greenery(layout, physics);
     this.root.add(this.#ground.root, this.greenery.root);
-    this.plaza.wall.show(model.latest(JUST_LAUNCHED_COUNT).map((b) => b.name));
+    this.plaza.wall.show(this.#wallEntries());
 
     this.interaction = new BoothInteraction(opts.bus, {
       get layout() {
@@ -122,6 +126,7 @@ export class City {
       },
       isLive: (id) => model.isLive(id),
       kiosk: this.plaza.kiosk,
+      wall: this.plaza.wallSpot,
     });
     this.interaction.onZone = (id) => {
       const district = id === null ? undefined : districts.get(id);
@@ -178,7 +183,7 @@ export class City {
       booths?.rebuildProps();
     }
     if (diff.added.length + diff.removed.length + diff.updated.length > 0) {
-      this.plaza.wall.show(this.model.latest(JUST_LAUNCHED_COUNT).map((b) => b.name));
+      this.plaza.wall.show(this.#wallEntries());
       this.#sinceCull = Number.POSITIVE_INFINITY;
     }
     return diff;
@@ -202,14 +207,33 @@ export class City {
   }
 
   /** Called on the player's interact action. */
-  interact(): 'booth' | 'kiosk' | null {
+  interact(): 'booth' | 'kiosk' | 'wall' | null {
     return this.interaction.interact();
+  }
+
+  /** The booth slug on the Just Launched wall under a ray (a click or tap), or null. */
+  pickWall(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number): string | null {
+    return this.plaza.wall.pick(ox, oy, oz, dx, dy, dz);
+  }
+
+  /** The newest booths for the wall, with logo URLs on the media host. */
+  #wallEntries(): WallEntry[] {
+    const host = this.#opts.mediaHost;
+    return this.model.latest(JUST_LAUNCHED_COUNT).map((b) => ({
+      id: b.id,
+      slug: b.slug,
+      name: b.name,
+      logoUrl: host !== null && b.logoKey ? mediaUrl(host, b.logoKey) : null,
+      approvedMs: Date.parse(b.approvedAt) || 0,
+      color: this.model.districts.find((d) => d.id === b.districtId)?.color ?? '#7c5cff',
+    }));
   }
 
   update(dt: number): void {
     const p = this.#opts.player;
     this.interaction.update(p.x, p.z);
     this.booths?.update(dt, p.x, p.z);
+    this.plaza.wall.update(dt, p.x, p.z);
     this.#sinceCull += dt;
     if (this.#sinceCull >= LOD_REEVALUATE_S) {
       this.#sinceCull = 0;

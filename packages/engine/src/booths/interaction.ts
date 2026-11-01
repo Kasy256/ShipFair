@@ -5,13 +5,15 @@ import {
   type EventBus,
   nearestBooth,
 } from '@shipfair/shared';
-import { KIOSK_RADIUS_M } from '../config.ts';
+import { KIOSK_RADIUS_M, WALL_INTERACT_RADIUS_M } from '../config.ts';
 
 export interface InteractionHost {
   readonly layout: CityLayout;
   /** False for removed booths (their lots stay in the layout as tombstones). */
   isLive(boothId: string): boolean;
   readonly kiosk: { readonly x: number; readonly z: number };
+  /** In front of the Just Launched wall. */
+  readonly wall: { readonly x: number; readonly z: number };
 }
 
 /**
@@ -27,9 +29,11 @@ export class BoothInteraction {
   readonly #focusPayload: { boothId: string | null } = { boothId: null };
   readonly #zonePayload: { districtId: number | null } = { districtId: null };
   readonly #openPayload = { boothId: '' };
+  readonly #wallPayload = { isNear: false };
   #focused: string | null = null;
   #zone: number | null | undefined;
   #isAtKiosk = false;
+  #isAtWall = false;
   /** Called with the new zone (null: the plaza) when it changes. */
   onZone: ((districtId: number | null) => void) | undefined;
 
@@ -63,6 +67,14 @@ export class BoothInteraction {
     const dx = x - k.x;
     const dz = z - k.z;
     this.#isAtKiosk = dx * dx + dz * dz <= KIOSK_RADIUS_M * KIOSK_RADIUS_M;
+    const wx = x - this.#host.wall.x;
+    const wz = z - this.#host.wall.z;
+    const isAtWall = wx * wx + wz * wz <= WALL_INTERACT_RADIUS_M * WALL_INTERACT_RADIUS_M;
+    if (isAtWall !== this.#isAtWall) {
+      this.#isAtWall = isAtWall;
+      this.#wallPayload.isNear = isAtWall;
+      this.#bus.emit('launches:near', this.#wallPayload);
+    }
     const zone = districtAt(layout, x, z)?.id ?? null;
     if (zone !== this.#zone) {
       this.#zone = zone;
@@ -72,8 +84,11 @@ export class BoothInteraction {
     }
   }
 
-  /** Opens what the player is at: the focused booth, else the kiosk. Returns what happened. */
-  interact(): 'booth' | 'kiosk' | null {
+  /**
+   * Opens what the player is at: the focused booth, else the kiosk, else the Just Launched list.
+   * Returns what happened.
+   */
+  interact(): 'booth' | 'kiosk' | 'wall' | null {
     if (this.#focused) {
       this.#openPayload.boothId = this.#focused;
       this.#bus.emit('booth:open', this.#openPayload);
@@ -82,6 +97,10 @@ export class BoothInteraction {
     if (this.#isAtKiosk) {
       this.#bus.emit('ui:open-submit');
       return 'kiosk';
+    }
+    if (this.#isAtWall) {
+      this.#bus.emit('ui:open-launches');
+      return 'wall';
     }
     return null;
   }

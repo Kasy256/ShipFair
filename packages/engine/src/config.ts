@@ -163,6 +163,15 @@ export const SIGN_ATLAS_ROWS = 32;
 export const SIGN_TEXT_ASPECT = 6;
 /** The plaza kiosk opens the submit form within this distance. */
 export const KIOSK_RADIUS_M = 3;
+/** The Just Launched wall (prompt 13): E within this distance of its front opens the list. */
+export const WALL_INTERACT_RADIUS_M = 6;
+/** It redraws only within this distance (and when on screen). */
+export const WALL_VIEW_RANGE_M = 45;
+/** Clicks and taps reach it from this far. */
+export const WALL_PICK_RANGE_M = 40;
+/** "x min ago" refreshes this often. */
+export const WALL_REDRAW_S = 60;
+export const WALL_LOGO_PX = 96;
 /** Ambient light and fog ease toward a district's tint at this rate. */
 export const THEME_TINT_HZ = 1.5;
 export const SKY_RADIUS_M = 1800;
