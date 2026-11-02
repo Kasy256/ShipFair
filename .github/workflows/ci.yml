@@ -43,6 +43,16 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # toktx turns non-palette textures into KTX2 (tools/assets). Pinned and checksum-checked;
+      # the asset tests encode with it when it is present.
+      - name: Install KTX-Software
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/ktx.deb" https://github.com/KhronosGroup/KTX-Software/releases/download/v4.3.2/KTX-Software-4.3.2-Linux-x86_64.deb
+          echo "225dfc55c37659c0cfee764ca725eb8941605f07  $RUNNER_TEMP/ktx.deb" | sha1sum -c -
+          sudo apt-get install -y "$RUNNER_TEMP/ktx.deb"
+          sudo ldconfig
+          toktx --version
+
       - name: Test
         run: pnpm test
 
@@ -56,6 +66,10 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # First-load JS for a world route against e2e/perf-budgets.json (prompt 14).
+      - name: Bundle budget
+        run: node tools/bundle-budget.ts
 
       - name: Install Playwright Chromium
         run: pnpm --filter @shipfair/e2e exec playwright install --with-deps chromium
@@ -78,8 +92,9 @@ jobs:
           curl -sf http://localhost:5173/api/dev/ping-realtime
           curl -sf http://localhost:1999/dev/ping-web
 
+      # The perf project (render budgets) runs in its own job below.
       - name: E2E
-        run: pnpm e2e
+        run: pnpm --filter @shipfair/e2e exec playwright test --project=chromium --project=mobile
 
       # Pass or fail, so visual changes can be reviewed from the run (prompt 05 screenshots).
       - name: Upload city screenshots
@@ -100,6 +115,54 @@ jobs:
             e2e/artifacts
             dev.log
           retention-days: 7
+
+  # Prompt 14: render budgets (e2e/perf-budgets.json) on the scripted route with 500 booths and
+  # 60 fake remote players, SwiftShader at 1280×720. Counts only: SwiftShader fps means nothing.
+  # Needs the built assets and the dev servers, not Supabase (fake world, solo test mode).
+  perf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Assets build
+        run: pnpm assets:build --ci
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @shipfair/e2e exec playwright install --with-deps chromium
+
+      - name: Start dev servers
+        run: |
+          pnpm dev > dev.log 2>&1 &
+          if ! timeout 180 bash -c "until curl -sf http://localhost:5173/ > /dev/null; do sleep 2; done"; then
+            echo "the web dev server never came up"; cat dev.log; exit 1
+          fi
+
+      - name: Render budgets
+        run: pnpm --filter @shipfair/e2e exec playwright test --project=perf
+
+      - name: Upload perf results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results
+          path: |
+            e2e/artifacts/**/perf-*.json
+            dev.log
+          if-no-files-found: ignore
+          retention-days: 30
 
   db:
     runs-on: ubuntu-latest

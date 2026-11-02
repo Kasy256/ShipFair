@@ -4,6 +4,7 @@ import type { RemoteView } from './avatars/remote.ts';
 import { type CityTestApi, createCityTestApi } from './debug/city-test-api.ts';
 import type { Engine } from './engine.ts';
 import type { InputAction, ScriptedMove } from './input/manager.ts';
+import type { QualitySettings } from './quality/adaptive.ts';
 import type { TestLevelLayout } from './world/test-level-layout.ts';
 
 export interface Vec3Like {
@@ -92,6 +93,17 @@ export interface ShipfairTestApi {
   };
   /** The city built from the snapshot (prompt 05). */
   city: CityTestApi;
+  /** Quality and memory (prompt 14). */
+  perf: {
+    /** Estimated texture memory, MB: booth images, signs and remote players' tags. */
+    readonly textureMb: number;
+    /** The adaptive controller's level (0 = the tier's best) and what it applies. */
+    readonly level: number;
+    readonly settings: Readonly<QualitySettings>;
+    readonly isAuto: boolean;
+    /** True while the tab is hidden: the loop is stopped and only heartbeats run. */
+    readonly isPaused: boolean;
+  };
   /** A booth city for draw-call and triangle budgets. */
   stress: {
     city(booths: number, seed?: number): { booths: number; props: number };
@@ -108,6 +120,14 @@ export interface AssetsStatus {
   placeholders: string[];
   clips: string[];
 }
+
+const DEFAULT_SETTINGS: QualitySettings = {
+  renderScale: 1,
+  shadows: false,
+  bloom: false,
+  nameTagDistanceM: 0,
+  streamRadiusM: 0,
+};
 
 const vec = (v: Vec3Like | undefined): Vec3Like => ({ x: v?.x ?? 0, y: v?.y ?? 0, z: v?.z ?? 0 });
 
@@ -244,6 +264,23 @@ export function createTestApi(engine: Engine): ShipfairTestApi {
       emote: (e) => rt()?.player.emote(e),
     },
     city: createCityTestApi(engine),
+    perf: {
+      get textureMb() {
+        return (rt()?.perf.textureBytes() ?? 0) / (1024 * 1024);
+      },
+      get level() {
+        return rt()?.perf.adaptive.level ?? 0;
+      },
+      get settings() {
+        return { ...(rt()?.perf.adaptive.settings ?? DEFAULT_SETTINGS) };
+      },
+      get isAuto() {
+        return rt()?.perf.adaptive.isAuto ?? false;
+      },
+      get isPaused() {
+        return rt()?.background.isPaused ?? false;
+      },
+    },
     stress: {
       city: (booths, seed) => rt()?.art.stress?.buildCity(booths, seed) ?? { booths: 0, props: 0 },
       clear: () => rt()?.art.stress?.clearCity(),
