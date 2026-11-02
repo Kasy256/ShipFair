@@ -139,7 +139,15 @@ export function buildRuntime(p: RuntimeParams): Runtime {
   if (debug.has('physics')) loop.add(new PhysicsWireframe(physics, renderer.scene));
   if (debug.has('perf')) {
     const parent = options.canvas.parentElement ?? document.body;
-    loop.add(new PerfOverlay(parent, loop, renderer.info, () => renderer.renderScale));
+    loop.add(
+      new PerfOverlay(
+        parent,
+        loop,
+        renderer.info,
+        () => renderer.renderScale,
+        () => perf.textureBytes(),
+      ),
+    );
   }
   const view: PlayerView = { x: 0, z: 0, yaw: 0, cameraYaw: 0 };
   loop.add({

@@ -1,7 +1,9 @@
 import type { WebGLInfo } from 'three';
 import type { Loop, System } from '../core/loop.ts';
+import { jsHeapMb, MemoryGraph } from './memory-graph.ts';
 
 const REFRESH_S = 0.25;
+const MB = 1024 * 1024;
 
 export type DebugFlag = 'perf' | 'physics';
 
@@ -17,23 +19,34 @@ export function debugFlags(search: string): ReadonlySet<DebugFlag> {
 }
 
 /**
- * `?debug=perf`: a small text readout of fps, frame ms, draw calls, triangles, textures and
- * geometries. A developer tool, so it is the one bit of DOM the engine draws itself; it is only
- * created behind the flag and writes `textContent` four times a second.
+ * `?debug=perf`: a small text readout of fps, frame ms, draw calls, triangles, textures,
+ * geometries, estimated texture memory and JS heap, over a rolling memory graph (prompt 14). A
+ * developer tool, so it is the one bit of DOM the engine draws itself; it is only created behind
+ * the flag and updates four times a second.
  */
 export class PerfOverlay implements System {
   readonly #el: HTMLDivElement;
+  readonly #text: HTMLDivElement;
+  readonly #graph = new MemoryGraph();
   readonly #loop: Loop;
   readonly #info: WebGLInfo;
   readonly #renderScale: () => number;
+  readonly #textureBytes: () => number;
   #elapsed = 0;
   #frames = 0;
   #frameMsSum = 0;
 
-  constructor(parent: HTMLElement, loop: Loop, info: WebGLInfo, renderScale: () => number) {
+  constructor(
+    parent: HTMLElement,
+    loop: Loop,
+    info: WebGLInfo,
+    renderScale: () => number,
+    textureBytes: () => number,
+  ) {
     this.#loop = loop;
     this.#info = info;
     this.#renderScale = renderScale;
+    this.#textureBytes = textureBytes;
     const el = document.createElement('div');
     el.dataset.testid = 'perf-overlay';
     el.setAttribute('aria-hidden', 'true');
@@ -50,6 +63,8 @@ export class PerfOverlay implements System {
       whiteSpace: 'pre',
       pointerEvents: 'none',
     });
+    this.#text = document.createElement('div');
+    el.append(this.#text, this.#graph.canvas);
     parent.appendChild(el);
     this.#el = el;
   }
@@ -62,10 +77,15 @@ export class PerfOverlay implements System {
     const fps = this.#frames / this.#elapsed;
     const ms = this.#frameMsSum / this.#frames;
     const { render, memory } = this.#info;
-    this.#el.textContent =
+    const textureMb = this.#textureBytes() / MB;
+    const heapMb = jsHeapMb();
+    this.#graph.push(textureMb, heapMb);
+    this.#text.textContent =
       `${fps.toFixed(0)} fps  ${ms.toFixed(1)} ms\n` +
       `draws ${render.calls}  tris ${render.triangles}\n` +
       `tex ${memory.textures}  geo ${memory.geometries}\n` +
+      `texMB ${textureMb.toFixed(1)} (peak ${this.#graph.peakTextureMb.toFixed(1)})\n` +
+      `heapMB ${Number.isNaN(heapMb) ? 'n/a' : heapMb.toFixed(0)}\n` +
       `scale ${this.#renderScale().toFixed(2)}`;
     this.#elapsed = 0;
     this.#frames = 0;

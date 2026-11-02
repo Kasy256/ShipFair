@@ -88,6 +88,10 @@ test('debug overlay: ?debug=perf shows live numbers', async ({ page }) => {
   await expect(overlay).toContainText('fps', { timeout: 30_000 });
   await expect(overlay).toContainText(/draws [1-9]\d*/);
   await expect(overlay).toContainText(/geo [1-9]\d*/);
+  // Prompt 14: estimated texture memory (with its peak), JS heap and the rolling graph.
+  await expect(overlay).toContainText(/texMB \d+\.\d \(peak \d+\.\d\)/);
+  await expect(overlay).toContainText(/heapMB \d+/);
+  await expect(page.getByTestId('perf-memory-graph')).toBeVisible();
   report('overlayText', ((await overlay.textContent()) ?? '').replaceAll('\n', ' | '));
 });
 
