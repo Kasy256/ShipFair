@@ -1,6 +1,6 @@
 begin;
 \ir _helpers.psql
-select plan(46);
+select plan(48);
 
 select tests.create_user('walker') as walker_id \gset
 select tests.create_user('second') as second_id \gset
@@ -236,6 +236,18 @@ select ok(
   'tier changes are logged by system'
 );
 select is_empty('select * from public.recompute_booth_tiers()', 'a second run changes nothing');
+
+-- A top-10 place alone isn't enough: a pavilion needs 25 unique visitors in the week. The busy
+-- booths go quiet (they keep their tiers: upgraded today), leaving room in the top 10.
+delete from public.booth_stats_daily where booth_id in (select id from tier_fixture);
+select tests.create_booth(:'owner_id', 'tier-quiet') as quiet_id \gset
+select tests.create_booth(:'owner_id', 'tier-busy-enough') as enough_id \gset
+insert into public.booth_stats_daily (booth_id, day, unique_visitors) values
+  (:'quiet_id', (now() at time zone 'utc')::date - 1, 24),
+  (:'enough_id', (now() at time zone 'utc')::date - 1, 25);
+create temp table tier_run_min as select * from public.recompute_booth_tiers();
+select is((select tier from public.booths where id = :'quiet_id'), 'stall'::public.booth_tier, '24 weekly visitors are not a pavilion, even in the top 10');
+select is((select tier from public.booths where id = :'enough_id'), 'pavilion'::public.booth_tier, '25 weekly visitors in the top 10 are');
 
 -- Wardrobe unlocks ---------------------------------------------------------------------------------
 

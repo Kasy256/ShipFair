@@ -58,6 +58,7 @@ export const TEXTURE_STREAM_RADIUS_M = 35;
 export const BOOTH_MEDIA_MAX = 5;
 export const BOOTH_TIER_VISITORS = 250; // sum of daily unique visitors for the `booth` tier
 export const PAVILION_TOP_N = 10; // by weekly unique visitors
+export const PAVILION_MIN_WEEKLY_VISITORS = 25; // and at least this many unique visitors this week
 export const TIER_DOWNGRADE_GRACE_DAYS = 7; // no downgrade this soon after an upgrade
 export const JUST_LAUNCHED_COUNT = 12; // booths on the plaza wall
 export const BOOTH_STATS_CHART_DAYS = 14; // the owner's chart on /me
