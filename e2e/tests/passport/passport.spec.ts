@@ -197,7 +197,10 @@ test('the wall shows a newly approved booth after one world refresh', async ({ p
   await expect(sheet).toBeVisible();
   // The list reads the UI's world store, which the real refresh path updates too; the shortcut
   // above only fed the engine, so take the newest booth the store knows.
-  await sheet.getByRole('button', { name: /Go to / }).first().click();
+  await sheet
+    .getByRole('button', { name: /Go to / })
+    .first()
+    .click();
   await expect(sheet).toBeHidden();
   const at = await page.evaluate((dt) => {
     window.__shipfair?.step(dt, 2);
