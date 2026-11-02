@@ -36,8 +36,33 @@ const staticHeaders = (mode: string): Plugin => {
   };
 };
 
+/** The chunks every city visit needs at once; Rapier is the largest and on the critical path. */
+const BOOT_CHUNK = /^assets\/(rapier|three|src)-[\w-]+\.js$/;
+
+/**
+ * Modulepreloads the engine, three and Rapier chunks from index.html (prompt 14), so their
+ * download starts with the shell instead of after it has been parsed (~1.1 s later on a 4×
+ * slowed phone). Low priority, so the shell still paints first. Other pages fetch them too;
+ * /submit and /me use the engine anyway, and the hashed files are cached for a year.
+ */
+const preloadBoot = (): Plugin => ({
+  name: 'shipfair:preload-boot',
+  apply: 'build',
+  transformIndexHtml: {
+    order: 'post',
+    handler: (_html, ctx) =>
+      Object.keys(ctx.bundle ?? {})
+        .filter((file) => BOOT_CHUNK.test(file))
+        .map((file) => ({
+          tag: 'link',
+          attrs: { rel: 'modulepreload', crossorigin: '', fetchpriority: 'low', href: `/${file}` },
+          injectTo: 'head' as const,
+        })),
+  },
+});
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss(), cloudflare(), brandHtml(), staticHeaders(mode)],
+  plugins: [react(), tailwindcss(), cloudflare(), brandHtml(), staticHeaders(mode), preloadBoot()],
   environments: {
     client: {
       build: {
@@ -53,6 +78,9 @@ export default defineConfig(({ mode }) => ({
                   name: 'three',
                   test: /[\\/]three[\\/](build|src|examples[\\/]jsm[\\/](?!loaders[\\/]KTX2Loader|libs[\\/](zstddec|ktx-parse)|utils[\\/]WorkerPool))/,
                 },
+                // Everything the entry imports statically, in one chunk: otherwise every module
+                // shared with a lazy page becomes its own tiny chunk (15 requests on a first load).
+                { name: 'shell', tags: ['$initial'] },
               ],
             },
           },
