@@ -83,7 +83,7 @@ as $$
 begin
   if not exists (select 1 from public.profiles as p where p.id = uid)
     or not public.is_not_banned(uid) then
-    return '{}';
+    return '{}'::text[];
   end if;
   insert into public.passport_stamps (user_id, stamp)
   select uid, s from public.passport_earned(uid) as s
