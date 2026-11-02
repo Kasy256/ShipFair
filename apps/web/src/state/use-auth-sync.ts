@@ -1,5 +1,6 @@
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { useEffect } from 'react';
+import { afterWorldBoot } from '../lib/boot.ts';
 import { fetchOwnProfile, ProfileError } from '../lib/profile-api.ts';
 import { loadSupabase, type Supabase } from '../lib/supabase.ts';
 import { authToastText } from '../ui/errors.ts';
@@ -61,35 +62,38 @@ async function applySession(client: Supabase, event: AuthChangeEvent, session: S
 /**
  * Keeps `useSessionStore` in step with Supabase Auth: the restored session on load, sign-in,
  * sign-out and refresh failures. Never throws into React: any failure leaves a working guest.
- * Mounted once, at the root.
+ * Mounted once, at the root. On a first visit to the city, Supabase loads once the city is ready
+ * (lib/boot.ts); until then the visitor is `loading`, which the HUD and realtime already wait on.
  */
 export function useAuthSync(): void {
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     let isCurrent = true;
-    loadSupabase().then(
-      (client) => {
-        if (!isCurrent) return;
-        if (!client) {
+    afterWorldBoot()
+      .then(loadSupabase)
+      .then(
+        (client) => {
+          if (!isCurrent) return;
+          if (!client) {
+            useSessionStore.getState().setGuest();
+            return;
+          }
+          const { data } = client.auth.onAuthStateChange((event, session) => {
+            // supabase-js holds a lock while it calls listeners; calling it back from inside
+            // would deadlock, so the work runs on the next tick.
+            setTimeout(() => {
+              applySession(client, event, session).catch((error: unknown) =>
+                console.error('Session update failed', error),
+              );
+            }, 0);
+          });
+          unsubscribe = () => data.subscription.unsubscribe();
+        },
+        (error: unknown) => {
+          console.error('Sign-in is unavailable (Supabase client failed to load)', error);
           useSessionStore.getState().setGuest();
-          return;
-        }
-        const { data } = client.auth.onAuthStateChange((event, session) => {
-          // supabase-js holds a lock while it calls listeners; calling it back from inside
-          // would deadlock, so the work runs on the next tick.
-          setTimeout(() => {
-            applySession(client, event, session).catch((error: unknown) =>
-              console.error('Session update failed', error),
-            );
-          }, 0);
-        });
-        unsubscribe = () => data.subscription.unsubscribe();
-      },
-      (error: unknown) => {
-        console.error('Sign-in is unavailable (Supabase client failed to load)', error);
-        useSessionStore.getState().setGuest();
-      },
-    );
+        },
+      );
     return () => {
       isCurrent = false;
       unsubscribe?.();

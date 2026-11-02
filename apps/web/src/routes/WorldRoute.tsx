@@ -1,6 +1,7 @@
 import type { Engine } from '@shipfair/engine';
 import { useEffect, useRef, useState } from 'react';
 import { track } from '../lib/analytics.ts';
+import { worldBooted } from '../lib/boot.ts';
 import { loadEngineModule } from '../lib/engine-loader.ts';
 import { WorldLoadError } from '../lib/world-source.ts';
 import { attachPlayerView } from '../state/player-view.ts';
@@ -68,10 +69,15 @@ export function WorldRoute() {
   useInputLock(!hasEntered);
 
   useEffect(() => {
-    // Download the engine while the world is fetched. A failure here resurfaces (and is shown)
-    // when WorldCanvas awaits the same import.
+    // Download the engine while the world is fetched (main.tsx already started it on a first
+    // visit; this covers arriving from another page). A failure resurfaces in WorldCanvas.
     loadEngineModule().catch(() => undefined);
   }, []);
+
+  // Sign-in (Supabase) waits for this on a first visit; see lib/boot.ts.
+  useEffect(() => {
+    if (stage === 'ready' || hasEngineFailed || world.error) worldBooted();
+  }, [stage, hasEngineFailed, world.error]);
 
   useEffect(() => {
     if (world.data) setWorld(world.data);

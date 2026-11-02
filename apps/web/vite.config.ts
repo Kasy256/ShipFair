@@ -48,7 +48,11 @@ export default defineConfig(({ mode }) => ({
             codeSplitting: {
               groups: [
                 { name: 'rapier', test: /[\\/]@dimforge[\\/]rapier3d-compat[\\/]/ },
-                { name: 'three', test: /[\\/]three[\\/](build|examples|src)[\\/]/ },
+                // KTX2Loader and its zstd decoder stay out: the engine imports them on demand.
+                {
+                  name: 'three',
+                  test: /[\\/]three[\\/](build|src|examples[\\/]jsm[\\/](?!loaders[\\/]KTX2Loader|libs[\\/](zstddec|ktx-parse)|utils[\\/]WorkerPool))/,
+                },
               ],
             },
           },

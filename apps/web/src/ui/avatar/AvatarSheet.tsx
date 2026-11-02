@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { saveAvatarStyle } from '../../lib/profile-api.ts';
 import { loadSupabase } from '../../lib/supabase.ts';
 import { selectSavedStyle, useSessionStore } from '../../state/session-store.ts';
 import { useUiStore } from '../../state/ui-store.ts';
 import { authToastText, profileErrorText } from '../errors.ts';
 import { Sheet } from '../Sheet.tsx';
-import { AvatarEditor } from './AvatarEditor.tsx';
+
+// The editor (item grids, swatches, its own 3D preview) is its own chunk, loaded on first open.
+const AvatarEditor = lazy(() =>
+  import('./AvatarEditor.tsx').then((m) => ({ default: m.AvatarEditor })),
+);
 
 /** Saves the draft look: to the profile when signed in, to this browser for a guest. */
 export async function saveLook(): Promise<void> {
@@ -75,7 +79,9 @@ export function AvatarSheet() {
         </p>
       )}
       <div className="mt-4">
-        <AvatarEditor value={style} onChange={setDraftStyle} />
+        <Suspense fallback={<p className="py-10 text-center text-muted">Loading the editor…</p>}>
+          <AvatarEditor value={style} onChange={setDraftStyle} />
+        </Suspense>
       </div>
       {failure && (
         <p role="alert" className="mt-4 rounded-xl bg-red-950/60 p-3 text-red-100 text-sm">
