@@ -1,4 +1,5 @@
 import { APP_NAME } from '@shipfair/shared';
+import { useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { usePassportStore } from '../state/passport-store.ts';
 import { useSession } from '../state/session-store.ts';
@@ -25,6 +26,21 @@ export function Hud() {
   const session = useSession();
   const location = useLocation();
   const navigate = useNavigate();
+  const nav = useRef<HTMLElement>(null);
+  // Phones put the minimap under these buttons, which wrap to more rows on narrow screens.
+  useEffect(() => {
+    const el = nav.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => {
+      root.style.setProperty('--hud-nav-bottom', `${el.offsetTop + el.offsetHeight}px`);
+    });
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--hud-nav-bottom');
+    };
+  }, []);
   const claim = () =>
     session.status === 'signed-in' ? navigate('/submit') : openSignIn('/submit');
   const button =
@@ -45,6 +61,7 @@ export function Hud() {
         )}
       </header>
       <nav
+        ref={nav}
         aria-label="World"
         className="absolute top-3 right-3 z-10 flex max-w-[60vw] flex-wrap justify-end gap-2"
       >
@@ -83,10 +100,10 @@ export function Hud() {
           onClick={() => setPassportOpen(true)}
         >
           Passport <span className="text-accent tabular-nums">{stampCount}</span>{' '}
-          <kbd className="ml-1 text-muted text-xs">P</kbd>
+          <kbd className="ml-1 hidden text-muted text-xs sm:inline">P</kbd>
         </button>
         <button type="button" className={button} onClick={() => setMapOpen(true)}>
-          Map <kbd className="ml-1 text-muted text-xs">M</kbd>
+          Map <kbd className="ml-1 hidden text-muted text-xs sm:inline">M</kbd>
         </button>
         <button
           type="button"
@@ -95,7 +112,7 @@ export function Hud() {
           aria-controls="controls-help"
           onClick={() => setHelpOpen(!isHelpOpen)}
         >
-          Help <kbd className="ml-1 text-muted text-xs">?</kbd>
+          Help <kbd className="ml-1 hidden text-muted text-xs sm:inline">?</kbd>
         </button>
       </nav>
     </>
