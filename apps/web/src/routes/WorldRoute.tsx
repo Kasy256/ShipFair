@@ -80,7 +80,7 @@ export function WorldRoute() {
   useEffect(() => (engine ? attachPlayerView(engine) : undefined), [engine]);
 
   useEffect(() => {
-    engine?.setReducedMotion(isReducedMotion);
+    engine?.applySettings({ isReducedMotion });
   }, [engine, isReducedMotion]);
 
   const boothCount = world.data?.snapshot?.booths.length ?? null;

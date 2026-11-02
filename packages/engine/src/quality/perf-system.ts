@@ -2,7 +2,7 @@ import type { EngineEvents, EventBus, QualityTier } from '@shipfair/shared';
 import { BENCHMARK_FRAMES } from '../config.ts';
 import type { Loop, System } from '../core/loop.ts';
 import type { Renderer } from '../render/renderer.ts';
-import { AdaptiveQuality } from './adaptive.ts';
+import { AdaptiveQuality, type QualitySettings } from './adaptive.ts';
 import { tierAfterBenchmark } from './detect.ts';
 
 /** Frames skipped before the benchmark starts timing (shader compiles, first uploads). */
@@ -31,29 +31,40 @@ export class PerfSystem implements System {
   #level = 0;
   /** Estimated texture bytes (the booth texture cache); renderer.info can't report them. */
   textureBytes: () => number = () => 0;
+  /** Applies the settings the renderer doesn't own (name tag range, streaming radius). */
+  onSettings: ((settings: Readonly<QualitySettings>) => void) | undefined;
   /** Average frame time measured by the boot benchmark, once it has finished. */
   benchmarkMs: number | undefined;
 
-  /** `onBenchmarkTier` is called if the benchmark wants a lower tier; omit it to skip that. */
+  /**
+   * `onBenchmarkTier` is called if the benchmark wants a lower tier; omit it to skip that.
+   * `isAuto` false keeps the tier's best settings whatever the frame rate.
+   */
   constructor(
     loop: Loop,
     renderer: Renderer,
     bus: EventBus,
     tier: QualityTier,
     onBenchmarkTier?: (tier: QualityTier) => void,
+    isAuto = true,
   ) {
     this.#loop = loop;
     this.#renderer = renderer;
     this.#bus = bus;
     this.#onBenchmarkTier = onBenchmarkTier;
     this.adaptive = new AdaptiveQuality(tier);
+    this.adaptive.setAuto(isAuto);
     renderer.apply(tier, this.adaptive.settings);
   }
 
   setTier(tier: QualityTier): void {
     this.adaptive.setTier(tier);
-    this.#level = this.adaptive.level;
-    this.#renderer.apply(tier, this.adaptive.settings);
+    this.#apply();
+  }
+
+  setAuto(isAuto: boolean): void {
+    this.adaptive.setAuto(isAuto);
+    this.#apply();
   }
 
   update(): void {
@@ -62,10 +73,7 @@ export class PerfSystem implements System {
     if (this.benchmarkMs === undefined) this.#benchmark(frameMs);
     if (!this.adaptive.frame(frameMs)) return;
 
-    if (this.adaptive.level !== this.#level) {
-      this.#level = this.adaptive.level;
-      this.#renderer.apply(this.adaptive.tier, this.adaptive.settings);
-    }
+    if (this.adaptive.level !== this.#level) this.#apply();
     const info = this.#renderer.info;
     const sample = this.#sample;
     sample.fps = Math.round(this.adaptive.fps * 10) / 10;
@@ -76,7 +84,15 @@ export class PerfSystem implements System {
     this.#bus.emit('perf:sample', sample);
   }
 
-  dispose(): void {}
+  dispose(): void {
+    this.onSettings = undefined;
+  }
+
+  #apply(): void {
+    this.#level = this.adaptive.level;
+    this.#renderer.apply(this.adaptive.tier, this.adaptive.settings);
+    this.onSettings?.(this.adaptive.settings);
+  }
 
   #benchmark(frameMs: number): void {
     this.#benchFrames++;

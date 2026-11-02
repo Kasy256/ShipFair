@@ -110,3 +110,10 @@ export const ASSET_MANIFEST_URL = '/assets/assets-manifest.generated.json';
 // never send the new messages, and their decoders drop the new summary field.
 export const PROTOCOL_VERSION = 3;
 export const MIN_CLIENT_PROTOCOL = 1;
+
+// Player settings (prompt 14): the settings menu's ranges, shared by the web store and the engine
+export const FOV_DEFAULT_DEG = 62; // vertical, in landscape; portrait widens it (engine fovForAspect)
+export const FOV_MIN_DEG = 50;
+export const FOV_MAX_DEG = 80;
+export const RENDER_SCALE_MIN = 0.5; // the player's cap, on top of the adaptive render scale
+export const RENDER_SCALE_MAX = 1;

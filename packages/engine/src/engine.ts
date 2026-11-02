@@ -8,55 +8,26 @@ import {
   type Handler,
   spawnBeside,
 } from '@shipfair/shared';
-import { Raycaster, Vector2, Vector3 } from 'three';
+import { Vector3 } from 'three';
 import { AudioHub } from './audio/audio-hub.ts';
-import { type ArtHost, loadArt } from './boot-art.ts';
-import { HEART_Y_M } from './config.ts';
-import { Loop } from './core/loop.ts';
-import { PerfOverlay } from './debug/perf-overlay.ts';
-import { PhysicsWireframe } from './debug/physics-wireframe.ts';
-import { type InputAction, InputManager } from './input/manager.ts';
+import { loadArt } from './boot-art.ts';
+import { CAMERA_FOV_DEG, HEART_Y_M } from './config.ts';
+import type { InputAction } from './input/manager.ts';
 import type { JoystickView } from './input/touch.ts';
 import type { NetConnectOptions } from './net/client.ts';
-import { Multiplayer } from './net/multiplayer.ts';
-import { initPhysics, PhysicsWorld } from './physics/world.ts';
-import { PlayerSystem } from './player/player-system.ts';
-import { PerfSystem } from './quality/perf-system.ts';
-import { Renderer } from './render/renderer.ts';
+import { initPhysics } from './physics/world.ts';
+import { ScreenRay } from './player/screen-ray.ts';
+import { buildRuntime, type Runtime } from './runtime.ts';
 import type {
   BoothChange,
   EngineOptions,
+  EngineSettings,
   PlayerView,
   QualityTier,
   StartStage,
   Teleport,
   WorldSnapshot,
 } from './types.ts';
-import { City } from './world/city.ts';
-import { Environment } from './world/environment.ts';
-import { HeartBurst } from './world/heart-burst.ts';
-import { type BuiltLevel, buildTestLevel } from './world/test-level.ts';
-import { type TestLevelLayout, testLevelLayout } from './world/test-level-layout.ts';
-
-/** Everything that exists between `start()` and `dispose()`. */
-interface Runtime {
-  art: ArtHost;
-  loop: Loop;
-  input: InputManager;
-  physics: PhysicsWorld;
-  renderer: Renderer;
-  environment: Environment;
-  /** The city built from the snapshot (null in the prompt-04 test level). */
-  city: City | null;
-  /** The prompt-04 test level, used when `start()` gets no snapshot. */
-  level: BuiltLevel | null;
-  layout: TestLevelLayout | null;
-  player: PlayerSystem;
-  perf: PerfSystem;
-  multiplayer: Multiplayer;
-  /** The upvote heart burst (prompt 12). */
-  hearts: HeartBurst;
-}
 
 /** Public surface of the 3D runtime (ARCHITECTURE.md §3). */
 export class Engine {
@@ -65,27 +36,34 @@ export class Engine {
   #runtime: Runtime | undefined;
   #quality: QualityTier;
   readonly #audio = new AudioHub();
-  readonly #view: PlayerView = { x: 0, z: 0, yaw: 0, cameraYaw: 0 };
   #onFrame: ((view: Readonly<PlayerView>) => void) | undefined;
   #isInputEnabled = true;
   /** The local player's look and name tag text, kept across art loading (prompt 07). */
   #style: AvatarStyleV2;
   #playerName: string;
-  #isReducedMotion: boolean;
+  /** Settings menu values (prompt 14), kept for a runtime that doesn't exist yet. */
+  readonly #settings: EngineSettings;
+  #isHidden = false;
   #isDisposed = false;
   /** A `connect()` made before `start()` finished; applied once the runtime exists. */
   #net: NetConnectOptions | null = null;
   /** Mutes set before `start()` finished. */
   #mutes: readonly string[] = [];
-  /** Picking players: reused, clicks are rare but there's no reason to allocate. */
-  readonly #raycaster = new Raycaster();
-  readonly #pointer = new Vector2();
+  readonly #screen: ScreenRay;
   readonly #spot = new Vector3();
 
   constructor(options: EngineOptions) {
     this.#options = options;
+    this.#screen = new ScreenRay(options.canvas);
     this.#quality = options.quality;
-    this.#isReducedMotion = options.isReducedMotion ?? false;
+    this.#settings = {
+      isAutoQuality: options.isAutoQuality !== false,
+      renderScale: options.renderScale ?? 1,
+      fovDeg: options.fovDeg ?? CAMERA_FOV_DEG,
+      volume: options.volume ?? 1,
+      isReducedMotion: options.isReducedMotion ?? false,
+    };
+    this.#audio.setVolume(this.#settings.volume);
     this.#style = options.avatarStyle ?? DEFAULT_AVATAR_STYLE;
     this.#playerName = options.playerName ?? '';
   }
@@ -129,95 +107,19 @@ export class Engine {
     if (this.#isDisposed) return;
     onStage?.('city');
     const options = this.#options;
-    const debug = options.debug ?? new Set();
-    const loop = new Loop();
-    const input = loop.add(new InputManager(options.canvas));
-    const physics = new PhysicsWorld();
-    const layout = world ? null : testLevelLayout();
-    const level = layout ? buildTestLevel(layout, physics) : null;
-    const spawn = layout ? layout.spawn : { x: 0, y: 0, z: 0, yaw: 0 };
-    const style = this.#style;
-    const player = loop.add(new PlayerSystem(physics, input.state, loop, spawn, style));
-    loop.add(physics);
-    const renderer = new Renderer(options.canvas, player.camera.camera, this.#quality);
-    const environment = new Environment(renderer.renderer, renderer.scene, this.#quality);
-    const city = world
-      ? new City({
-          snapshot: world,
-          physics,
-          bus: options.bus,
-          environment,
-          viewer: player.camera.camera.position,
-          player: player.renderPosition,
-          tier: this.#quality,
-          mediaHost: options.mediaHost ?? null,
-        })
-      : null;
-    if (city) {
-      city.setReducedMotion(this.#isReducedMotion);
-      const { x, z, yaw } = city.spawn;
-      player.teleport(x, 0, z, yaw);
-      renderer.scene.add(city.root);
-      player.onInteract = () => city.interact();
-    }
-    if (level) renderer.scene.add(...level.root);
-    renderer.scene.add(player.avatar.object);
-    const onBenchmarkTier = options.isAutoQuality === false ? undefined : this.#lowerTier;
-    const perf = loop.add(
-      new PerfSystem(loop, renderer, options.bus, this.#quality, onBenchmarkTier),
-    );
-    const multiplayer = new Multiplayer({
-      loop,
-      bus: options.bus,
-      scene: renderer.scene,
-      player,
-      city,
-      viewer: player.camera.camera.position,
-      tier: this.#quality,
+    const runtime = buildRuntime({
+      options,
+      world,
+      quality: this.#quality,
+      style: this.#style,
+      settings: this.#settings,
       avatar: () => this.#style,
+      lowerTier: (tier) => this.setQuality(tier),
+      pick: (x, y) => this.#pick(x, y),
+      frame: (view) => this.#onFrame?.(view),
     });
-    perf.textureBytes = () => (city?.textureBytes ?? 0) + multiplayer.remotes.textureBytes;
-    const hearts = loop.add(new HeartBurst());
-    renderer.scene.add(hearts.mesh);
-    input.mouse.onPick = (x, y) => this.#pick(x, y);
-    input.touch.onTap = (x, y) => {
-      this.#pick(x, y);
-    };
-    loop.add({
-      update: (dt) => environment.follow(player.renderPosition, dt),
-      dispose() {},
-    });
-    if (city) loop.add({ update: (dt) => city.update(dt), dispose() {} });
-    const art: ArtHost = { art: null, stress: null, ready: Promise.resolve(null) };
-    loop.add({ update: (dt) => art.stress?.update(dt), dispose() {} });
-    if (debug.has('physics')) loop.add(new PhysicsWireframe(physics, renderer.scene));
-    if (debug.has('perf')) {
-      const parent = options.canvas.parentElement ?? document.body;
-      loop.add(new PerfOverlay(parent, loop, renderer.info, () => renderer.renderScale));
-    }
-    loop.add({ update: () => this.#reportFrame(player), dispose() {} });
-    // Rendering is the last thing every frame, but the renderer is disposed by the engine, after
-    // everything that owns GPU resources has released them.
-    loop.add({ update: (dt) => renderer.update(dt), dispose() {} });
-    // One step lets Rapier's broad phase see the level before the first camera ray.
-    physics.world.step();
-    renderer.isAutoRendering = options.isTestMode !== true;
-
-    this.#runtime = {
-      art,
-      loop,
-      input,
-      physics,
-      renderer,
-      environment,
-      city,
-      level,
-      layout,
-      player,
-      perf,
-      multiplayer,
-      hearts,
-    };
+    this.#runtime = runtime;
+    const { art, loop, input, physics, renderer, player, multiplayer, background } = runtime;
     art.ready = loadArt(art, {
       bus: options.bus,
       renderer,
@@ -240,7 +142,11 @@ export class Engine {
       console.warn('Shader warm-up failed', error);
     }
     if (this.#isDisposed) return;
-    if (options.isTestMode !== true) loop.start();
+    // A tab hidden while loading starts paused; showing it starts the loop.
+    if (options.isTestMode !== true) {
+      if (this.#isHidden) background.pause();
+      else loop.start();
+    }
     onStage?.('ready');
   }
 
@@ -337,40 +243,20 @@ export class Engine {
    */
   #pick(clientX: number, clientY: number): boolean {
     const runtime = this.#runtime;
-    if (!runtime) return false;
-    const rect = this.canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return false;
-    this.#pointer.set(
-      ((clientX - rect.left) / rect.width) * 2 - 1,
-      -((clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    // Test mode renders only on request, so the camera's matrices may be a frame old.
-    const camera = runtime.player.camera.camera;
-    camera.updateMatrixWorld();
-    this.#raycaster.setFromCamera(this.#pointer, camera);
-    const { origin, direction } = this.#raycaster.ray;
+    const ray = runtime && this.#screen.cast(clientX, clientY, runtime.player.camera.camera);
+    if (!runtime || !ray) return false;
+    const { origin: o, direction: d } = ray;
     const remotes = runtime.multiplayer.remotes;
-    const id = remotes.pick(origin.x, origin.y, origin.z, direction.x, direction.y, direction.z);
+    const id = remotes.pick(o.x, o.y, o.z, d.x, d.y, d.z);
     const info = id >= 0 ? remotes.infoOf(id) : null;
-    if (!info) {
-      // Not a player: maybe a row on the Just Launched wall, which takes you to that booth.
-      const slug = runtime.city?.pickWall(
-        origin.x,
-        origin.y,
-        origin.z,
-        direction.x,
-        direction.y,
-        direction.z,
-      );
-      return slug ? this.teleport({ kind: 'booth', slug }) : false;
+    if (info) {
+      const { uid: userId, name, isGuest } = info;
+      this.#options.bus.emit('player:select', { id, userId, name, isGuest });
+      return true;
     }
-    this.#options.bus.emit('player:select', {
-      id,
-      userId: info.uid,
-      name: info.name,
-      isGuest: info.isGuest,
-    });
-    return true;
+    // Not a player: maybe a row on the Just Launched wall, which takes you to that booth.
+    const slug = runtime.city?.pickWall(o.x, o.y, o.z, d.x, d.y, d.z);
+    return slug ? this.teleport({ kind: 'booth', slug }) : false;
   }
 
   /** Where player `id` appears on screen (client px), or null if not shown (tests click there). */
@@ -378,14 +264,7 @@ export class Engine {
     const runtime = this.#runtime;
     if (!runtime?.multiplayer.remotes.positionOf(id, this.#spot)) return null;
     this.#spot.y += heightM;
-    const camera = runtime.player.camera.camera;
-    camera.updateMatrixWorld();
-    this.#spot.project(camera);
-    const rect = this.canvas.getBoundingClientRect();
-    return {
-      x: rect.left + ((this.#spot.x + 1) / 2) * rect.width,
-      y: rect.top + ((1 - this.#spot.y) / 2) * rect.height,
-    };
+    return this.#screen.project(this.#spot, runtime.player.camera.camera);
   }
 
   /**
@@ -394,12 +273,6 @@ export class Engine {
    */
   onFrame(listener: ((view: Readonly<PlayerView>) => void) | undefined): void {
     this.#onFrame = listener;
-  }
-
-  /** Reduced motion: booths appear without the build-up animation. */
-  setReducedMotion(isReduced: boolean): void {
-    this.#isReducedMotion = isReduced;
-    this.#runtime?.city?.setReducedMotion(isReduced);
   }
 
   /** Call from a user gesture (a click): browsers keep audio locked until one happens. */
@@ -439,6 +312,40 @@ export class Engine {
     this.#runtime?.input.setEnabled(enabled);
   }
 
+  /** The settings menu (prompt 14). Only the values given change; see `EngineSettings`. */
+  applySettings(next: Partial<EngineSettings>): void {
+    const s = this.#settings;
+    s.isAutoQuality = next.isAutoQuality ?? s.isAutoQuality;
+    s.renderScale = next.renderScale ?? s.renderScale;
+    s.fovDeg = next.fovDeg ?? s.fovDeg;
+    s.volume = next.volume ?? s.volume;
+    s.isReducedMotion = next.isReducedMotion ?? s.isReducedMotion;
+    this.#audio.setVolume(s.volume);
+    const runtime = this.#runtime;
+    if (!runtime) return;
+    // Switching auto resets the adaptive level, so only when it changes.
+    if (runtime.perf.adaptive.isAuto !== s.isAutoQuality) runtime.perf.setAuto(s.isAutoQuality);
+    runtime.renderer.setUserScale(s.renderScale);
+    runtime.renderer.setFov(s.fovDeg);
+    runtime.city?.setReducedMotion(s.isReducedMotion);
+  }
+
+  get settings(): Readonly<EngineSettings> {
+    return this.#settings;
+  }
+
+  /**
+   * The page was hidden (another tab, the phone locked) or shown again. Hidden: nothing renders
+   * and the realtime client only sends heartbeats. Test mode has no loop to stop.
+   */
+  setHidden(isHidden: boolean): void {
+    this.#isHidden = isHidden;
+    const runtime = this.#runtime;
+    if (!runtime || this.#options.isTestMode === true) return;
+    if (isHidden) runtime.background.pause();
+    else runtime.background.resume();
+  }
+
   setQuality(tier: QualityTier): void {
     this.#quality = tier;
     this.#runtime?.perf.setTier(tier);
@@ -460,6 +367,7 @@ export class Engine {
     // Systems go in reverse order of adding (the player's avatar, then input), then the parts
     // the loop doesn't own, and the WebGL renderer last.
     try {
+      runtime.background.dispose();
       runtime.loop.dispose();
       runtime.art.stress?.dispose();
       runtime.art.art?.dispose();
@@ -471,22 +379,6 @@ export class Engine {
       runtime.renderer.dispose();
     }
   }
-
-  #reportFrame(player: PlayerSystem): void {
-    const listener = this.#onFrame;
-    if (!listener) return;
-    const view = this.#view;
-    view.x = player.renderPosition.x;
-    view.z = player.renderPosition.z;
-    view.yaw = player.controller.yaw;
-    // The camera sits at (sin yaw, cos yaw) from the player and looks back, so it faces yaw + π.
-    view.cameraYaw = player.camera.yaw + Math.PI;
-    listener(view);
-  }
-
-  readonly #lowerTier = (tier: QualityTier): void => {
-    this.setQuality(tier);
-  };
 
   #listen(): void {
     const bus = this.#options.bus;

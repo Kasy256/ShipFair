@@ -7,6 +7,7 @@ import {
   type QualityTier,
   spawnForBooth,
   spawnForDistrict,
+  TEXTURE_STREAM_RADIUS_M,
   type Teleport,
   type WorldSnapshot,
 } from '@shipfair/shared';
@@ -72,6 +73,7 @@ export class City {
   readonly #colliders: RAPIER.Collider[];
   #tier: QualityTier;
   #isReducedMotion = false;
+  #streamRadiusM = TEXTURE_STREAM_RADIUS_M;
   #sinceCull = Number.POSITIVE_INFINITY;
 
   constructor(opts: CityOptions) {
@@ -159,8 +161,15 @@ export class City {
       load: this.#opts.load ?? bitmapSource(),
     });
     this.booths.isReducedMotion = this.#isReducedMotion;
+    this.booths.content.setRadius(this.#streamRadiusM);
     this.root.add(this.booths.root);
     this.#sinceCull = Number.POSITIVE_INFINITY;
+  }
+
+  /** Booth images stream within this radius (adaptive quality shortens it). */
+  setStreamRadius(radiusM: number): void {
+    this.#streamRadiusM = radiusM;
+    this.booths?.content.setRadius(radiusM);
   }
 
   /** Reduced motion turns off the booth build-up animation. */
