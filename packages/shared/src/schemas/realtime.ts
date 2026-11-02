@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { ShardId } from '../protocol.ts';
 import { Handle, Timestamp, Uuid } from './common.ts';
+import { PassportEvidenceList } from './passport.ts';
 
 // Payloads of the realtime ↔ web RPC calls (ARCHITECTURE.md §6). Both sides parse them: an RPC
 // argument crosses a Worker boundary, so it is external input like any other.
@@ -47,5 +48,10 @@ export const StatsBatch = z.object({
   /** `STATS_INGEST_SECRET`, a second layer on top of the service binding. */
   secret: z.string().min(1).max(256),
   rows: z.array(BoothStatsRow).max(STATS_ROWS_MAX),
+  /**
+   * Passport evidence seen since the last batch (prompt 13): districts dwelled in, booths
+   * visited, realtime-only facts. Optional so a prompt-12 shard's batches still parse.
+   */
+  evidence: PassportEvidenceList.default([]),
 });
 export type StatsBatch = z.infer<typeof StatsBatch>;

@@ -5,6 +5,7 @@ import { AdminRoute } from './routes/AdminRoute.tsx';
 import { AuthCallback } from './routes/AuthCallback.tsx';
 import { InfoPage } from './routes/InfoPage.tsx';
 import { MePage } from './routes/MePage.tsx';
+import { ProfilePage } from './routes/ProfilePage.tsx';
 import { RootLayout } from './routes/RootLayout.tsx';
 import { WorldRoute } from './routes/WorldRoute.tsx';
 
@@ -34,6 +35,7 @@ const pages: RouteObject[] = [
     ),
   },
   { path: 'me', element: <MePage /> },
+  { path: 'u/:handle', element: <ProfilePage /> },
   { path: AUTH_CALLBACK_PATH.slice(1), element: <AuthCallback /> },
   // Staff only: the guard asks the server, then lazy-loads the admin chunk.
   { path: 'admin', element: <AdminRoute /> },

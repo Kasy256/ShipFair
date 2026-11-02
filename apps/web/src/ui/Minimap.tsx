@@ -95,8 +95,9 @@ export function Minimap({ layout }: MinimapProps) {
       data-testid="minimap"
       aria-label="Minimap. Your heading points up; coloured squares are booths."
       role="img"
-      // Phones: top right, under the buttons (the touch controls own the bottom corners).
-      className="pointer-events-none absolute top-14 right-3 z-10 h-28 w-28 rounded-full sm:top-auto sm:bottom-3 sm:h-[148px] sm:w-[148px]"
+      // Phones: top right, under the buttons however many rows they wrap to (Hud measures them;
+      // the touch controls own the bottom corners).
+      className="pointer-events-none absolute top-[calc(var(--hud-nav-bottom,2.75rem)+0.5rem)] right-3 z-10 h-28 w-28 rounded-full sm:top-auto sm:bottom-3 sm:h-[148px] sm:w-[148px]"
     />
   );
 }

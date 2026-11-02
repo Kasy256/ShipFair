@@ -331,8 +331,9 @@ export class Engine {
   }
 
   /**
-   * Picks the remote player under a screen point (client px) and emits `player:select`. True
-   * when someone was hit (the click then doesn't lock the pointer or interact).
+   * Picks the remote player under a screen point (client px) and emits `player:select`, or a
+   * booth on the Just Launched wall and teleports there. True when something was hit (the click
+   * then doesn't lock the pointer or interact).
    */
   #pick(clientX: number, clientY: number): boolean {
     const runtime = this.#runtime;
@@ -351,7 +352,18 @@ export class Engine {
     const remotes = runtime.multiplayer.remotes;
     const id = remotes.pick(origin.x, origin.y, origin.z, direction.x, direction.y, direction.z);
     const info = id >= 0 ? remotes.infoOf(id) : null;
-    if (!info) return false;
+    if (!info) {
+      // Not a player: maybe a row on the Just Launched wall, which takes you to that booth.
+      const slug = runtime.city?.pickWall(
+        origin.x,
+        origin.y,
+        origin.z,
+        direction.x,
+        direction.y,
+        direction.z,
+      );
+      return slug ? this.teleport({ kind: 'booth', slug }) : false;
+    }
     this.#options.bus.emit('player:select', {
       id,
       userId: info.uid,

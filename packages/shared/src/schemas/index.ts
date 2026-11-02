@@ -8,6 +8,7 @@ export * from './common.ts';
 export * from './district.ts';
 export * from './env.ts';
 export * from './guestbook.ts';
+export * from './passport.ts';
 export * from './profile.ts';
 export * from './realtime.ts';
 export * from './report.ts';

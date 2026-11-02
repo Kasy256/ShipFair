@@ -244,6 +244,7 @@ export type Database = {
           status: Database['public']['Enums']['booth_status'];
           tagline: string;
           tier: Database['public']['Enums']['booth_tier'];
+          tier_upgraded_at: string | null;
           updated_at: string;
           url: string;
         };
@@ -264,6 +265,7 @@ export type Database = {
           status?: Database['public']['Enums']['booth_status'];
           tagline: string;
           tier?: Database['public']['Enums']['booth_tier'];
+          tier_upgraded_at?: string | null;
           updated_at?: string;
           url: string;
         };
@@ -283,6 +285,7 @@ export type Database = {
           status?: Database['public']['Enums']['booth_status'];
           tagline?: string;
           tier?: Database['public']['Enums']['booth_tier'];
+          tier_upgraded_at?: string | null;
           updated_at?: string;
           url?: string;
         };
@@ -474,6 +477,62 @@ export type Database = {
           },
         ];
       };
+      passport_evidence: {
+        Row: {
+          created_at: string;
+          key: string;
+          kind: string;
+          player_key: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          key: string;
+          kind: string;
+          player_key: string;
+        };
+        Update: {
+          created_at?: string;
+          key?: string;
+          kind?: string;
+          player_key?: string;
+        };
+        Relationships: [];
+      };
+      passport_guest_links: {
+        Row: {
+          created_at: string;
+          guest_key: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          guest_key: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          guest_key?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'passport_guest_links_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'passport_guest_links_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       passport_stamps: {
         Row: {
           created_at: string;
@@ -616,6 +675,22 @@ export type Database = {
           },
         ];
       };
+      wardrobe_unlocks: {
+        Row: {
+          item_id: string;
+          rule: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          item_id: string;
+          rule: string;
+        };
+        Update: {
+          item_id?: string;
+          rule?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       admin_report_targets: {
@@ -643,6 +718,22 @@ export type Database = {
         };
         ComputedFields: never;
         Relationships: [];
+      };
+      booth_stats_week: {
+        Row: {
+          booth_id: string;
+          visitors: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [
+          {
+            foreignKeyName: 'booth_stats_daily_booth_id_fkey';
+            columns: ['booth_id'];
+            isOneToOne: false;
+            referencedRelation: 'booths';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       booth_vote_counts: {
         Row: {
@@ -729,6 +820,8 @@ export type Database = {
         Args: { action: string; actor: string; payload?: Json; target_id: string };
         Returns: Json;
       };
+      avatar_items: { Args: { style: Json }; Returns: string[] };
+      award_stamps: { Args: { claims?: string[]; uid: string }; Returns: string[] };
       booth_media_keys_valid: {
         Args: { logo_key: string; media: Json; owner: string };
         Returns: boolean;
@@ -739,10 +832,27 @@ export type Database = {
       has_profanity: { Args: { input: string }; Returns: boolean };
       hook_before_user_created: { Args: { event: Json }; Returns: Json };
       ingest_booth_stats: { Args: { stats: Json }; Returns: number };
+      ingest_passport_evidence: { Args: { evidence: Json }; Returns: number };
       is_not_banned: { Args: { uid: string }; Returns: boolean };
       is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      merge_guest_passport: {
+        Args: { claims: string[]; guest: string; uid: string };
+        Returns: Json;
+      };
+      passport_earned: { Args: { uid: string }; Returns: string[] };
+      prune_passport_evidence: { Args: Record<PropertyKey, never>; Returns: number };
       realtime_player: { Args: { uid: string; with_profile?: boolean }; Returns: Json };
+      recompute_booth_tiers: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          booth_id: string;
+          new_tier: Database['public']['Enums']['booth_tier'];
+          old_tier: Database['public']['Enums']['booth_tier'];
+        }[];
+      };
+      record_try_click: { Args: { booth: string }; Returns: boolean };
       report_context_valid: { Args: { context: Json }; Returns: boolean };
+      unlock_rule_met: { Args: { rule: string; uid: string }; Returns: boolean };
     };
     Enums: {
       booth_status: 'draft' | 'pending' | 'approved' | 'rejected' | 'hidden' | 'archived';

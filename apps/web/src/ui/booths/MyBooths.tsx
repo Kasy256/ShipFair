@@ -1,10 +1,14 @@
+import type { BoothStatsDay } from '@shipfair/shared';
 import { BOOTHS_PER_USER_MAX, type BoothOwn } from '@shipfair/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { fetchMyBooths } from '../../lib/booth-api.ts';
+import { fetchBoothStats } from '../../lib/passport-api.ts';
+import { socialClient } from '../../lib/social-api.ts';
 import { loadSupabase } from '../../lib/supabase.ts';
 import { useUiStore } from '../../state/ui-store.ts';
 import { boothErrorText } from '../errors.ts';
+import { BoothStatsChart } from './BoothStatsChart.tsx';
 import { StatusChip } from './StatusChip.tsx';
 
 const action = 'rounded-lg bg-ink-3 px-3 py-1.5 font-semibold text-sm hover:bg-ink';
@@ -27,7 +31,7 @@ function RevisionLine({ booth }: { booth: BoothOwn }) {
   );
 }
 
-function BoothRow({ booth }: { booth: BoothOwn }) {
+function BoothRow({ booth, stats }: { booth: BoothOwn; stats: BoothStatsDay[] | undefined }) {
   const showToast = useUiStore((s) => s.showToast);
   const shareUrl = `${window.location.origin}/b/${booth.slug}`;
   const copy = () =>
@@ -54,6 +58,7 @@ function BoothRow({ booth }: { booth: BoothOwn }) {
         <p className="mt-1 text-sm">Hidden after reports while a moderator takes a look.</p>
       )}
       <RevisionLine booth={booth} />
+      {isLive && stats && <BoothStatsChart days={stats} />}
       <div className="mt-3 flex flex-wrap gap-2">
         {canEdit && (
           <Link to={`/submit?booth=${booth.id}`} className={action} data-testid="edit-booth">
@@ -79,6 +84,12 @@ function BoothRow({ booth }: { booth: BoothOwn }) {
 export function MyBooths({ userId }: { userId: string }) {
   const query = useQuery({ queryKey: ['my-booths', userId], queryFn: () => load(userId) });
   const booths = query.data ?? [];
+  const liveIds = booths.filter((b) => b.status === 'approved').map((b) => b.id);
+  const stats = useQuery({
+    queryKey: ['my-booth-stats', liveIds],
+    queryFn: async () => fetchBoothStats(await socialClient(), liveIds),
+    enabled: liveIds.length > 0,
+  });
   return (
     <>
       {query.isPending && <p className="mt-2 text-muted">Loading…</p>}
@@ -102,7 +113,7 @@ export function MyBooths({ userId }: { userId: string }) {
       {booths.length > 0 && (
         <ul className="mt-3 grid gap-3" data-testid="my-booths">
           {booths.map((booth) => (
-            <BoothRow key={booth.id} booth={booth} />
+            <BoothRow key={booth.id} booth={booth} stats={stats.data?.get(booth.id)} />
           ))}
         </ul>
       )}

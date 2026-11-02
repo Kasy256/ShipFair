@@ -91,3 +91,12 @@ export const BoothOwn = BoothPublic.omit({ approvedAt: true }).extend({
   revision: BoothRevisionOwn.nullable().default(null),
 });
 export type BoothOwn = z.infer<typeof BoothOwn>;
+
+/** One day of a booth's stats for its owner's chart on `/me` (`booth_stats_daily`, owner RLS). */
+export const BoothStatsDay = z.object({
+  boothId: Uuid,
+  day: z.iso.date(),
+  visitors: z.int().nonnegative(),
+  tryClicks: z.int().nonnegative(),
+});
+export type BoothStatsDay = z.infer<typeof BoothStatsDay>;

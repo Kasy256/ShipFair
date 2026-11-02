@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useLocation } from 'react-router';
 import { track } from '../lib/analytics.ts';
 import { makerLinks, mediaUrl, shareUrl, tryItUrl } from '../lib/booth-links.ts';
+import { recordTryClick } from '../lib/passport-api.ts';
 import { socialClient, submitReport } from '../lib/social-api.ts';
 import { useSessionStore } from '../state/session-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
@@ -10,6 +11,7 @@ import { useWorldStore } from '../state/world-store.ts';
 import { Guestbook } from './booth/Guestbook.tsx';
 import { MakerHere } from './booth/MakerHere.tsx';
 import { VoteButton } from './booth/VoteButton.tsx';
+import { WeeklyVisitors } from './booth/WeeklyVisitors.tsx';
 import { ScreenshotCarousel } from './ScreenshotCarousel.tsx';
 import { Sheet } from './Sheet.tsx';
 import { ReportForm } from './social/ReportForm.tsx';
@@ -119,6 +121,7 @@ function BoothDetails({ booth, onClose }: BoothDetailsProps) {
           </li>
         )}
         {booth.pricing && <li className={badge}>{PRICING_LABEL[booth.pricing]}</li>}
+        <WeeklyVisitors boothId={booth.id} />
       </ul>
 
       <ScreenshotCarousel boothName={booth.name} media={booth.media} mediaHost={mediaHost} />
@@ -136,7 +139,10 @@ function BoothDetails({ booth, onClose }: BoothDetailsProps) {
             href={tryHref}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => track({ name: 'booth_try_click', props: { boothId: booth.id } })}
+            onClick={() => {
+              track({ name: 'booth_try_click', props: { boothId: booth.id } });
+              recordTryClick(booth.id);
+            }}
             className="rounded-xl bg-accent px-5 py-2.5 font-bold text-ink"
           >
             Try it<span className="sr-only"> (opens in a new tab)</span>

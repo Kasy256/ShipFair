@@ -10,6 +10,7 @@ import { useDeepLinks } from '../state/use-deep-links.ts';
 import { useEngineBridge } from '../state/use-engine-bridge.ts';
 import { useInputLock } from '../state/use-input-lock.ts';
 import { useLocalPlayer } from '../state/use-local-player.ts';
+import { usePassport } from '../state/use-passport.ts';
 import { useRealtime } from '../state/use-realtime.ts';
 import { useWorldQuery } from '../state/use-world-query.ts';
 import { useWorldShortcuts } from '../state/use-world-shortcuts.ts';
@@ -22,11 +23,13 @@ import { ControlsHelp } from '../ui/ControlsHelp.tsx';
 import { DistrictBanner } from '../ui/DistrictBanner.tsx';
 import { worldErrorText } from '../ui/errors.ts';
 import { Hud } from '../ui/Hud.tsx';
+import { LaunchesSheet } from '../ui/LaunchesSheet.tsx';
 import { LoadingScreen, type LoadStage } from '../ui/LoadingScreen.tsx';
 import { MapOverlay } from '../ui/MapOverlay.tsx';
 import { Minimap } from '../ui/Minimap.tsx';
 import { PlayerCard } from '../ui/PlayerCard.tsx';
 import { PromptPill } from '../ui/PromptPill.tsx';
+import { PassportBook } from '../ui/passport/PassportBook.tsx';
 import { Toasts } from '../ui/Toasts.tsx';
 import { TouchControls } from '../ui/TouchControls.tsx';
 import { UpdateBanner } from '../ui/UpdateBanner.tsx';
@@ -60,6 +63,7 @@ export function WorldRoute() {
   useWorldShortcuts(hasEntered);
   useBoothNotices(hasEntered);
   useRealtime(engine, hasEntered, search);
+  usePassport(hasEntered, search);
   // Nothing behind the loading screen may move the avatar.
   useInputLock(!hasEntered);
 
@@ -139,6 +143,8 @@ export function WorldRoute() {
           <MapOverlay engine={engine} />
           <ClaimSheet />
           <AvatarSheet />
+          <PassportBook />
+          <LaunchesSheet engine={engine} />
           {!isOverlayOpen && <Toasts />}
         </>
       )}

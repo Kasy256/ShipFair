@@ -18,6 +18,8 @@ interface BoothVisual extends ContentBooth {
   readonly theme: DistrictTheme;
 }
 
+const TIER_RANK: Readonly<Record<BoothTier, number>> = { stall: 0, booth: 1, pavilion: 2 };
+
 const slot = new Matrix4();
 const world = new Matrix4();
 
@@ -107,11 +109,23 @@ export class BoothLayer {
     if (i >= 0) this.anchors.splice(i, 1);
   }
 
-  /** Name, media or tier changed: same lot, redrawn without the build-up. */
+  /**
+   * Name, media or tier changed: same lot. A tier that went up (the nightly job, prompt 13)
+   * builds up like a new booth; anything else is redrawn in place.
+   */
   updated(id: string): void {
     const placed = this.#model.lotOf(id);
+    const before = this.#visuals.get(id)?.tier;
+    const after = this.#model.tierOf(id);
+    const isUpgrade =
+      before !== undefined && after !== undefined && TIER_RANK[after] > TIER_RANK[before];
     this.removed(id);
-    if (placed) this.#add(id, placed.lot, false);
+    if (placed) this.#add(id, placed.lot, isUpgrade && !this.isReducedMotion);
+  }
+
+  /** Booths currently building up (tests). */
+  get growingCount(): number {
+    return this.#growing.length;
   }
 
   /** Street furniture for every lot (empty ones too); rebuilt when a district grows. */

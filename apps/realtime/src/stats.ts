@@ -1,4 +1,9 @@
-import type { BoothStatsRow } from '@shipfair/shared';
+import {
+  type BoothStatsRow,
+  PASSPORT_EVIDENCE_ROWS_MAX,
+  type PassportEvidence,
+} from '@shipfair/shared';
+import type { EvidenceKind, EvidenceSink } from './shard/passport.ts';
 import type { VisitSink } from './shard/visits.ts';
 
 /** What `WebRpc.ingestStats` answers (apps/web/worker/realtime-rpc.ts). */
@@ -81,5 +86,62 @@ export class VisitLedger implements VisitSink {
   prune(nowMs: number): void {
     const yesterday = new Date(nowMs - DAY_MS).toISOString().slice(0, 10);
     this.#sql.exec('delete from visit_seen where day < ?', yesterday);
+  }
+}
+
+/** Facts already queued or sent by this instance; past this many the memory is dropped. */
+const EVIDENCE_SEEN_MAX = 20_000;
+
+/**
+ * Passport evidence not yet reported, in shard SQLite like the visit counts (prompt 13). An
+ * in-memory set skips facts this instance already recorded, so a player pacing in and out of a
+ * district costs no writes. Duplicates that slip through (after an eviction) are harmless: the
+ * database ignores evidence it already has.
+ */
+export class EvidenceLedger implements EvidenceSink {
+  readonly #sql: SqlStorage;
+  readonly #seen = new Set<string>();
+
+  constructor(sql: SqlStorage) {
+    this.#sql = sql;
+    sql.exec(`create table if not exists evidence_pending (
+      player text not null, kind text not null, key text not null,
+      primary key (player, kind, key)
+    ) without rowid`);
+  }
+
+  add(player: string, kind: EvidenceKind, key: string): void {
+    const id = `${player}|${kind}|${key}`;
+    if (this.#seen.has(id)) return;
+    if (this.#seen.size >= EVIDENCE_SEEN_MAX) this.#seen.clear();
+    this.#seen.add(id);
+    this.#sql.exec(
+      'insert or ignore into evidence_pending (player, kind, key) values (?, ?, ?)',
+      player,
+      kind,
+      key,
+    );
+  }
+
+  /** Up to one batch's worth of unreported evidence. */
+  pending(): PassportEvidence[] {
+    return this.#sql
+      .exec<{ player: string; kind: EvidenceKind; key: string }>(
+        'select player, kind, key from evidence_pending limit ?',
+        PASSPORT_EVIDENCE_ROWS_MAX,
+      )
+      .toArray()
+      .map((r) => ({ player: r.player, kind: r.kind, key: r.key }) as PassportEvidence);
+  }
+
+  settle(rows: readonly PassportEvidence[]): void {
+    for (const row of rows) {
+      this.#sql.exec(
+        'delete from evidence_pending where player = ? and kind = ? and key = ?',
+        row.player,
+        row.kind,
+        row.key,
+      );
+    }
   }
 }

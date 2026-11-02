@@ -58,6 +58,17 @@ export const TEXTURE_STREAM_RADIUS_M = 35;
 export const BOOTH_MEDIA_MAX = 5;
 export const BOOTH_TIER_VISITORS = 250; // sum of daily unique visitors for the `booth` tier
 export const PAVILION_TOP_N = 10; // by weekly unique visitors
+export const PAVILION_MIN_WEEKLY_VISITORS = 25; // and at least this many unique visitors this week
+export const TIER_DOWNGRADE_GRACE_DAYS = 7; // no downgrade this soon after an upgrade
+export const JUST_LAUNCHED_COUNT = 12; // booths on the plaza wall
+export const BOOTH_STATS_CHART_DAYS = 14; // the owner's chart on /me
+
+// Passport (prompt 13, ARCHITECTURE.md §7 "Passport trust model")
+export const DISTRICT_STAMP_DWELL_S = 10; // continuous time inside a district for its stamp
+export const PASSPORT_BOOTH_MILESTONES = [1, 10, 50, 100] as const; // booths visited
+export const PASSPORT_STAMP_BATCH_MAX = 8; // stamps per POST /api/passport/stamp
+export const PASSPORT_MERGE_MAX = 64; // guest stamps per POST /api/passport/merge
+export const PASSPORT_EVIDENCE_ROWS_MAX = 5000; // per stats batch
 
 // Booth submission (prompt 08, TRUST_AND_SAFETY.md "Booths"). _B is bytes, _PX pixels.
 export const BOOTHS_PER_USER_MAX = 3; // every status except archived

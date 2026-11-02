@@ -10,6 +10,7 @@ import type { Supabase } from './supabase.ts';
 /** Error codes the profile calls raise; `ui/errors.ts` turns them into friendly text. */
 export type ProfileErrorCode =
   | 'handle_taken'
+  | 'item_locked'
   | 'name_not_allowed'
   | 'no_permission'
   | 'not_found'
@@ -36,6 +37,7 @@ interface PostgrestLikeError {
 /** Postgres error codes from the profiles table and its triggers (ARCHITECTURE.md §5). */
 function fromDbError(error: PostgrestLikeError): ProfileError {
   if (error.code === '23505') return new ProfileError('handle_taken', error.message);
+  if (error.hint === 'locked_item') return new ProfileError('item_locked', error.message);
   if (error.code === '23514') return new ProfileError('name_not_allowed', error.message);
   if (error.code === '42501') return new ProfileError('no_permission', error.message);
   return new ProfileError('network', error.message, { cause: error });

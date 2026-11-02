@@ -30,6 +30,8 @@ export class WorldView {
   readonly #boothBySlug: Map<string, string>;
   readonly #districtBySlug: Map<string, DistrictLayout>;
   readonly #boothsByOwner = new Map<string, string[]>();
+  readonly #ownerByBooth = new Map<string, string>();
+  readonly #slugByDistrict = new Map<number, string>();
 
   private constructor(version: number, layout: CityLayout | null, snapshot?: WorldSnapshot) {
     this.version = version;
@@ -37,6 +39,7 @@ export class WorldView {
     this.bounds = layout?.bounds ?? FALLBACK_BOUNDS;
     this.#boothBySlug = new Map(snapshot?.booths.map((b) => [b.slug, b.id]) ?? []);
     for (const booth of snapshot?.booths ?? []) {
+      this.#ownerByBooth.set(booth.id, booth.ownerId);
       const owned = this.#boothsByOwner.get(booth.ownerId);
       if (!owned) this.#boothsByOwner.set(booth.ownerId, [booth.id]);
       else if (owned.length < BOOTHS_PER_USER_MAX) owned.push(booth.id);
@@ -44,6 +47,7 @@ export class WorldView {
     const laid = new Map(layout?.districts.map((d) => [d.id, d]) ?? []);
     this.#districtBySlug = new Map();
     for (const d of snapshot?.districts ?? []) {
+      this.#slugByDistrict.set(d.id, d.slug);
       const district = laid.get(d.id);
       if (district) this.#districtBySlug.set(d.slug, district);
     }
@@ -68,6 +72,16 @@ export class WorldView {
   /** Live booths owned by this profile (the snapshot holds approved booths only). */
   boothsOf(uid: string | undefined): readonly string[] {
     return (uid && this.#boothsByOwner.get(uid)) || NO_BOOTHS;
+  }
+
+  /** The owner's profile id of a live booth (passport `met-a-maker`). */
+  ownerOf(boothId: string): string | undefined {
+    return this.#ownerByBooth.get(boothId);
+  }
+
+  /** A district's slug by id (passport district evidence). */
+  districtSlug(id: number): string | undefined {
+    return this.#slugByDistrict.get(id);
   }
 
   /** Where a teleport lands (same helpers as the client), or null for an unknown target. */

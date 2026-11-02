@@ -1,3 +1,4 @@
+import { DEFAULT_AVATAR_STYLE } from '@shipfair/shared';
 import { fakeWorld } from '@shipfair/shared/fake-world';
 
 // Shared by vitest.config.ts (which builds the stub Workers) and the Worker tests.
@@ -25,6 +26,12 @@ export const USERS = {
   banned: '00000000-0000-4000-8000-0000000000b1',
   newbie: '00000000-0000-4000-8000-0000000000c1',
   noProfile: '00000000-0000-4000-8000-0000000000d1',
+} as const;
+
+/** Bob's saved look wears the locked backpack (he earned it); the others' saved looks don't. */
+export const BOB_LOOK = {
+  ...DEFAULT_AVATAR_STYLE,
+  accessory: { item: 'backpack', color: 4 },
 } as const;
 
 /**

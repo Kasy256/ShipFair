@@ -4,8 +4,8 @@ import { useChatStore } from './chat-store.ts';
 import { selectIsOverlayOpen, useUiStore } from './ui-store.ts';
 
 /**
- * `M` toggles the map, `?` the controls help and Enter opens the chat composer (when no panel is
- * open), unless the user is typing in a field.
+ * `M` toggles the map, `P` the passport, `?` the controls help and Enter opens the chat composer
+ * (when no panel is open), unless the user is typing in a field.
  */
 export function useWorldShortcuts(isActive: boolean): void {
   useEffect(() => {
@@ -18,6 +18,9 @@ export function useWorldShortcuts(isActive: boolean): void {
         // The booth panel and kiosk sheet keep focus until closed; M doesn't swap them out.
         if (ui.openBoothId !== null || ui.isClaimOpen) return;
         ui.setMapOpen(!ui.isMapOpen);
+      } else if (e.key === 'p' || e.key === 'P') {
+        if (ui.openBoothId !== null || ui.isClaimOpen) return;
+        ui.setPassportOpen(!ui.isPassportOpen);
       } else if (e.key === '?') {
         ui.setHelpOpen(!ui.isHelpOpen);
       } else if (e.key === 'Enter' && !e.shiftKey) {

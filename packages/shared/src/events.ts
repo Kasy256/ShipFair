@@ -52,6 +52,10 @@ export interface EngineEvents {
     renderScale: number;
   };
   'ui:open-submit': undefined;
+  /** The player stands at the plaza's Just Launched wall (its prompt), or left it. */
+  'launches:near': { isNear: boolean };
+  /** Interact at the wall: the UI lists the newest booths to jump to. */
+  'ui:open-launches': undefined;
   /** An art asset failed to load; the engine uses its placeholder. Sent once per asset id. */
   'asset:missing': { id: string; url: string | null; reason: string };
   // UI → Engine

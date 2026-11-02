@@ -1,23 +1,15 @@
 import type RAPIER from '@dimforge/rapier3d-compat';
 import { APP_NAME, type CityLayout } from '@shipfair/shared';
-import {
-  CanvasTexture,
-  type Group,
-  Mesh,
-  MeshBasicMaterial,
-  MeshStandardMaterial,
-  PlaneGeometry,
-  SRGBColorSpace,
-} from 'three';
+import { type Group, Mesh, MeshStandardMaterial } from 'three';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { mergeGroups } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { PhysicsWorld } from '../physics/world.ts';
 import { blockFont, blockText } from './block-font.ts';
 import type { StaticMaterials } from './build-city.ts';
 import { districtFrame } from './city-geometry.ts';
+import { JustLaunchedWall, type LogoLoader } from './just-launched.ts';
 import { LABEL_ASPECT, type LabelAtlas } from './labels.ts';
 import type { StaticMerger } from './static-merge.ts';
-import { context2d, createCanvas } from './textures.ts';
 
 // The plaza (ARCHITECTURE.md §4): spawn at the origin facing north (+z), the brand letters ahead,
 // the "Claim a booth" kiosk between them, the Just Launched wall behind and a signpost by every
@@ -35,62 +27,12 @@ const SIGNPOST_BACK_M = 4;
 const SIGNPOST_ACROSS_M = 5;
 const BOARD_W_M = 3;
 
-/** The "Just Launched" screen: a canvas the UI data feeds (names only, drawn as text). */
-export class JustLaunchedWall {
-  readonly mesh: Mesh;
-  readonly #canvas = createCanvas(1024, 512);
-  readonly #texture = new CanvasTexture(this.#canvas);
-
-  constructor(parent: Group) {
-    this.#texture.colorSpace = SRGBColorSpace;
-    const material = new MeshBasicMaterial({ map: this.#texture });
-    this.mesh = new Mesh(new PlaneGeometry(WALL.w, WALL.h), material);
-    this.mesh.name = 'just-launched';
-    this.mesh.position.set(0, WALL.y + WALL.h / 2, WALL.z + 0.26);
-    parent.add(this.mesh);
-    this.show([]);
-  }
-
-  /** Newest first. An empty list shows the placeholder. */
-  show(names: readonly string[]): void {
-    const ctx = context2d(this.#canvas);
-    const { width: w, height: h } = this.#canvas;
-    const gradient = ctx.createLinearGradient(0, 0, w, h);
-    gradient.addColorStop(0, '#120c33');
-    gradient.addColorStop(1, '#0b3d47');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, w, h);
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '900 64px "Segoe UI", Helvetica, Arial, sans-serif';
-    ctx.fillText('JUST LAUNCHED', 48, 72);
-    ctx.fillStyle = '#00e5c7';
-    ctx.fillRect(48, 112, 220, 8);
-    ctx.font = '700 40px "Segoe UI", Helvetica, Arial, sans-serif';
-    if (names.length === 0) {
-      ctx.fillStyle = '#c9c4ff';
-      ctx.fillText('New booths appear here.', 48, 200);
-    }
-    names.slice(0, 6).forEach((name, i) => {
-      ctx.fillStyle = i === 0 ? '#ffd23f' : '#e9e6ff';
-      ctx.fillText(`${i + 1}.  ${name}`, 48, 180 + i * 54, w - 96);
-    });
-    this.#texture.needsUpdate = true;
-  }
-
-  dispose(): void {
-    this.mesh.removeFromParent();
-    this.mesh.geometry.dispose();
-    (this.mesh.material as MeshBasicMaterial).dispose();
-    this.#texture.dispose();
-  }
-}
-
 export interface Plaza {
   readonly spawn: { readonly x: number; readonly z: number; readonly yaw: number };
   readonly kiosk: { readonly x: number; readonly z: number };
   readonly wall: JustLaunchedWall;
+  /** Where the player stands to read the wall (in front of it). */
+  readonly wallSpot: { readonly x: number; readonly z: number };
   readonly colliders: RAPIER.Collider[];
   dispose(): void;
 }
@@ -109,6 +51,7 @@ export function buildPlaza(
   layout: CityLayout,
   labels: PlazaLabels,
   physics: PhysicsWorld,
+  loadLogo: LogoLoader | null,
 ): Plaza {
   const colliders: RAPIER.Collider[] = [];
   const box = (x: number, y: number, z: number, hx: number, hy: number, hz: number) =>
@@ -175,7 +118,11 @@ export function buildPlaza(
   box(KIOSK.x, 0.55, KIOSK.z, 0.9, 0.55, 0.45);
 
   // Just Launched wall: a dark frame behind the screen, facing the spawn from the south.
-  const wall = new JustLaunchedWall(parent);
+  const wall = new JustLaunchedWall(
+    parent,
+    { x: 0, y: WALL.y + WALL.h / 2, z: WALL.z + 0.26, w: WALL.w, h: WALL.h },
+    { load: loadLogo },
+  );
   merger.box(
     materials.solid,
     [WALL.w + 0.6, WALL.h + WALL.y + 0.3, 0.4],
@@ -217,6 +164,7 @@ export function buildPlaza(
     spawn: layout.plaza.spawn,
     kiosk: KIOSK,
     wall,
+    wallSpot: { x: 0, z: WALL.z + 3 },
     colliders,
     dispose() {
       letters.removeFromParent();

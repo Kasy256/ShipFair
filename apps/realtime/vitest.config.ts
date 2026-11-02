@@ -1,7 +1,7 @@
 import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
 import { vitestPreset } from '@shipfair/config/vitest';
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { JWKS_URL, STATS_SECRET, TEST_JWK, USERS, WORLD } from './src/test/fixtures.ts';
+import { BOB_LOOK, JWKS_URL, STATS_SECRET, TEST_JWK, USERS, WORLD } from './src/test/fixtures.ts';
 
 const { d: _private, ...publicJwk } = TEST_JWK;
 
@@ -12,18 +12,19 @@ const webStub = `
   import { WorkerEntrypoint } from 'cloudflare:workers';
   const USERS = ${JSON.stringify(USERS)};
   const WORLD = ${JSON.stringify(WORLD)};
+  const BOB_LOOK = ${JSON.stringify(BOB_LOOK)};
   const OLD = '2026-01-01T00:00:00+00:00';
   let calls = [];
   let chatMinutes = 0;
-  const profile = (id, handle, createdAt = OLD) =>
-    ({ id, handle, displayName: handle[0].toUpperCase() + handle.slice(1), avatarStyle: { v: 2 }, createdAt });
+  const profile = (id, handle, createdAt = OLD, avatarStyle = { v: 2 }) =>
+    ({ id, handle, displayName: handle[0].toUpperCase() + handle.slice(1), avatarStyle, createdAt });
   export class WebRpc extends WorkerEntrypoint {
     ping() { return 'pong from web stub'; }
     getPlayer(userId, withProfile = true) {
       calls.push(['getPlayer', userId, withProfile]);
       const known = {
         [USERS.ada]: profile(USERS.ada, 'ada'),
-        [USERS.bob]: profile(USERS.bob, 'bob'),
+        [USERS.bob]: profile(USERS.bob, 'bob', OLD, BOB_LOOK),
         [USERS.banned]: profile(USERS.banned, 'troll'),
         [USERS.newbie]: profile(USERS.newbie, 'newbie', new Date().toISOString()),
       };

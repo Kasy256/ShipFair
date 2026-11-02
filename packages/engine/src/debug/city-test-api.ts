@@ -50,7 +50,11 @@ export interface CityTestApi {
   content(boothId: string): { logo: string | null; screens: (string | null)[] } | null;
   update(changes: BoothChange[]): void;
   teleport(to: Teleport): void;
-  interact(): 'booth' | 'kiosk' | null;
+  interact(): 'booth' | 'kiosk' | 'wall' | null;
+  /** The Just Launched wall: its slugs (newest first) and how often it redrew. */
+  wall(): { slugs: string[]; draws: number };
+  /** Booths building up right now (new, or a tier upgrade). */
+  growing(): number;
   /** Waits for in-flight booth image loads. */
   settled(): Promise<void>;
 }
@@ -128,6 +132,11 @@ export function createCityTestApi(engine: Engine): CityTestApi {
     update: (changes) => engine.updateBooths(changes),
     teleport: (to) => engine.teleport(to),
     interact: () => city()?.interact() ?? null,
+    wall: () => {
+      const wall = city()?.plaza.wall;
+      return { slugs: wall?.entries.map((e) => e.slug) ?? [], draws: wall?.draws ?? 0 };
+    },
+    growing: () => city()?.booths?.growingCount ?? 0,
     settled: async () => city()?.booths?.content.cache.settled(),
   };
 }

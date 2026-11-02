@@ -63,6 +63,25 @@ describe('WebRpc.ingestStats', () => {
     expect(await table('ingested')).toEqual([]);
   });
 
+  it('stores passport evidence first, even in a batch without visit counts', async () => {
+    const evidence = [{ player: OWNER, kind: 'district', key: 'ai-agents' }];
+    const result = await exports.WebRpc.ingestStats({
+      shard: 'w-1',
+      secret: SECRET,
+      rows: [],
+      evidence,
+    });
+    expect(result).toEqual({ ok: true, written: 0 });
+    expect(await table('evidence')).toEqual(evidence);
+    const bad = await exports.WebRpc.ingestStats({
+      shard: 'w-1',
+      secret: SECRET,
+      rows: [row],
+      evidence: [{ player: OWNER, kind: 'fact', key: 'first:upvote' }],
+    });
+    expect(bad).toEqual({ ok: false, error: 'invalid' });
+  });
+
   it('skips the database for an empty batch', async () => {
     expect(await exports.WebRpc.ingestStats({ shard: 'w-2', secret: SECRET, rows: [] })).toEqual({
       ok: true,

@@ -120,6 +120,30 @@ from (values
   (40, 3, 'budget-bubble', 'Budget Bubble', 'Plans budgets in a currency that only exists here', 'free')
 ) as b (n, district_id, slug, name, tagline, pricing);
 
+-- Example visits ------------------------------------------------------------------------------
+-- History the nightly tier job (recompute_booth_tiers, prompt 13) agrees with, so running it
+-- locally keeps the tiers above, and the owner chart on /me has bars. Pavilions: visitors on each
+-- of the last 14 days (the busiest weeks in the city). Booths: 270+ visitors over the 30 days
+-- before this week. Stalls: a handful in the week before this one.
+
+insert into public.booth_stats_daily (booth_id, day, unique_visitors, visits, try_clicks)
+select b.id, (now() at time zone 'utc')::date - d.d, u.u, u.u + u.u / 3, u.u / 8
+from public.booths b
+cross join lateral (
+  select generate_series(
+    case when b.tier = 'pavilion' then 0 else 8 end,
+    case b.tier when 'pavilion' then 13 when 'booth' then 37 else 13 end
+  ) as d
+) d
+cross join lateral (
+  select case b.tier
+    when 'pavilion' then 20 + (d.d * 7 + length(b.slug)) % 25
+    when 'booth' then 9 + (d.d * 5 + length(b.slug)) % 7
+    else 1 + (d.d + length(b.slug)) % 4
+  end as u
+) u
+where b.slug like 'example-%';
+
 -- Feature flags --------------------------------------------------------------------------------
 -- Fresh local and e2e accounts submit straight away (the live default is 60 minutes).
 

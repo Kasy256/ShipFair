@@ -7,6 +7,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { type KeyboardEvent, useState } from 'react';
 import { fetchAvatarCatalog, itemsOf } from '../../lib/avatar-catalog.ts';
+import { useUnlocks } from '../../state/use-unlocks.ts';
 import { AvatarPreviewCanvas } from './AvatarPreviewCanvas.tsx';
 import { HairPanel } from './HairPanel.tsx';
 import { type GridOption, ItemGrid } from './ItemGrid.tsx';
@@ -66,6 +67,7 @@ export function AvatarEditor({ value, onChange }: AvatarEditorProps) {
     staleTime: Infinity,
   });
   const items = catalog.data ?? [];
+  const isUnlocked = useUnlocks();
 
   const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
@@ -156,6 +158,7 @@ export function AvatarEditor({ value, onChange }: AvatarEditorProps) {
           )}
           {tab === 'facial' && (
             <SlotPanel
+              isUnlocked={isUnlocked}
               slot="facial"
               noun="facial hair"
               style={value}
@@ -194,6 +197,7 @@ export function AvatarEditor({ value, onChange }: AvatarEditorProps) {
           )}
           {tab === 'headwear' && (
             <SlotPanel
+              isUnlocked={isUnlocked}
               slot="headwear"
               noun="headwear"
               style={value}
@@ -207,6 +211,7 @@ export function AvatarEditor({ value, onChange }: AvatarEditorProps) {
           )}
           {(tab === 'top' || tab === 'bottom' || tab === 'shoes') && (
             <SlotPanel
+              isUnlocked={isUnlocked}
               slot={tab}
               noun={tab === 'shoes' ? 'shoes' : tab}
               style={value}
@@ -217,6 +222,7 @@ export function AvatarEditor({ value, onChange }: AvatarEditorProps) {
           )}
           {tab === 'extras' && (
             <SlotPanel
+              isUnlocked={isUnlocked}
               slot="accessory"
               noun="accessory"
               style={value}

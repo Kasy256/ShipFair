@@ -38,6 +38,10 @@ interface UiState {
   /** The avatar editor over the world (guests and signed-in users). */
   isAvatarOpen: boolean;
   selectedPlayer: SelectedPlayer | null;
+  /** The passport book (P, prompt 13). */
+  isPassportOpen: boolean;
+  /** The Just Launched list (interact at the plaza wall). */
+  isLaunchesOpen: boolean;
   isReducedMotion: boolean;
   toasts: readonly Toast[];
   openBooth(id: string): void;
@@ -50,6 +54,8 @@ interface UiState {
   setOnboardingOpen(isOpen: boolean): void;
   setAvatarOpen(isOpen: boolean): void;
   selectPlayer(player: SelectedPlayer | null): void;
+  setPassportOpen(isOpen: boolean): void;
+  setLaunchesOpen(isOpen: boolean): void;
   setReducedMotion(isReduced: boolean): void;
   showToast(text: string): void;
   dismissToast(id: number): void;
@@ -82,6 +88,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   isOnboardingOpen: false,
   isAvatarOpen: false,
   selectedPlayer: null,
+  isPassportOpen: false,
+  isLaunchesOpen: false,
   isReducedMotion: initialReducedMotion(),
   toasts: [],
   // One overlay at a time: opening a booth closes the map, and the other way round.
@@ -124,6 +132,25 @@ export const useUiStore = create<UiState>()((set, get) => ({
         ? { selectedPlayer: player, openBoothId: null, isMapOpen: false, isClaimOpen: false }
         : { selectedPlayer: null },
     ),
+  setPassportOpen: (isOpen) =>
+    set(
+      isOpen
+        ? {
+            isPassportOpen: true,
+            openBoothId: null,
+            isMapOpen: false,
+            isClaimOpen: false,
+            isLaunchesOpen: false,
+            selectedPlayer: null,
+          }
+        : { isPassportOpen: false },
+    ),
+  setLaunchesOpen: (isOpen) =>
+    set(
+      isOpen
+        ? { isLaunchesOpen: true, openBoothId: null, isMapOpen: false, isPassportOpen: false }
+        : { isLaunchesOpen: false },
+    ),
   setReducedMotion(isReduced) {
     set({ isReducedMotion: isReduced });
     try {
@@ -148,4 +175,6 @@ export const selectIsOverlayOpen = (s: UiState): boolean =>
   s.isSignInOpen ||
   s.isOnboardingOpen ||
   s.isAvatarOpen ||
+  s.isPassportOpen ||
+  s.isLaunchesOpen ||
   s.selectedPlayer !== null;

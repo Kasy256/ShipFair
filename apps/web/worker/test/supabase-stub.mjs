@@ -98,7 +98,45 @@ const defaultStore = () => ({
   admin_report_targets: [],
   // Batches passed to ingest_booth_stats, newest last.
   ingested: [],
+  // Prompt 13. `passport_backed`: {player, stamp} rows the evidence would back (the stub's
+  // stand-in for passport_earned); `passport_stamps`: awarded rows; `evidence`: ingested rows;
+  // `tier_changes`: what the next recompute_booth_tiers returns; `try_clicks`: booth ids.
+  passport_backed: [],
+  passport_stamps: [],
+  guest_links: [],
+  evidence: [],
+  tier_changes: [],
+  try_clicks: [],
 });
+
+// Stand-ins for award_stamps and merge_guest_passport (…_passport_and_tiers.sql).
+function awardStamps({ uid, claims = null }) {
+  const held = () =>
+    store.passport_stamps
+      .filter((p) => p.user_id === uid && (claims === null || claims.includes(p.stamp)))
+      .map((p) => p.stamp);
+  for (const row of store.passport_backed) {
+    if (row.player !== uid || (claims !== null && !claims.includes(row.stamp))) continue;
+    if (!held().includes(row.stamp)) store.passport_stamps.push({ user_id: uid, stamp: row.stamp });
+  }
+  return held().sort();
+}
+
+function mergeGuest({ uid, guest, claims }) {
+  const key = `guest:${guest}`;
+  let link = store.guest_links.find((l) => l.guest_key === key);
+  if (!link) {
+    link = { guest_key: key, user_id: uid };
+    store.guest_links.push(link);
+  }
+  if (link.user_id !== uid) return { awarded: [], pending: [] };
+  for (const row of store.passport_backed) if (row.player === key) row.player = uid;
+  const held = awardStamps({ uid, claims });
+  return {
+    awarded: claims.filter((c) => held.includes(c)),
+    pending: claims.filter((c) => !held.includes(c)),
+  };
+}
 
 // A stand-in for `realtime_player` (…_realtime_rpc.sql): the profile row and the bans table.
 function realtimePlayer({ uid, with_profile }) {
@@ -294,6 +332,28 @@ export default {
         store.ingested.push(stats);
         return Response.json(stats.length);
       }
+      const rpc = url.pathname.startsWith('/rest/v1/rpc/') && request.method === 'POST';
+      const name = url.pathname.slice('/rest/v1/rpc/'.length);
+      if (rpc && name === 'award_stamps') return Response.json(awardStamps(await request.json()));
+      if (rpc && name === 'merge_guest_passport') {
+        return Response.json(mergeGuest(await request.json()));
+      }
+      if (rpc && name === 'ingest_passport_evidence') {
+        const { evidence } = await request.json();
+        store.evidence.push(...evidence);
+        return Response.json(evidence.length);
+      }
+      if (rpc && name === 'recompute_booth_tiers') {
+        const changes = store.tier_changes;
+        store.tier_changes = [];
+        return Response.json(changes);
+      }
+      if (rpc && name === 'prune_passport_evidence') return Response.json(0);
+      if (rpc && name === 'record_try_click') {
+        const { booth } = await request.json();
+        store.try_clicks.push(booth);
+        return Response.json(true);
+      }
       if (url.pathname === '/rest/v1/rpc/delete_account' && request.method === 'POST') {
         const { uid } = await request.json();
         deleted.push(uid);
@@ -305,7 +365,14 @@ export default {
     if (url.pathname === '/rest/v1/booths') {
       return Response.json(url.searchParams.get('status') === 'eq.approved' ? booths : []);
     }
-    if (url.pathname === '/rest/v1/public_profiles') return Response.json(profiles);
+    if (url.pathname === '/rest/v1/public_profiles') {
+      const handle = url.searchParams.get('handle')?.replace('eq.', '');
+      return Response.json(handle ? profiles.filter((p) => p.handle === handle) : profiles);
+    }
+    if (url.pathname === '/rest/v1/passport_stamps') {
+      const user = url.searchParams.get('user_id')?.replace('eq.', '');
+      return Response.json(store.passport_stamps.filter((p) => p.user_id === user));
+    }
     return new Response('unknown table', { status: 404 });
   },
 };
