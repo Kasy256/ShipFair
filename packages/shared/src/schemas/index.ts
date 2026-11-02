@@ -13,5 +13,6 @@ export * from './profile.ts';
 export * from './profile-input.ts';
 export * from './realtime.ts';
 export * from './report.ts';
+export * from './settings.ts';
 export * from './submission.ts';
 export * from './world.ts';

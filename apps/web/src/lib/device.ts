@@ -2,6 +2,16 @@
 export const isCoarsePointer = (): boolean =>
   typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
 
+/** How long the touch Use button buzzes (ms): a tick, not a buzz. */
+const HAPTIC_TICK_MS = 10;
+
+/** A short vibration on interact, where the browser supports it (Android Chrome; not iOS). */
+export function hapticTick(): void {
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    navigator.vibrate(HAPTIC_TICK_MS);
+  }
+}
+
 export const prefersReducedMotion = (): boolean =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;

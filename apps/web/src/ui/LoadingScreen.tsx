@@ -58,10 +58,14 @@ export function LoadingScreen({
       data-testid="loading-screen"
       className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-ink/95 px-4 text-center"
     >
-      <h1 id="loading-title" className="font-bold text-5xl text-accent tracking-tight sm:text-6xl">
+      {/* Fixed line box: the display face swapping in never moves anything below it. */}
+      <h1
+        id="loading-title"
+        className="h-12 font-display font-extrabold text-5xl text-accent leading-none tracking-tight sm:h-15 sm:text-6xl"
+      >
         {APP_NAME}
       </h1>
-      <p className="mt-3 max-w-md text-muted">{APP_TAGLINE}</p>
+      <p className="mt-3 min-h-12 max-w-md text-muted">{APP_TAGLINE}</p>
 
       {error ? (
         <div role="alert" className="mt-10 max-w-md rounded-xl bg-ink-3 p-4">
@@ -108,7 +112,7 @@ export function LoadingScreen({
         </div>
       )}
 
-      <p className="absolute inset-x-4 bottom-6 mx-auto max-w-lg text-muted text-sm">
+      <p className="absolute inset-x-4 bottom-[calc(var(--safe-bottom)+0.75rem)] mx-auto max-w-lg text-muted text-sm">
         <span className="font-semibold text-paper">Tip:</span> {tip}
       </p>
     </section>

@@ -12,7 +12,8 @@ import { NetPill } from './NetPill.tsx';
 /**
  * Top-left: brand, the current district, the connection pill and live visitor counts.
  * Top-right: the visitor (sign in, or the handle linking to /me), "Claim a booth" (/submit, or
- * sign-in first), invite a friend, the avatar editor, map and help.
+ * sign-in first), invite a friend, the avatar editor, map, settings and help. Both stay inside
+ * the safe areas (notches, rounded corners).
  */
 export function Hud() {
   const zone = useWorldStore((s) => zoneName(s.currentDistrictId, s.districtsById));
@@ -22,6 +23,7 @@ export function Hud() {
   const openSignIn = useUiStore((s) => s.openSignIn);
   const setAvatarOpen = useUiStore((s) => s.setAvatarOpen);
   const setPassportOpen = useUiStore((s) => s.setPassportOpen);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const stampCount = usePassportStore((s) => s.stamps.size);
   const session = useSession();
   const location = useLocation();
@@ -48,8 +50,10 @@ export function Hud() {
 
   return (
     <>
-      <header className="pointer-events-none absolute top-3 left-3 z-10 rounded-xl bg-ink/70 px-3 py-2 backdrop-blur">
-        <h1 className="font-bold text-accent text-lg leading-none tracking-tight">{APP_NAME}</h1>
+      <header className="pointer-events-none absolute top-(--safe-top) left-(--safe-left) z-10 min-w-36 rounded-xl bg-ink/70 px-3 py-2 backdrop-blur">
+        <h1 className="h-[1.125rem] font-display font-extrabold text-accent text-lg leading-none tracking-tight">
+          {APP_NAME}
+        </h1>
         <p className="mt-1 font-semibold text-sm" data-testid="hud-district">
           {zone}
         </p>
@@ -63,7 +67,7 @@ export function Hud() {
       <nav
         ref={nav}
         aria-label="World"
-        className="absolute top-3 right-3 z-10 flex max-w-[60vw] flex-wrap justify-end gap-2"
+        className="absolute top-(--safe-top) right-(--safe-right) z-10 flex max-w-[60vw] flex-wrap justify-end gap-2"
       >
         {session.status === 'signed-in' && session.profile ? (
           <Link to="/me" className={button} data-testid="hud-account">
@@ -104,6 +108,14 @@ export function Hud() {
         </button>
         <button type="button" className={button} onClick={() => setMapOpen(true)}>
           Map <kbd className="ml-1 hidden text-muted text-xs sm:inline">M</kbd>
+        </button>
+        <button
+          type="button"
+          className={button}
+          data-testid="hud-settings"
+          onClick={() => setSettingsOpen(true)}
+        >
+          Settings
         </button>
         <button
           type="button"

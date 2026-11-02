@@ -97,7 +97,7 @@ export function Minimap({ layout }: MinimapProps) {
       role="img"
       // Phones: top right, under the buttons however many rows they wrap to (Hud measures them;
       // the touch controls own the bottom corners).
-      className="pointer-events-none absolute top-[calc(var(--hud-nav-bottom,2.75rem)+0.5rem)] right-3 z-10 h-28 w-28 rounded-full sm:top-auto sm:bottom-3 sm:h-[148px] sm:w-[148px]"
+      className="pointer-events-none absolute top-[calc(var(--hud-nav-bottom,2.75rem)+0.5rem)] right-(--safe-right) z-10 h-28 w-28 rounded-full sm:top-auto sm:bottom-(--safe-bottom) sm:h-[148px] sm:w-[148px]"
     />
   );
 }

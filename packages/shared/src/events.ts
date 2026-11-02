@@ -52,6 +52,8 @@ export interface EngineEvents {
     renderScale: number;
   };
   'ui:open-submit': undefined;
+  /** The player stands at the plaza's "Claim a booth" kiosk, or left it (prompt 14: touch Use). */
+  'kiosk:near': { isNear: boolean };
   /** The player stands at the plaza's Just Launched wall (its prompt), or left it. */
   'launches:near': { isNear: boolean };
   /** Interact at the wall: the UI lists the newest booths to jump to. */

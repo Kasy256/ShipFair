@@ -30,6 +30,7 @@ export class BoothInteraction {
   readonly #zonePayload: { districtId: number | null } = { districtId: null };
   readonly #openPayload = { boothId: '' };
   readonly #wallPayload = { isNear: false };
+  readonly #kioskPayload = { isNear: false };
   #focused: string | null = null;
   #zone: number | null | undefined;
   #isAtKiosk = false;
@@ -66,7 +67,12 @@ export class BoothInteraction {
     const k = this.#host.kiosk;
     const dx = x - k.x;
     const dz = z - k.z;
-    this.#isAtKiosk = dx * dx + dz * dz <= KIOSK_RADIUS_M * KIOSK_RADIUS_M;
+    const isAtKiosk = dx * dx + dz * dz <= KIOSK_RADIUS_M * KIOSK_RADIUS_M;
+    if (isAtKiosk !== this.#isAtKiosk) {
+      this.#isAtKiosk = isAtKiosk;
+      this.#kioskPayload.isNear = isAtKiosk;
+      this.#bus.emit('kiosk:near', this.#kioskPayload);
+    }
     const wx = x - this.#host.wall.x;
     const wz = z - this.#host.wall.z;
     const isAtWall = wx * wx + wz * wz <= WALL_INTERACT_RADIUS_M * WALL_INTERACT_RADIUS_M;

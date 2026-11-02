@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* The one display face (prompt 14): the brand name only. Everything else uses the system stack.
+   Self-hosted (the CSP allows fonts from this origin only), Latin subset, OFL (src/fonts/OFL.txt).
+   swap: the title shows in the fallback at once; its box has a fixed height, so nothing moves. */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("./fonts/bricolage-grotesque-800-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F,
+    U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @theme {
   --color-ink: #0b1020;
   --color-ink-2: #141a2e;
@@ -8,6 +22,7 @@
   --color-muted: #b9bfd3;
   --color-accent: #ffb547;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --animate-banner: banner 2.6s ease-out both;
   --animate-toast: toast-in 0.2s ease-out both;
@@ -56,6 +71,15 @@
   }
 }
 
+/* Edge offsets that clear notches and home indicators (index.html sets viewport-fit=cover).
+   Use as `top-(--safe-top)` etc. The bottom one leaves room for the home bar on iOS. */
+:root {
+  --safe-top: max(0.75rem, env(safe-area-inset-top));
+  --safe-right: max(0.75rem, env(safe-area-inset-right));
+  --safe-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  --safe-left: max(0.75rem, env(safe-area-inset-left));
+}
+
 @layer base {
   /* Every interactive element gets a visible focus ring (CODING_STANDARDS.md §5). */
   :focus-visible {
@@ -67,5 +91,14 @@
     background: var(--color-ink);
     color: var(--color-paper);
     font-family: var(--font-sans);
+  }
+
+  /* In the city the page never scrolls or bounces, and a double tap never zooms (the canvas
+     itself is touch-action: none, so pinch and drag go to the camera). Other pages scroll. */
+  html:has([data-world-page]),
+  html:has([data-world-page]) body {
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
   }
 }
