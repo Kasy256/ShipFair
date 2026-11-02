@@ -83,7 +83,7 @@ export function ChatPanel() {
         role="log"
         aria-live="polite"
         aria-label="Chat messages from people nearby"
-        className="mb-2 grid max-h-48 gap-0.5 overflow-y-auto text-sm"
+        className="mb-2 grid max-h-[min(12rem,28dvh)] gap-0.5 overflow-y-auto text-sm"
         data-testid="chat-log"
       >
         {lines.map((line) => (

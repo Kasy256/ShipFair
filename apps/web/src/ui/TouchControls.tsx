@@ -70,7 +70,7 @@ export function TouchControls({ engine }: TouchControlsProps) {
       <div
         ref={restRef}
         aria-hidden="true"
-        className="absolute bottom-[calc(var(--safe-bottom)+1.5rem)] left-[calc(var(--safe-left)+1.5rem)] h-28 w-28 rounded-full border-2 border-paper/20 transition-opacity"
+        className="absolute bottom-[calc(var(--safe-bottom)+1.5rem)] left-[calc(var(--safe-left)+1.5rem)] h-28 w-28 rounded-full border-2 border-paper/20 transition-opacity motion-reduce:transition-none"
       />
       <div
         ref={ringRef}
