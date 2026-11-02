@@ -131,7 +131,7 @@ export class CharacterFactory {
 
   #bodyAsset(bodyId: string, lod: Lod): { id: string; promise: Promise<LoadedAsset> } {
     const entry = this.#manifest.characters.find((c) => c.id === bodyId);
-    const url = entry ? (lod === 0 ? entry.url : entry.lod1.url) : null;
+    const url = this.#assets.urlOf(lod === 0 ? entry : entry?.lod1);
     const id = `body:${bodyId}:${lod}`;
     return { id, promise: this.#assets.load(id, url, empty) };
   }
@@ -151,7 +151,7 @@ export class CharacterFactory {
       items.map((item) => {
         const id = `item:${item.kind}:${item.id}:${item.body}:${lod}`;
         return this.#assets
-          .load(id, lod === 0 ? item.url : item.lod1.url, empty)
+          .load(id, this.#assets.urlOf(lod === 0 ? item : item.lod1), empty)
           .then((asset) => ({ id, item, asset }));
       }),
     );

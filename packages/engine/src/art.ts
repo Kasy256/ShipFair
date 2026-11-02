@@ -1,4 +1,4 @@
-import type { EventBus, GeneratedAssetManifest } from '@shipfair/shared';
+import type { EventBus, GeneratedAssetManifest, QualityTier } from '@shipfair/shared';
 import type { WebGLRenderer } from 'three';
 import { type AssetLoader, AssetManager } from './assets/asset-manager.ts';
 import { createGltfLoader } from './assets/gltf-loader.ts';
@@ -34,8 +34,15 @@ export class Art {
     this.props = parts.props;
   }
 
-  static async load(bus: EventBus, renderer: WebGLRenderer, loader?: AssetLoader): Promise<Art> {
+  /** `tier` low loads the 512 px texture copies where the build made them. */
+  static async load(
+    bus: EventBus,
+    renderer: WebGLRenderer,
+    loader?: AssetLoader,
+    tier: QualityTier = 'high',
+  ): Promise<Art> {
     const assets = new AssetManager(bus, loader ?? createGltfLoader(renderer));
+    assets.isLowTier = tier === 'low';
     const manifest = await assets.loadManifest();
     const materials = new PaletteMaterials(await loadPalette(manifest?.palette.url ?? null));
     const propIds = manifest

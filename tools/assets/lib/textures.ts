@@ -1,6 +1,8 @@
 // The palette stays a small PNG sampled with nearest filtering and no mipmaps (linear filtering or
 // mips blend neighbouring squares). Any other texture goes to KTX2 through KTX-Software's `toktx`:
-// ETC1S for colour, UASTC for normal maps, at most 1024 px.
+// ETC1S for colour, UASTC for normal maps, at most 1024 px; files with such textures also get a
+// 512 px copy for the low tier (prompt 14). No texture ships without a KTX2 path: without toktx
+// the build fails instead of copying the PNG through.
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,7 +11,8 @@ import { type Document, ImageUtils, type Texture } from '@gltf-transform/core';
 import { KHRTextureBasisu } from '@gltf-transform/extensions';
 import { listTextureSlots } from '@gltf-transform/functions';
 
-export const MAX_TEXTURE_PX = 1024;
+/** Longest texture side per variant: the normal file, and the low tier's `.low` copy. */
+export const TEXTURE_MAX_PX = { high: 1024, low: 512 } as const;
 // WebGL enums as glTF stores them.
 const NEAREST = 9728;
 const CLAMP_TO_EDGE = 33071;
@@ -48,11 +51,11 @@ function paletteSampler(doc: Document, texture: Texture): void {
   }
 }
 
-function encodeKtx2(texture: Texture, isNormal: boolean, exe: string): Uint8Array {
+function encodeKtx2(texture: Texture, isNormal: boolean, exe: string, maxPx: number): Uint8Array {
   const image = texture.getImage();
   if (!image) throw new Error('texture has no image');
   const [w = 1, h = 1] = ImageUtils.getSize(image, texture.getMimeType()) ?? [];
-  const scale = Math.min(1, MAX_TEXTURE_PX / Math.max(w, h));
+  const scale = Math.min(1, maxPx / Math.max(w, h));
   const dir = mkdtempSync(join(tmpdir(), 'shipfair-ktx-'));
   try {
     const ext = texture.getMimeType() === 'image/jpeg' ? 'jpg' : 'png';
@@ -71,8 +74,24 @@ function encodeKtx2(texture: Texture, isNormal: boolean, exe: string): Uint8Arra
   }
 }
 
-/** Fixes palette sampling and converts every other texture. Returns problems (as errors). */
-export function processTextures(doc: Document, file: string, paletteMaterial: string): string[] {
+/** True when the file has textures other than the palette that still need KTX2 encoding. */
+export function needsKtx2(doc: Document, paletteMaterial: string): boolean {
+  return doc
+    .getRoot()
+    .listTextures()
+    .some((t) => !isPaletteTexture(doc, t, paletteMaterial) && t.getMimeType() !== 'image/ktx2');
+}
+
+/**
+ * Fixes palette sampling and converts every other texture, at most `maxPx` on the longest side.
+ * Returns problems (as errors).
+ */
+export function processTextures(
+  doc: Document,
+  file: string,
+  paletteMaterial: string,
+  maxPx: number = TEXTURE_MAX_PX.high,
+): string[] {
   const errors: string[] = [];
   const others: Texture[] = [];
   for (const texture of doc.getRoot().listTextures()) {
@@ -91,7 +110,7 @@ export function processTextures(doc: Document, file: string, paletteMaterial: st
   for (const texture of others) {
     const isNormal = listTextureSlots(texture).includes('normalTexture');
     try {
-      texture.setImage(encodeKtx2(texture, isNormal, exe)).setMimeType('image/ktx2');
+      texture.setImage(encodeKtx2(texture, isNormal, exe, maxPx)).setMimeType('image/ktx2');
       texture.setURI(texture.getURI().replace(/\.(png|jpe?g)$/i, '.ktx2'));
     } catch (error) {
       errors.push(`${file}: KTX2 encoding of ${texture.getName()} failed: ${String(error)}`);

@@ -1,7 +1,7 @@
 // One function per manifest section: load (or generate a placeholder), check the naming contract,
 // build LODs, optimise, measure against the contract budgets and emit content-hashed files.
 import type { Document } from '@gltf-transform/core';
-import { weld } from '@gltf-transform/functions';
+import { cloneDocument, weld } from '@gltf-transform/functions';
 import type {
   AssetSourceManifest,
   BuiltAnimations,
@@ -22,7 +22,7 @@ import {
 } from './placeholders.ts';
 import { loadSource, type Report, type Sink } from './sink.ts';
 import { checkBudget, countTriangles, largestAlternative, measure } from './stats.ts';
-import { processTextures } from './textures.ts';
+import { needsKtx2, processTextures, TEXTURE_MAX_PX } from './textures.ts';
 
 export interface Ctx {
   contract: Contract;
@@ -43,11 +43,31 @@ function record(ctx: Ctx, result: { errors: string[]; warnings: string[] }): voi
   ctx.report.warnings.push(...result.warnings);
 }
 
-async function finish(ctx: Ctx, base: string, doc: Document, kind: Parameters<typeof optimise>[1]) {
-  ctx.report.errors.push(...processTextures(doc, base, ctx.contract.materials.palette));
+/**
+ * Textures to KTX2, optimise, write. A file with textures also gets `<base>.low` with textures at
+ * 512 px for the low tier (`urlLow`); palette-only files (all current art) are written once.
+ */
+async function finish(
+  ctx: Ctx,
+  base: string,
+  doc: Document,
+  kind: Parameters<typeof optimise>[1],
+): Promise<{ url: string; bytes: number; urlLow?: string }> {
+  const palette = ctx.contract.materials.palette;
+  const low = needsKtx2(doc, palette) ? cloneDocument(doc) : null;
+  ctx.report.errors.push(...processTextures(doc, base, palette, TEXTURE_MAX_PX.high));
   await optimise(doc, kind);
-  return ctx.sink.addGlb(base, doc);
+  const out = await ctx.sink.addGlb(base, doc);
+  if (!low) return out;
+  ctx.report.errors.push(...processTextures(low, `${base}.low`, palette, TEXTURE_MAX_PX.low));
+  await optimise(low, kind);
+  const outLow = await ctx.sink.addGlb(`${base}.low`, low);
+  return { ...out, urlLow: outLow.url };
 }
+
+/** `url`, plus `urlLow` when the build wrote a low-tier copy. */
+const urls = (out: { url: string; urlLow?: string }) =>
+  out.urlLow ? { url: out.url, urlLow: out.urlLow } : { url: out.url };
 
 export interface CharacterResult {
   built: BuiltCharacter;
@@ -115,10 +135,10 @@ export async function processCharacter(
     baseTriangles,
     built: {
       id: entry.id,
-      url: out0.url,
+      ...urls(out0),
       isPlaceholder,
       stats,
-      lod1: { url: out1.url, stats: stats1, error: round4(lod1.error), isHandMade },
+      lod1: { ...urls(out1), stats: stats1, error: round4(lod1.error), isHandMade },
       hairs: isPlaceholder ? [] : entry.hairs,
       accessories: isPlaceholder ? [] : entry.accessories,
       ...shape,
@@ -179,7 +199,7 @@ export async function processBoothKit(
     }
   }
   ctx.report.budget.push(...stats.problems);
-  return { url: out.url, isPlaceholder: !loaded, stats, ...layout };
+  return { ...urls(out), isPlaceholder: !loaded, stats, ...layout };
 }
 
 export async function processProp(
@@ -196,7 +216,7 @@ export async function processProp(
   ctx.report.budget.push(...stats.problems);
   return {
     id: entry.id,
-    url: out.url,
+    ...urls(out),
     isPlaceholder: !loaded,
     stats,
     collider: entry.collider,

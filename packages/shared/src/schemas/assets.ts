@@ -63,6 +63,8 @@ export type AssetStats = z.infer<typeof AssetStats>;
 
 const Built = {
   url: Url,
+  /** The same file with textures at 512 px for the low tier; only for files with textures. */
+  urlLow: Url.optional(),
   /** True when the source was missing and the build wrote a generated stand-in. */
   isPlaceholder: z.boolean(),
   stats: AssetStats,
@@ -71,7 +73,13 @@ const Built = {
 export const BuiltCharacter = z.object({
   id: AssetId,
   ...Built,
-  lod1: z.object({ url: Url, stats: AssetStats, error: z.number(), isHandMade: z.boolean() }),
+  lod1: z.object({
+    url: Url,
+    urlLow: Url.optional(),
+    stats: AssetStats,
+    error: z.number(),
+    isHandMade: z.boolean(),
+  }),
   hairs: z.array(z.string()),
   accessories: z.array(z.string()),
   bounds: Bounds,
