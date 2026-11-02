@@ -28,7 +28,7 @@ import {
   useClock,
   webCalls,
 } from './test/client.ts';
-import { USERS, WORLD } from './test/fixtures.ts';
+import { BOB_LOOK, USERS, WORLD } from './test/fixtures.ts';
 
 // WorldShard behaviour through real WebSockets. Each test uses its own shard name; time and the
 // 10 Hz loop are stepped by hand (TICK_MODE=manual, `useClock`, `tick`), never waited for.
@@ -106,6 +106,36 @@ describe('hello', () => {
     const join = await watcher.next('join');
     expect(join.player.id).toBe(old.you);
     expect(join.player.avatar).toEqual(migrateAvatarStyle(v1));
+  });
+
+  it('shows a locked wardrobe item only when the saved look wears it', async () => {
+    await shard('w-110');
+    const { client: watcher } = await placed('w-110', 0, 0);
+    const backpack = { ...AVATAR, accessory: { item: 'backpack', color: 4 } } as const;
+    const bare = { ...backpack, accessory: { item: 'none', color: 4 } } as const;
+
+    // A guest's stamps are only in their browser; Ada's saved look has no backpack.
+    await TestClient.join('w-110', { guestId: guestId(), avatar: backpack });
+    await tick('w-110');
+    expect((await watcher.next('join')).player.avatar).toEqual(bare);
+    await TestClient.join('w-110', { token: await token(USERS.ada), avatar: backpack });
+    await tick('w-110');
+    expect((await watcher.next('join')).player.avatar).toEqual(bare);
+
+    // Bob saved it (SQL checked his stamps). His profile is cached by the first hello, but a
+    // locked item reads it fresh, so a look saved a moment ago is never stripped.
+    await shard('w-111');
+    const { client: other } = await placed('w-111', 0, 0);
+    await TestClient.join('w-111', { token: await token(USERS.bob) });
+    await tick('w-111');
+    await other.next('join');
+    await webCalls();
+    await TestClient.join('w-111', { token: await token(USERS.bob), avatar: BOB_LOOK });
+    await tick('w-111');
+    expect((await other.next('join')).player.avatar).toEqual(BOB_LOOK);
+    expect((await webCalls()).filter((c) => c[0] === 'getPlayer')).toEqual([
+      ['getPlayer', USERS.bob, true],
+    ]);
   });
 
   it('accepts a valid Supabase JWT and shows the profile name and uid', async () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_AVATAR_STYLE } from './avatar.ts';
 import {
   boothMilestones,
   isUnlockMet,
@@ -8,6 +9,8 @@ import {
   StampKey,
   StampRequest,
   stampCategory,
+  withoutLockedItems,
+  wornLockedItems,
 } from './passport.ts';
 import { StatsBatch } from './realtime.ts';
 
@@ -84,6 +87,20 @@ describe('helpers', () => {
       'lanyard',
     ]);
     expect(lockedItems(['lanyard'], new Set(['booths:50']), ['ai-agents'])).toEqual([]);
+  });
+
+  it('takes locked items off a look unless they are allowed', () => {
+    const look = {
+      ...DEFAULT_AVATAR_STYLE,
+      accessory: { item: 'backpack' as const, color: 4 },
+    };
+    expect(wornLockedItems(DEFAULT_AVATAR_STYLE)).toEqual([]);
+    expect(wornLockedItems(look)).toEqual(['backpack']);
+    expect(withoutLockedItems(look, new Set())).toEqual({
+      ...look,
+      accessory: { item: 'none', color: 4 },
+    });
+    expect(withoutLockedItems(look, new Set(['backpack']))).toBe(look);
   });
 });
 

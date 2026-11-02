@@ -17,6 +17,8 @@ import {
   toNetPos,
   toNetYaw,
   WorldSnapshot,
+  withoutLockedItems,
+  wornLockedItems,
 } from '@shipfair/shared';
 import { getServerByName } from 'partyserver';
 import { verifyAccessToken } from './auth.ts';
@@ -61,7 +63,16 @@ const MAX_NET_ID = 65535;
 type Hello = Extract<ClientMessage, { type: 'hello' }>;
 
 type Identity =
-  | { kind: 'player'; name: string; isGuest: boolean; uid?: string; key: string; createdMs: number }
+  | {
+      kind: 'player';
+      name: string;
+      isGuest: boolean;
+      uid?: string;
+      key: string;
+      createdMs: number;
+      /** The profile's saved look (signed in): the locked items it wears may be shown. */
+      savedLook?: unknown;
+    }
   | { kind: 'refused'; notice: Notice; code: number; reason: string };
 
 const notice = (n: Notice): Notice => n;
@@ -315,9 +326,14 @@ export class WorldShard extends RoomServer<Env, ConnState> {
     }
     pending.isBusy = true;
 
+    // Protocol v2 sends the v2 look; a v1 client's flat tints are migrated to the nearest v2.
+    const look = migrateAvatarStyle(msg.avatar);
+    const wornLocked = wornLockedItems(look);
     let identity: Identity;
     try {
-      identity = msg.token ? await this.#signedIn(msg.token) : guest(msg.guestId ?? '');
+      identity = msg.token
+        ? await this.#signedIn(msg.token, wornLocked.length > 0)
+        : guest(msg.guestId ?? '');
     } catch (error) {
       console.error('shard: hello identity check failed', error);
       identity = refusedKicked("We couldn't check your sign-in. Try again in a moment.");
@@ -357,8 +373,19 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       isGuest: identity.isGuest,
       ...(identity.uid === undefined ? {} : { uid: identity.uid }),
       key: identity.key,
-      // Protocol v2 sends the v2 look; a v1 client's flat tints are migrated to the nearest v2.
-      avatar: migrateAvatarStyle(msg.avatar),
+      // Locked wardrobe items (prompt 13): shown only when the saved look, which SQL checked on
+      // save, wears them. A guest's stamps live in their browser, so others never see theirs.
+      avatar:
+        wornLocked.length === 0
+          ? look
+          : withoutLockedItems(
+              look,
+              new Set(
+                identity.savedLook === undefined
+                  ? []
+                  : wornLockedItems(migrateAvatarStyle(identity.savedLook)),
+              ),
+            ),
       createdMs: identity.createdMs,
       p: [toNetPos(spawn.x), 0, toNetPos(spawn.z)],
       r: toNetYaw(spawn.yaw),
@@ -392,7 +419,8 @@ export class WorldShard extends RoomServer<Env, ConnState> {
     this.#startLoop();
   }
 
-  async #signedIn(token: string): Promise<Identity> {
+  /** `wantsLocked`: the hello wears a locked item, so read the saved look fresh, not cached. */
+  async #signedIn(token: string, wantsLocked: boolean): Promise<Identity> {
     const check = await verifyAccessToken(token, this.#config().jwksUrl);
     if (!check.ok) {
       const text =
@@ -409,7 +437,7 @@ export class WorldShard extends RoomServer<Env, ConnState> {
     const now = this.now();
     const cached = this.#profiles.get(check.userId);
     const isCacheFresh = cached !== undefined && now - cached.at < PROFILE_CACHE_MS;
-    const record = await this.env.WEB.getPlayer(check.userId, !isCacheFresh);
+    const record = await this.env.WEB.getPlayer(check.userId, !isCacheFresh || wantsLocked);
     if (!record) return refusedKicked("We couldn't verify your sign-in.");
     if (record.banned) {
       return {
@@ -433,6 +461,7 @@ export class WorldShard extends RoomServer<Env, ConnState> {
       uid: profile.id,
       key: profile.id,
       createdMs: Date.parse(profile.createdAt) || 0,
+      savedLook: profile.avatarStyle,
     };
   }
 

@@ -6,6 +6,7 @@ import {
   PASSPORT_STAMP_BATCH_MAX,
 } from '../constants.ts';
 import { UNLOCKS } from '../generated/wardrobe-ids.ts';
+import { type AvatarStyleV2, DEFAULT_AVATAR_STYLE } from './avatar.ts';
 import { Slug, Timestamp, Uuid } from './common.ts';
 
 // Passport stamps (prompt 13). The browser never awards a stamp: the server derives every stamp
@@ -67,6 +68,31 @@ export function lockedItems(
     const rule = UNLOCKS[id];
     return rule !== undefined && !isUnlockMet(rule, stamps, districtSlugs);
   });
+}
+
+/** The look's slots that hold a wardrobe item id. */
+const ITEM_SLOTS = ['hair', 'facial', 'headwear', 'top', 'bottom', 'shoes', 'accessory'] as const;
+
+/** The locked wardrobe items `style` wears. */
+export function wornLockedItems(style: AvatarStyleV2): string[] {
+  return ITEM_SLOTS.map((slot) => style[slot].item).filter((id) => UNLOCKS[id] !== undefined);
+}
+
+/**
+ * `style` with each locked item not in `allowed` put back to that slot's default. The shard shows
+ * other players a locked item only when the saved look (checked by SQL on save) wears it.
+ */
+export function withoutLockedItems(
+  style: AvatarStyleV2,
+  allowed: ReadonlySet<string>,
+): AvatarStyleV2 {
+  let out = style;
+  for (const slot of ITEM_SLOTS) {
+    const item = style[slot].item;
+    if (UNLOCKS[item] === undefined || allowed.has(item)) continue;
+    out = { ...out, [slot]: { ...out[slot], item: DEFAULT_AVATAR_STYLE[slot].item } };
+  }
+  return out;
 }
 
 /** `POST /api/passport/stamp` (signed in): stamps the browser thinks it earned. */
