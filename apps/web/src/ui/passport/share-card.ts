@@ -13,7 +13,8 @@ const R = 46;
 export interface PassportCard {
   title: string;
   subtitle: string;
-  stamps: readonly StampInfo[];
+  /** Every slot in book order: earned ones are inked, the rest drawn as empty rings. */
+  slots: readonly { info: StampInfo; held: boolean }[];
   footer: string;
 }
 
@@ -37,11 +38,21 @@ export function drawPassportCard(canvas: HTMLCanvasElement, card: PassportCard):
   ctx.font = '500 30px system-ui, "Segoe UI", sans-serif';
   ctx.fillText(card.subtitle, 90, 156, W - 150);
 
-  card.stamps.slice(0, PER_ROW * 3).forEach((stamp, i) => {
+  card.slots.slice(0, PER_ROW * 3).forEach(({ info: stamp, held }, i) => {
     const x = 120 + (i % PER_ROW) * 120;
     const y = 270 + Math.floor(i / PER_ROW) * 115;
     ctx.save();
     ctx.translate(x, y);
+    if (!held) {
+      ctx.strokeStyle = 'rgba(185, 191, 211, 0.35)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.arc(0, 0, R - 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
     ctx.rotate((((i * 37) % 17) - 8) * (Math.PI / 180));
     ctx.fillStyle = `${stamp.color}33`;
     ctx.strokeStyle = stamp.color;

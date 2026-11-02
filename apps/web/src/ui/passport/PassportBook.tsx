@@ -58,11 +58,12 @@ function PassportPages({ onClose }: { onClose: () => void }) {
 
   const share = async () => {
     const canvas = document.createElement('canvas');
-    const mine = PAGES.flatMap((p) => pages[p].filter((s) => stamps.has(s)));
     drawPassportCard(canvas, {
       title: handle ? `@${handle}'s passport` : 'My passport',
       subtitle: `${held} of ${total} stamps collected`,
-      stamps: mine.map((s) => stampInfo(s, districts)),
+      slots: PAGES.flatMap((p) =>
+        pages[p].map((s) => ({ info: stampInfo(s, districts), held: stamps.has(s) })),
+      ),
       footer: handle ? `${window.location.host}/u/${handle}` : window.location.host,
     });
     const link = handle ? `${window.location.origin}/u/${handle}` : null;
