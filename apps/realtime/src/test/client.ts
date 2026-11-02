@@ -3,11 +3,10 @@ import { env, exports } from 'cloudflare:workers';
 import {
   type ClientMessage,
   DEFAULT_AVATAR_STYLE,
-  decodeServer,
-  encodeClient,
   PROTOCOL_VERSION,
   type ServerMessage,
 } from '@shipfair/shared';
+import { decodeServer, encodeClient } from '@shipfair/shared/codec';
 import { importJWK, SignJWT } from 'jose';
 import type { Env } from '../env.ts';
 import type { WorldShard } from '../world-shard.ts';

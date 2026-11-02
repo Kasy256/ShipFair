@@ -2,14 +2,13 @@ import {
   type ClientMessage,
   createBus,
   DEFAULT_AVATAR_STYLE,
-  decodeClient,
   type EngineEvents,
-  encodeServer,
   IDLE_HEARTBEAT_HZ,
   NET_ANIM,
   PROTOCOL_VERSION,
   type ServerMessage,
 } from '@shipfair/shared';
+import { decodeClient, encodeServer } from '@shipfair/shared/codec';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ClockSync } from '../core/clock-sync.ts';
 import {

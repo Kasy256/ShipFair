@@ -50,6 +50,9 @@ export const REPORT_CONTEXT_LINES = 20; // chat lines from the reported player a
 export const GUESTBOOK_PAGE_SIZE = 20; // entries per page in the booth panel
 export const CHAT_LOG_LINES = 30; // lines kept in the chat log panel
 
+// Profiles
+export const DISPLAY_NAME_MAX_CHARS = 32;
+
 // Booths
 export const BOOTH_FOCUS_RADIUS_M = 3;
 export const BOOTH_VISIT_RADIUS_M = 6;

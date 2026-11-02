@@ -1,4 +1,5 @@
-import { encodeSnap, type ServerMessage } from '@shipfair/shared';
+import type { ServerMessage } from '@shipfair/shared';
+import { encodeSnap } from '@shipfair/shared/codec';
 import type { AoiGrid } from './aoi-grid.ts';
 import type { Player } from './player.ts';
 

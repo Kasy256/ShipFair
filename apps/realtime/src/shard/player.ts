@@ -6,12 +6,12 @@ import {
   CLIENT_MAX_MSG_PER_S,
   createBucket,
   EMOTE_PER_S,
-  encodeSnapEntry,
   fromNetPos,
   type PlayerSummary,
   TELEPORT_PER_S,
   type TokenBucket,
 } from '@shipfair/shared';
+import { encodeSnapEntry } from '@shipfair/shared/codec';
 import { MOVE_BURST, MUTE_BURST, MUTE_PER_S } from '../limits.ts';
 import type { RoomConnection } from '../room-connection.ts';
 

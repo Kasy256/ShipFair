@@ -10,6 +10,7 @@ export * from './env.ts';
 export * from './guestbook.ts';
 export * from './passport.ts';
 export * from './profile.ts';
+export * from './profile-input.ts';
 export * from './realtime.ts';
 export * from './report.ts';
 export * from './submission.ts';

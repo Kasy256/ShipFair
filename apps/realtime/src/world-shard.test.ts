@@ -3,14 +3,13 @@ import { exports } from 'cloudflare:workers';
 import {
   AvatarStyle,
   boothAnchor,
-  encodeClient,
-  encodeServer,
   guestName,
   layoutCity,
   migrateAvatarStyle,
   type SnapEntry,
   spawnForBooth,
 } from '@shipfair/shared';
+import { encodeClient, encodeServer } from '@shipfair/shared/codec';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CLOSE } from './limits.ts';
 import {
