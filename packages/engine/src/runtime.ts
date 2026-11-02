@@ -1,6 +1,7 @@
 import type { AvatarStyleV2, QualityTier, WorldSnapshot } from '@shipfair/shared';
 import type { ArtHost } from './boot-art.ts';
 import { BackgroundPause } from './core/background.ts';
+import { markBoot } from './core/boot-marks.ts';
 import { Loop } from './core/loop.ts';
 import { PerfOverlay } from './debug/perf-overlay.ts';
 import { PhysicsWireframe } from './debug/physics-wireframe.ts';
@@ -75,7 +76,9 @@ export function buildRuntime(p: RuntimeParams): Runtime {
   const renderer = new Renderer(options.canvas, player.camera.camera, quality);
   renderer.setUserScale(settings.renderScale);
   renderer.setFov(settings.fovDeg);
+  markBoot('renderer');
   const environment = new Environment(renderer.renderer, renderer.scene, quality);
+  markBoot('environment');
   const city = world
     ? new City({
         snapshot: world,
@@ -88,6 +91,7 @@ export function buildRuntime(p: RuntimeParams): Runtime {
         mediaHost: options.mediaHost ?? null,
       })
     : null;
+  markBoot('city-model');
   if (city) {
     city.setReducedMotion(settings.isReducedMotion);
     const { x, z, yaw } = city.spawn;
@@ -166,7 +170,8 @@ export function buildRuntime(p: RuntimeParams): Runtime {
   loop.add({ update: (dt) => renderer.update(dt), dispose() {} });
   // One step lets Rapier's broad phase see the level before the first camera ray.
   physics.world.step();
-  renderer.isAutoRendering = options.isTestMode !== true;
+  // Engine.start turns this on (live mode) once shaders have compiled.
+  renderer.isAutoRendering = false;
   return {
     art,
     loop,

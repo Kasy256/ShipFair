@@ -12,6 +12,7 @@ import { Vector3 } from 'three';
 import { AudioHub } from './audio/audio-hub.ts';
 import { loadArt } from './boot-art.ts';
 import { CAMERA_FOV_DEG, HEART_Y_M } from './config.ts';
+import { markBoot } from './core/boot-marks.ts';
 import type { InputAction } from './input/manager.ts';
 import type { JoystickView } from './input/touch.ts';
 import type { NetConnectOptions } from './net/client.ts';
@@ -103,8 +104,10 @@ export class Engine {
   async start(world?: WorldSnapshot, onStage?: (stage: StartStage) => void): Promise<void> {
     if (this.#runtime || this.#isDisposed) return;
     onStage?.('physics');
+    markBoot('physics');
     await initPhysics();
     if (this.#isDisposed) return;
+    markBoot('city');
     onStage?.('city');
     const options = this.#options;
     const runtime = buildRuntime({
@@ -119,6 +122,7 @@ export class Engine {
       frame: (view) => this.#onFrame?.(view),
     });
     this.#runtime = runtime;
+    markBoot('city-built');
     const { art, loop, input, physics, renderer, player, multiplayer, background } = runtime;
     art.ready = loadArt(art, {
       bus: options.bus,
@@ -133,8 +137,9 @@ export class Engine {
     if (this.#net) multiplayer.connect(this.#net);
     input.setEnabled(this.#isInputEnabled);
     this.#listen();
-    loop.advance(0);
+    loop.advance(0); // places camera and systems; no draw yet (it would compile shaders in sync)
     onStage?.('shaders');
+    markBoot('shaders');
     try {
       await renderer.compile();
     } catch (error) {
@@ -142,6 +147,8 @@ export class Engine {
       console.warn('Shader warm-up failed', error);
     }
     if (this.#isDisposed) return;
+    markBoot('ready');
+    renderer.isAutoRendering = options.isTestMode !== true;
     // A tab hidden while loading starts paused; showing it starts the loop.
     if (options.isTestMode !== true) {
       if (this.#isHidden) background.pause();
@@ -229,11 +236,9 @@ export class Engine {
   /** The upvote heart burst at a booth (or above the player if the booth isn't in the city). */
   burstHearts(boothId: string): void {
     const runtime = this.#runtime;
-    if (!runtime) return;
-    const anchor = runtime.city ? boothAnchor(runtime.city.layout, boothId) : null;
-    const p = runtime.player.renderPosition;
-    if (anchor) runtime.hearts.burst(anchor.x, HEART_Y_M, anchor.z);
-    else runtime.hearts.burst(p.x, p.y + HEART_Y_M, p.z);
+    const anchor = runtime?.city ? boothAnchor(runtime.city.layout, boothId) : null;
+    const at = anchor ? { x: anchor.x, y: 0, z: anchor.z } : runtime?.player.renderPosition;
+    if (at) runtime?.hearts.burst(at.x, at.y + HEART_Y_M, at.z);
   }
 
   /**
@@ -282,8 +287,7 @@ export class Engine {
 
   /**
    * The signed-in user's (or guest's) look and name. Colours change at once; new items or a new
-   * body rebuild in the background and swap in. Name tags arrive with remote players (prompt 11);
-   * until then the name is only kept here.
+   * body rebuild in the background and swap in. The name is what others see on the name tag.
    */
   setLocalPlayer(player: { style: AvatarStyleV2; name: string }): void {
     this.#style = player.style;
@@ -314,12 +318,8 @@ export class Engine {
 
   /** The settings menu (prompt 14). Only the values given change; see `EngineSettings`. */
   applySettings(next: Partial<EngineSettings>): void {
-    const s = this.#settings;
-    s.isAutoQuality = next.isAutoQuality ?? s.isAutoQuality;
-    s.renderScale = next.renderScale ?? s.renderScale;
-    s.fovDeg = next.fovDeg ?? s.fovDeg;
-    s.volume = next.volume ?? s.volume;
-    s.isReducedMotion = next.isReducedMotion ?? s.isReducedMotion;
+    // exactOptionalPropertyTypes: a key that is present holds a value, never undefined.
+    const s = Object.assign(this.#settings, next);
     this.#audio.setVolume(s.volume);
     const runtime = this.#runtime;
     if (!runtime) return;

@@ -93,7 +93,8 @@ export class SignAtlas {
   readonly root = new Group();
   readonly #quad = new PlaneGeometry(1, 1).translate(0, 0, SLOT_OFFSET);
   readonly #canvas = createCanvas(TEXT_W, CELL_H);
-  readonly #ctx = context2d(this.#canvas);
+  // Read back once per name: kept on the CPU (see context2d).
+  readonly #ctx = context2d(this.#canvas, { willReadFrequently: true });
   readonly #pages: Page[] = [];
   readonly #signs = new Map<string, Sign>();
   readonly #extra: number[][] = [
