@@ -18,3 +18,7 @@ Licence texts are copied to `art/licenses/`.
 ## Animations from Mixamo
 
 - **Mixamo** by Adobe (free for use in games; the downloaded FBX files are not redistributed). Retargeted onto our skeleton by `pnpm art:animations`: `emote_wave` (Waving), `emote_clap` (Clapping), `emote_cheer` (Cheering), `emote_point` (Pointing), `emote_sit` (Sitting Idle). https://www.mixamo.com
+
+## Fonts
+
+- **Bricolage Grotesque** (ExtraBold 800, Latin subset), © 2022 The Bricolage Grotesque Project Authors, SIL Open Font License 1.1, https://github.com/ateliertriay/bricolage. Used for the brand name only. Licence: `apps/web/src/fonts/OFL.txt`
