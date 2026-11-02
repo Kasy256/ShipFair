@@ -179,7 +179,7 @@ select ok(not public.record_try_click(:'pending_id'), 'a booth that is not live 
 
 -- Tiers ----------------------------------------------------------------------------------------------
 
--- Eleven busy booths (weekly 1100 … 1000), far above the seeded city's (none), plus edge cases.
+-- Eleven busy booths (weekly 1100 … 1000), far above the seeded city's (at most 308), plus edge cases.
 create temp table tier_fixture (n int, id uuid);
 insert into tier_fixture
 select n, tests.create_booth(:'owner_id', 'tier-top-' || n) from generate_series(1, 11) as n;
