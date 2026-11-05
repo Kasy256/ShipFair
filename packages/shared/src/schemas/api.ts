@@ -26,9 +26,14 @@ export type HealthRequestQuery = z.infer<typeof HealthRequestQuery>;
 
 export const HealthResponse = z.object({
   ok: z.boolean(),
-  /** Build version (git sha or tag). */
+  /** package.json version. */
   version: z.string().min(1),
+  /** Git sha the Worker was deployed from (`RELEASE`), `dev` locally. */
+  release: z.string().min(1),
+  environment: z.enum(['development', 'staging', 'production']),
   db: z.enum(['ok', 'down']),
+  /** How long the database check took. */
+  dbMs: z.number().int().nonnegative(),
 });
 export type HealthResponse = z.infer<typeof HealthResponse>;
 

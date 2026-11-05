@@ -1,4 +1,5 @@
 import { exports } from 'cloudflare:workers';
+import { HealthResponse } from '@shipfair/shared';
 import { describe, expect, it } from 'vitest';
 import pkg from '../package.json';
 import { resetStub, stub } from './test/helpers.ts';
@@ -9,12 +10,12 @@ describe('web Worker', () => {
     const res = await exports.default.fetch('https://web.test/api/health');
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
-    expect(await res.json()).toMatchObject({
+    expect(HealthResponse.parse(await res.json())).toMatchObject({
       ok: true,
       version: pkg.version,
       release: 'dev',
       environment: 'development',
-      db: { ok: true, ms: expect.any(Number) },
+      db: 'ok',
     });
   });
 
@@ -22,7 +23,7 @@ describe('web Worker', () => {
     await stub('/__mode', { method: 'POST', body: 'fail' });
     const res = await exports.default.fetch('https://web.test/api/health');
     expect(res.status).toBe(503);
-    expect(await res.json()).toMatchObject({ ok: false, db: { ok: false } });
+    expect(HealthResponse.parse(await res.json())).toMatchObject({ ok: false, db: 'down' });
     await resetStub();
   });
 

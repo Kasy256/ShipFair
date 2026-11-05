@@ -162,8 +162,17 @@ describe('WorldSnapshot and API schemas', () => {
   });
 
   it('parses health and error bodies', () => {
-    expect(HealthResponse.parse({ ok: true, version: 'abc123', db: 'ok' }).db).toBe('ok');
-    expect(HealthResponse.safeParse({ ok: true, version: '', db: 'ok' }).success).toBe(false);
+    const health = {
+      ok: true,
+      version: '0.0.0',
+      release: 'abc123',
+      environment: 'staging',
+      db: 'ok',
+      dbMs: 12,
+    };
+    expect(HealthResponse.parse(health).db).toBe('ok');
+    expect(HealthResponse.safeParse({ ...health, version: '' }).success).toBe(false);
+    expect(HealthResponse.safeParse({ ...health, db: 'slow' }).success).toBe(false);
     expect(ApiError.parse({ error: { code: 'not_found', message: 'No such booth' } })).toBeTruthy();
     expect(ApiError.safeParse({ error: { code: 'Not Found', message: '' } }).success).toBe(false);
   });
