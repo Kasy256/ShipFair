@@ -1,6 +1,4 @@
-import { scrubBreadcrumb, scrubEvent, sentryDataCollection } from '@shipfair/shared';
-
-// Browser error reporting (prompt 15). Sentry's SDK is ~25 KB gzip, so it isn't in the first
+// Browser error reporting (prompt 15). The Sentry client (sentry-client.ts) isn't in the first
 // load: it is imported after the first interaction (or after IDLE_LOAD_MS without one). Errors
 // from before that are queued by the inline script in index.html and sent once it has loaded.
 // Release = the git sha the build was made from (VITE_RELEASE, set by CI).
@@ -9,8 +7,8 @@ const INTERACTIONS = ['pointerdown', 'keydown', 'touchstart'] as const;
 /** A visitor who never interacts (a broken boot, say) still reports, a little later. */
 export const IDLE_LOAD_MS = 15_000;
 
-type SentryModule = typeof import('@sentry/react');
-let loading: Promise<SentryModule | null> | null = null;
+type Capture = (error: unknown, hint?: { tags?: Record<string, string> }) => unknown;
+let loading: Promise<Capture | null> | null = null;
 
 export interface ErrorReportingConfig {
   dsn: string | undefined;
@@ -27,26 +25,18 @@ export function readConfig(): ErrorReportingConfig {
 }
 
 /** Imports and starts Sentry once, then hands it the errors queued during boot. */
-export function loadSentry(config = readConfig()): Promise<SentryModule | null> {
-  if (!config.dsn) return Promise.resolve(null);
-  loading ??= import('@sentry/react').then(
-    (Sentry) => {
-      Sentry.init({
-        dsn: config.dsn,
-        release: config.release,
-        environment: config.environment,
-        // Errors only: no tracing, no replays, no cookies/headers/bodies/user fields.
-        tracesSampleRate: 0,
-        dataCollection: sentryDataCollection(),
-        beforeSend: (event) => scrubEvent(event),
-        beforeBreadcrumb: (crumb) => scrubBreadcrumb(crumb),
-      });
+export function loadSentry(config = readConfig()): Promise<Capture | null> {
+  const { dsn } = config;
+  if (!dsn) return Promise.resolve(null);
+  loading ??= import('./sentry-client.ts').then(
+    ({ startSentry }) => {
+      const capture: Capture = startSentry({ ...config, dsn });
       window.__sfBootErrorsOff?.();
       for (const error of window.__sfBootErrors?.splice(0) ?? []) {
-        Sentry.captureException(error, { tags: { phase: 'boot' } });
+        capture(error, { tags: { phase: 'boot' } });
       }
       if (import.meta.env.MODE !== 'production') window.__shipfairSentry = 'loaded';
-      return Sentry;
+      return capture;
     },
     (error: unknown) => {
       // Offline or blocked: keep the page working, and allow a later retry.
@@ -79,5 +69,5 @@ export function startErrorReporting(config = readConfig()): () => void {
 
 /** Reports an error we handled (and showed a message for) but still want to know about. */
 export function reportError(error: unknown): void {
-  void loadSentry().then((Sentry) => Sentry?.captureException(error));
+  void loadSentry().then((capture) => capture?.(error));
 }
