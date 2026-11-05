@@ -4,6 +4,10 @@
   "main": "./worker/index.ts",
   // Held back for @cloudflare/vitest-pool-workers 0.23 (TECH_STACK.md "Known version constraints").
   "compatibility_date": "2026-08-15",
+  // AsyncLocalStorage for @sentry/cloudflare (per-request scopes). Nothing else from Node.
+  "compatibility_flags": ["nodejs_als"],
+  // Workers Logs: console output (JSON lines from crons and shards) kept and searchable.
+  "observability": { "enabled": true },
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
@@ -19,17 +23,23 @@
   },
   // Booth media. Locally Miniflare's R2 (no S3 endpoint, so uploads go through the Worker).
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "shipfair-media-dev" }],
-  // The nightly tier job (worker/passport.ts runNightly), 03:00 UTC. Inherited by every env.
-  "triggers": { "crons": ["0 3 * * *"] },
+  // worker/cron.ts: tiers 03:00 UTC, R2 media cleanup hourly, report-context purge and stats
+  // check 03:30 UTC. Inherited by every env.
+  "triggers": { "crons": ["0 3 * * *", "0 * * * *", "30 3 * * *"] },
   // World cache version. No id: wrangler provisions the namespace on first deploy (prompt 15).
   "kv_namespaces": [{ "binding": "KV" }],
   // RPC to the realtime Worker. Locally this resolves through wrangler's dev registry.
   "services": [
     { "binding": "REALTIME", "service": "shipfair-realtime", "entrypoint": "RealtimeRpc" }
   ],
-  // Routes, SUPABASE_* values and secrets arrive with prompt 15.
+  // Public per-environment values (SUPABASE_URL, SUPABASE_ANON_KEY, SENTRY_DSN, RELEASE) are
+  // passed with `--var` by the deploy workflows from GitHub Environment variables; secrets are
+  // set once with `wrangler secret put --env <env>` (docs/RELEASING.md).
   "env": {
     "staging": {
+      "routes": [{ "pattern": "staging.shipfair.xyz", "custom_domain": true }],
+      // PR previews (`wrangler versions upload --preview-alias pr-<n>`) run on workers.dev.
+      "preview_urls": true,
       "vars": { "ENVIRONMENT": "staging", "R2_BUCKET": "shipfair-media-staging" },
       "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "shipfair-media-staging" }],
       "kv_namespaces": [{ "binding": "KV" }],
@@ -41,7 +51,10 @@
         }
       ]
     },
+    // No public DNS yet: production answers on workers.dev only. At launch add
+    // "routes": [{ "pattern": "shipfair.xyz", "custom_domain": true }] (docs/RELEASING.md).
     "production": {
+      "workers_dev": true,
       "vars": { "ENVIRONMENT": "production", "R2_BUCKET": "shipfair-media" },
       "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "shipfair-media" }],
       "kv_namespaces": [{ "binding": "KV" }],

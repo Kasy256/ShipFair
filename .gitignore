@@ -19,6 +19,8 @@ coverage/
 playwright-report/
 test-results/
 e2e/artifacts/
+e2e/reports/
+apps/realtime/dist-deploy/
 
 # OS and editor
 .DS_Store

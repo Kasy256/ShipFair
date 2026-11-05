@@ -116,6 +116,10 @@ export default defineConfig(({ mode }) => ({
     rapierWasm(),
     preloadBoot(),
   ],
+  // CI builds for deploys set SENTRY_SOURCEMAPS=1: maps are written next to the bundles without a
+  // `sourceMappingURL` comment, uploaded to Sentry, then deleted before `wrangler deploy`, so
+  // they are never served (.github/workflows/deploy-*.yml).
+  build: { sourcemap: process.env.SENTRY_SOURCEMAPS ? 'hidden' : false },
   environments: {
     client: {
       build: {

@@ -14,11 +14,17 @@ export interface SecurityHosts {
 }
 
 const TURNSTILE = 'https://challenges.cloudflare.com';
+/**
+ * The one inline script, index.html's boot-error queue. Allowed by hash, never 'unsafe-inline';
+ * `error-reporting.test.ts` fails if the script and this hash drift apart.
+ */
+export const BOOT_SCRIPT_SHA256 = 'sha256-nBNQ1OzALSaRLvfX3yUADSqLPUMkhZMaBb9nu0DioLM=';
 const SENTRY = [
   'https://*.ingest.sentry.io',
   'https://*.ingest.us.sentry.io',
   'https://*.ingest.de.sentry.io',
 ];
+/** PostHog is bundled without its remote extensions (no scripts), so it only needs connect-src. */
 const POSTHOG = 'https://*.posthog.com';
 /** Presigned booth media uploads go straight to R2's S3 endpoint (prompt 08). */
 const R2_UPLOADS = 'https://*.r2.cloudflarestorage.com';
@@ -42,13 +48,15 @@ export function contentSecurityPolicy(hosts: SecurityHosts): string {
       ? [`http://${hosts.realtimeHost}`, `ws://${hosts.realtimeHost}`]
       : [`https://${hosts.realtimeHost}`, `wss://${hosts.realtimeHost}`]
     : [];
-  const devScript = hosts.isDev ? ["'unsafe-inline'"] : [];
+  // Vite dev injects an inline React Refresh preamble. A hash in the list would make browsers
+  // ignore 'unsafe-inline', so dev gets only 'unsafe-inline' and builds only the hash.
+  const inlineScript = hosts.isDev ? ["'unsafe-inline'"] : [`'${BOOT_SCRIPT_SHA256}'`];
   const devConnect = hosts.isDev ? ['ws:', 'http://localhost:*', 'http://127.0.0.1:*'] : [];
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
     // WebAssembly compilation: Rapier (its .wasm is fetched from /assets, see vite.config.ts)
     // and the Basis transcoder.
-    'script-src': ["'self'", "'wasm-unsafe-eval'", TURNSTILE, POSTHOG, ...devScript],
+    'script-src': ["'self'", "'wasm-unsafe-eval'", TURNSTILE, ...inlineScript],
     // React sets dynamic `style` attributes (joystick, progress bar).
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', ...media],

@@ -20,6 +20,7 @@ interface SettingsState {
   settings: PlayerSettings;
   /** Changes some settings and saves them all. */
   update(patch: Partial<PlayerSettings>): void;
+  /** Display settings back to their defaults; the analytics choice is kept. */
   reset(): void;
 }
 
@@ -39,8 +40,10 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     set({ settings });
     save(settings);
   },
+  /** Back to the default look and feel. A privacy choice is not a display setting: it stays. */
   reset() {
-    set({ settings: DEFAULT_PLAYER_SETTINGS });
-    save(DEFAULT_PLAYER_SETTINGS);
+    const settings = { ...DEFAULT_PLAYER_SETTINGS, analytics: get().settings.analytics };
+    set({ settings });
+    save(settings);
   },
 }));

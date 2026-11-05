@@ -13,7 +13,7 @@ import { enterWorld } from '../engine/helpers.ts';
 
 export const REALTIME_PORT = 8898;
 export const REALTIME_HOST = `127.0.0.1:${REALTIME_PORT}`;
-const INSPECTOR_PORT = 9242;
+const DEFAULT_PORTS = { port: REALTIME_PORT, inspectorPort: 9242 };
 const REALTIME_DIR = fileURLToPath(new URL('../../../apps/realtime/', import.meta.url));
 const ROOT_DIR = fileURLToPath(new URL('../../../', import.meta.url));
 const WRANGLER_JS = join(REALTIME_DIR, 'node_modules/wrangler/bin/wrangler.js');
@@ -43,9 +43,9 @@ function stopTree(child: ChildProcess): Promise<void> {
   });
 }
 
-async function isHealthy(): Promise<boolean> {
+async function isHealthy(host = REALTIME_HOST): Promise<boolean> {
   try {
-    const res = await fetch(`http://${REALTIME_HOST}/health`);
+    const res = await fetch(`http://${host}/health`);
     return res.ok;
   } catch {
     return false;
@@ -55,6 +55,18 @@ async function isHealthy(): Promise<boolean> {
 export class RealtimeServer {
   readonly #persist = mkdtempSync(join(tmpdir(), 'shipfair-rt-e2e-'));
   #child: ChildProcess | null = null;
+  readonly port: number;
+  readonly #inspectorPort: number;
+
+  /** Specs that stop and restart their server use their own ports, so they never collide. */
+  constructor(ports: { port: number; inspectorPort: number } = DEFAULT_PORTS) {
+    this.port = ports.port;
+    this.#inspectorPort = ports.inspectorPort;
+  }
+
+  get host(): string {
+    return `127.0.0.1:${this.port}`;
+  }
 
   async start(): Promise<void> {
     const child = spawn(
@@ -67,24 +79,31 @@ export class RealtimeServer {
         '-c',
         '../../tools/loadtest/web-stub.wrangler.jsonc',
         '--port',
-        String(REALTIME_PORT),
+        String(this.port),
         '--ip',
         '127.0.0.1',
         '--inspector-port',
-        String(INSPECTOR_PORT),
+        String(this.#inspectorPort),
         '--persist-to',
         this.#persist,
         '--var',
         'STATS_INGEST_SECRET:e2e',
         '--show-interactive-dev-session=false',
       ],
-      { cwd: REALTIME_DIR, env: plainEnv(), stdio: ['ignore', 'pipe', 'pipe'] },
+      {
+        cwd: REALTIME_DIR,
+        // Its own dev registry: these workers are named like `pnpm dev`'s (shipfair-realtime,
+        // shipfair-web), and sharing the global registry pointed the real web Worker's REALTIME
+        // binding at this server, and crashed `pnpm dev`'s realtime when this one stopped.
+        env: { ...plainEnv(), WRANGLER_REGISTRY_PATH: join(this.#persist, 'registry') },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
     );
     this.#child = child;
     child.stdout?.resume();
     child.stderr?.resume();
     const deadline = Date.now() + READY_TIMEOUT_MS;
-    while (!(await isHealthy())) {
+    while (!(await isHealthy(this.host))) {
       if (child.exitCode !== null) throw new Error(`wrangler dev exited (${child.exitCode})`);
       if (Date.now() > deadline) throw new Error('the realtime server did not start in 120 s');
       await new Promise((r) => setTimeout(r, 500));
@@ -97,7 +116,7 @@ export class RealtimeServer {
     if (child) await stopTree(child);
     // The port must be free before a restart.
     const deadline = Date.now() + 20_000;
-    while ((await isHealthy()) && Date.now() < deadline)
+    while ((await isHealthy(this.host)) && Date.now() < deadline)
       await new Promise((r) => setTimeout(r, 250));
   }
 }
@@ -152,7 +171,10 @@ export function startBots(count: number, durationS: number): { stop(): Promise<v
  * 20 s). Remote players still interpolate on the real clock, so stepping one frame before a
  * sample shows them where a real-time page would.
  */
-export async function openConnected(page: Page, opts: { query?: string; path?: string } = {}) {
+export async function openConnected(
+  page: Page,
+  opts: { query?: string; path?: string; host?: string } = {},
+) {
   // Realtime warnings (join failures, dropped frames) explain a page that never comes online.
   page.on('console', (m) => {
     if (m.type() === 'warning' && m.text().startsWith('Realtime'))
@@ -160,7 +182,8 @@ export async function openConnected(page: Page, opts: { query?: string; path?: s
   });
   const extra = opts.query ? `&${opts.query}` : '';
   const path = opts.path ?? '/';
-  await page.goto(`${path}?test&debug=fake60&quality=low&realtime=${REALTIME_HOST}${extra}`);
+  const host = opts.host ?? REALTIME_HOST;
+  await page.goto(`${path}?test&debug=fake60&quality=low&realtime=${host}${extra}`);
   await expect(page.getByTestId('world-canvas')).toHaveAttribute('data-status', 'ready', {
     timeout: 60_000,
   });

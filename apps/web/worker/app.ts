@@ -1,17 +1,18 @@
 import { type SubmissionsStatus, Uuid } from '@shipfair/shared';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import pkg from '../package.json';
 import { deleteAccount, requireUser } from './account.ts';
 import { admin } from './admin/routes.ts';
 import { dev } from './dev.ts';
 import type { Env } from './env.ts';
 import { AppError } from './errors.ts';
 import { readFlags } from './flags.ts';
+import { health } from './health.ts';
 import { claimStamps, mergeGuestPassport } from './passport.ts';
 import { profilePage } from './profile-page.ts';
 import { rateLimit } from './rate-limits.ts';
 import { securityHeaders } from './security-headers.ts';
+import { reportError } from './sentry.ts';
 import { serviceDb } from './service.ts';
 import { sharePage } from './share.ts';
 import { checkBoothUrl, type SubmitContext, submitBooth, submitRevision } from './submissions.ts';
@@ -19,6 +20,8 @@ import { localUpload, signUpload } from './uploads.ts';
 import { cachedWorld, WORLD_CACHE_CONTROL } from './world.ts';
 
 export const app = new Hono<{ Bindings: Env }>();
+
+const NO_STORE = { 'cache-control': 'no-store' } as const;
 
 app.use(async (c, next) => {
   await next();
@@ -31,7 +34,10 @@ app.use(async (c, next) => {
   for (const [name, value] of Object.entries(headers)) c.res.headers.set(name, value);
 });
 
-app.get('/api/health', (c) => c.json({ ok: true, version: pkg.version }));
+app.get('/api/health', async (c) => {
+  const { body, status } = await health(c.env);
+  return c.json(body, status, NO_STORE);
+});
 
 app.get('/api/world', async (c) => {
   const { json, status } = await cachedWorld(c.env, c.executionCtx, new URL(c.req.url).origin);
@@ -51,7 +57,6 @@ app.post('/api/me/delete', async (c) => {
   return c.json(await deleteAccount(c.env, userId, body), 200, { 'cache-control': 'no-store' });
 });
 
-const NO_STORE = { 'cache-control': 'no-store' } as const;
 const jsonBody = (c: { req: { json(): Promise<unknown> } }) => c.req.json().catch(() => null);
 
 app.post('/api/uploads/sign', async (c) => {
@@ -134,12 +139,18 @@ app.notFound((c) => c.json({ error: { code: 'not_found', message: 'Route not fou
 // The one place errors become `{ error: { code, message } }` (CODING_STANDARDS.md §3).
 app.onError((error, c) => {
   if (error instanceof AppError) {
-    if (error.status >= 500) console.error(`${error.code}: ${error.message}`, error.cause);
+    if (error.status >= 500) {
+      console.error(`${error.code}: ${error.message}`, error.cause);
+      // 503s are an upstream (Supabase) being down: the uptime check on /api/health covers
+      // them, and one outage at peak traffic would use up the month's Sentry quota.
+      if (error.status !== 503) reportError(error);
+    }
     return c.json({ error: { code: error.code, message: error.message } }, error.status);
   }
   if (error instanceof HTTPException && error.status < 500) {
     return c.json({ error: { code: 'bad_request', message: error.message } }, error.status);
   }
   console.error('Unhandled error', error);
+  reportError(error);
   return c.json({ error: { code: 'internal', message: 'Something went wrong on our side' } }, 500);
 });

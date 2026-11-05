@@ -1,14 +1,15 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import type { FeatureFlags, PlayerRecord, WorldSnapshot } from '@shipfair/shared';
 import { app } from './app.ts';
+import { runScheduled } from './cron.ts';
 import type { Env } from './env.ts';
 import { readFlags } from './flags.ts';
-import { runNightly } from './passport.ts';
 import { getPlayer, type IngestResult, ingestStats, worldForRealtime } from './realtime-rpc.ts';
+import { sentryOptions, withSentry } from './sentry.ts';
 import { bumpWorldVersion } from './world.ts';
 
 /** RPC methods other Workers call over a service binding (never routable from the internet). */
-export class WebRpc extends WorkerEntrypoint<Env> {
+class WebRpcEntrypoint extends WorkerEntrypoint<Env> {
   ping(): string {
     return 'pong from web';
   }
@@ -42,13 +43,17 @@ export class WebRpc extends WorkerEntrypoint<Env> {
   }
 }
 
+/** Errors thrown from these methods reach Sentry (when `SENTRY_DSN` is set). */
+export const WebRpc = withSentry(sentryOptions, WebRpcEntrypoint);
+
 // Only /api/*, /b/* and /u/* reach the Worker (`run_worker_first`). Everything else is served
-// from static assets, and unknown paths fall back to index.html. `scheduled` is the nightly tier
-// job (wrangler.jsonc `triggers.crons`, 03:00 UTC).
-export default {
+// from static assets, and unknown paths fall back to index.html. `scheduled` runs the job for
+// each Cron Trigger (cron.ts, wrangler.jsonc `triggers.crons`).
+// Wrapped with Sentry: unhandled errors and failed cron runs are reported (sentry.ts).
+export default withSentry(sentryOptions, {
   fetch: app.fetch,
-  // Awaited, so a failure marks the cron run as failed in the dashboard.
-  async scheduled(_controller, env) {
-    await runNightly(env);
+  // Awaited, so a failure marks the cron run as failed in the dashboard (and in Sentry).
+  async scheduled(controller, env, _ctx) {
+    await runScheduled(controller.cron, env);
   },
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<Env>);

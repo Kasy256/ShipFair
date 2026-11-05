@@ -9,6 +9,7 @@ describe('PlayerSettings', () => {
       renderScale: 1,
       fovDeg: FOV_DEFAULT_DEG,
       volume: 1,
+      analytics: 'anonymous',
     });
   });
 
@@ -18,9 +19,16 @@ describe('PlayerSettings', () => {
       renderScale: 0.2,
       fovDeg: 70,
       volume: 'loud',
+      analytics: 'everything',
       extra: true,
     });
-    expect(parsed).toEqual({ quality: 'low', renderScale: 1, fovDeg: 70, volume: 1 });
+    expect(parsed).toEqual({
+      quality: 'low',
+      renderScale: 1,
+      fovDeg: 70,
+      volume: 1,
+      analytics: 'anonymous',
+    });
   });
 
   it('rejects non-objects (the caller falls back to the defaults)', () => {

@@ -17,3 +17,5 @@ allowBuilds:
   supabase: true
   # Optional native msgpack accelerator for Node only; browsers and Workers use the JS path.
   msgpackr-extract: false
+  # posthog-js dependency; its postinstall only prints a funding banner.
+  core-js: false

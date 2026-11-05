@@ -1,0 +1,89 @@
+name: Deploy ShipFair
+description: >
+  Migrates Supabase, then builds and deploys realtime and web for one environment, with
+  Sentry source maps (uploaded, never served). Used by deploy-staging.yml and deploy-prod.yml.
+
+inputs:
+  environment:
+    description: staging or production (the wrangler env and the Vite mode)
+    required: true
+  release:
+    description: git sha, tags every Sentry event and the /health responses
+    required: true
+  cloudflare-api-token:
+    required: true
+  supabase-access-token:
+    required: true
+  supabase-db-password:
+    required: true
+  sentry-auth-token:
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    # 1. Database: migrations only, never manual SQL (INFRASTRUCTURE.md §5).
+    - name: Migrate (supabase db push)
+      shell: bash
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ inputs.supabase-access-token }}
+        SUPABASE_DB_PASSWORD: ${{ inputs.supabase-db-password }}
+      run: |
+        pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+        pnpm exec supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
+
+    # 2. Realtime first: it stays compatible with the client already deployed.
+    - name: Deploy realtime
+      shell: bash
+      working-directory: apps/realtime
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        RELEASE: ${{ inputs.release }}
+      run: |
+        pnpm exec wrangler deploy --env "${{ inputs.environment }}" \
+          --outdir dist-deploy --upload-source-maps \
+          --var "RELEASE:$RELEASE" \
+          --var "SUPABASE_JWKS_URL:$SUPABASE_URL/auth/v1/.well-known/jwks.json" \
+          --var "SENTRY_DSN:${SENTRY_DSN_WORKERS:-}"
+
+    # 3. Web: the SPA (Vite mode = environment) and its Worker, with hidden source maps.
+    - name: Build web
+      shell: bash
+      env:
+        CLOUDFLARE_ENV: ${{ inputs.environment }}
+        SENTRY_SOURCEMAPS: "1"
+        VITE_RELEASE: ${{ inputs.release }}
+      run: pnpm --filter @shipfair/web exec vite build --mode "${{ inputs.environment }}"
+
+    - name: Upload source maps to Sentry, then delete them
+      shell: bash
+      env:
+        SENTRY_AUTH_TOKEN: ${{ inputs.sentry-auth-token }}
+        RELEASE: ${{ inputs.release }}
+      run: |
+        if [ -n "$SENTRY_AUTH_TOKEN" ]; then
+          SENTRY="npx --yes @sentry/cli@3.8.2"
+          $SENTRY releases new "$RELEASE"
+          $SENTRY sourcemaps inject apps/web/dist
+          $SENTRY sourcemaps upload --release "$RELEASE" apps/web/dist
+          $SENTRY sourcemaps upload --release "$RELEASE" --url-prefix '~/' apps/realtime/dist-deploy
+        else
+          echo "::warning::SENTRY_AUTH_TOKEN is not set: no source maps uploaded"
+        fi
+        # Never serve them, with or without Sentry.
+        find apps/web/dist apps/realtime/dist-deploy -name '*.map' -delete
+        if find apps/web/dist/client -name '*.map' | grep -q .; then echo "source maps left in the client build"; exit 1; fi
+
+    - name: Deploy web
+      shell: bash
+      working-directory: apps/web
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        RELEASE: ${{ inputs.release }}
+      run: |
+        pnpm exec wrangler deploy \
+          --var "RELEASE:$RELEASE" \
+          --var "SUPABASE_URL:$SUPABASE_URL" \
+          --var "SUPABASE_ANON_KEY:$VITE_SUPABASE_ANON_KEY" \
+          --var "SENTRY_DSN:${SENTRY_DSN_WORKERS:-}"

@@ -1,11 +1,23 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
-import { ShardId } from '@shipfair/shared';
+import * as Sentry from '@sentry/cloudflare';
+import { ShardId, workerSentryOptions } from '@shipfair/shared';
 import { getServerByName, type Lobby, routePartykitRequest } from 'partyserver';
+import { Coordinator as CoordinatorServer } from './coordinator.ts';
 import type { Env } from './env.ts';
 import type { WorldShard } from './world-shard.ts';
 
-export { Coordinator } from './coordinator.ts';
 export { WorldShard } from './world-shard.ts';
+
+// Sentry (off without SENTRY_DSN): the public fetch handler, the RPC entrypoint and the
+// Coordinator. WorldShard is left out on purpose: the SDK sets up a scope and a span for every
+// hibernated WebSocket message, which is the shard's hot path (60 players at 10 Hz). Its own
+// error paths are caught and logged to Workers Logs (`shard: …` lines).
+const sentryOptions = (env: Env) => workerSentryOptions(env);
+
+export const Coordinator = Sentry.instrumentDurableObjectWithSentry(
+  sentryOptions,
+  CoordinatorServer,
+);
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const uuids = (values: unknown): string[] =>
@@ -30,7 +42,7 @@ async function eachShard(
 }
 
 /** RPC methods the web Worker calls over its service binding (never routable from the internet). */
-export class RealtimeRpc extends WorkerEntrypoint<Env> {
+class RealtimeRpcEntrypoint extends WorkerEntrypoint<Env> {
   ping(): string {
     return 'pong from realtime';
   }
@@ -58,6 +70,8 @@ export class RealtimeRpc extends WorkerEntrypoint<Env> {
   }
 }
 
+export const RealtimeRpc = Sentry.withSentry(sentryOptions, RealtimeRpcEntrypoint);
+
 const notFound = () =>
   Response.json({ error: { code: 'not_found', message: 'Route not found' } }, { status: 404 });
 
@@ -70,15 +84,17 @@ const isJoin = (req: Request, lobby: Lobby<Env>) =>
   req.method === 'GET' &&
   new URL(req.url).pathname.endsWith('/main/join');
 
-export default {
+export default Sentry.withSentry(sentryOptions, {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
 
     // Shard list, populations and totals for uptime checks (clients get totals pushed instead).
     if (pathname === '/health') {
-      return Response.json(await (await coordinator(env)).health(), {
-        headers: { 'cache-control': 'no-store' },
-      });
+      const health = await (await coordinator(env)).health();
+      return Response.json(
+        { ...health, release: env.RELEASE ?? 'dev', environment: env.ENVIRONMENT },
+        { headers: { 'cache-control': 'no-store' } },
+      );
     }
 
     // Local proof that realtime → web RPC works through the dev registry. Hidden outside development.
@@ -97,4 +113,4 @@ export default {
     });
     return routed ?? notFound();
   },
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<Env>);

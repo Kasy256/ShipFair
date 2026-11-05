@@ -6,6 +6,7 @@ import {
   RENDER_SCALE_MIN,
 } from '@shipfair/shared';
 import type { ChangeEvent } from 'react';
+import { browserOptsOut, browserSignals } from '../lib/analytics.ts';
 import { useSettingsStore } from '../state/settings-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
 import { Sheet } from './Sheet.tsx';
@@ -20,8 +21,9 @@ const percent = (value: number) => `${Math.round(value * 100)}%`;
 const numberFrom = (e: ChangeEvent<HTMLInputElement>) => Number(e.currentTarget.value);
 
 /**
- * Settings (prompt 14): quality, render scale, field of view, sound volume and reduced motion.
- * Every change applies at once and is saved in this browser.
+ * Settings (prompt 14): quality, render scale, field of view, sound volume and reduced motion,
+ * plus the analytics choice (prompt 15). Every change applies at once and is saved in this
+ * browser. Reset leaves the privacy choice alone.
  */
 export function SettingsSheet() {
   const isOpen = useUiStore((s) => s.isSettingsOpen);
@@ -142,6 +144,53 @@ export function SettingsSheet() {
           </span>
         </span>
       </label>
+
+      <fieldset className="mt-6">
+        <legend className="font-semibold">Privacy</legend>
+        {browserOptsOut(browserSignals()) ? (
+          <p className="mt-2 text-muted text-sm" data-testid="analytics-dnt">
+            Your browser asks sites not to track you, so we don't send any usage stats.
+          </p>
+        ) : (
+          <>
+            <label className="mt-2 flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={settings.analytics === 'off'}
+                onChange={(e) =>
+                  update({ analytics: e.currentTarget.checked ? 'off' : 'anonymous' })
+                }
+                className="h-4 w-4 accent-accent"
+              />
+              <span>
+                <span className="block font-semibold">Don't track me</span>
+                <span className="block text-muted text-sm">
+                  No usage stats at all. Otherwise we count visits and booth opens anonymously,
+                  never chat or what you type.
+                </span>
+              </span>
+            </label>
+            <label className="mt-3 flex cursor-pointer items-center gap-3 has-[:disabled]:opacity-50">
+              <input
+                type="checkbox"
+                checked={settings.analytics === 'remember'}
+                disabled={settings.analytics === 'off'}
+                onChange={(e) =>
+                  update({ analytics: e.currentTarget.checked ? 'remember' : 'anonymous' })
+                }
+                className="h-4 w-4 accent-accent"
+              />
+              <span>
+                <span className="block font-semibold">Remember this browser</span>
+                <span className="block text-muted text-sm">
+                  Keeps an anonymous id in a cookie so we can count returning visitors. Off means a
+                  new id every visit, kept in memory only.
+                </span>
+              </span>
+            </label>
+          </>
+        )}
+      </fieldset>
 
       <button
         type="button"

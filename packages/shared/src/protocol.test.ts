@@ -245,6 +245,7 @@ describe('encodeSnap', () => {
     i % 8,
   ];
 
+  // 3 × 70,000 entries through both encoders: ~5 s on a busy CI runner, so not the 5 s default.
   it('is byte-identical to encodeServer for 0, 1, 15, 16, 60 and 70,000 entries', () => {
     for (const n of [0, 1, 15, 16, 60, 70_000]) {
       for (const t of [0, 1234, 1_793_000_000_000]) {
@@ -255,7 +256,7 @@ describe('encodeSnap', () => {
         );
       }
     }
-  });
+  }, 20_000);
 
   it('decodes back to the same snap', () => {
     const s = [entry(1), entry(2)];

@@ -18,6 +18,10 @@ export interface Env {
   WorldShard: DurableObjectNamespace<import('./world-shard.ts').WorldShard>;
   WEB: Fetcher & WebRpc;
   ENVIRONMENT: 'development' | 'staging' | 'production';
+  /** Git sha of the deploy (`wrangler deploy --var RELEASE:<sha>`); unset locally. Tags Sentry events. */
+  RELEASE?: string;
+  /** Sentry DSN for this Worker (a var; DSNs are public). Unset: Sentry stays off. */
+  SENTRY_DSN?: string;
   // Validated with `RealtimeEnv` (config.ts); kept loose here so a bad value is a clear error.
   SUPABASE_JWKS_URL?: string;
   STATS_INGEST_SECRET?: string;

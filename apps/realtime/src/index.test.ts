@@ -5,7 +5,12 @@ describe('realtime Worker', () => {
   it('GET /health answers the coordinator health shape', async () => {
     const res = await exports.default.fetch('https://rt.test/health');
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ ok: true, shards: expect.any(Array) });
+    expect(await res.json()).toMatchObject({
+      ok: true,
+      shards: expect.any(Array),
+      release: 'dev',
+      environment: 'development',
+    });
   });
 
   it('unknown paths return the error shape', async () => {

@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@sentry/cloudflare": "11.9.0",
     "@shipfair/shared": "workspace:*",
     "jose": "6.2.13",
     "partyserver": "0.5.10"

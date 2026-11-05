@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../env.ts';
+import { AdminMediaKey } from '../routes.ts';
 import {
   type AdminContext,
   approveBooth,
@@ -19,8 +20,6 @@ import { adminFlags, moderationLog, searchUsers, userDetail } from './users.ts';
 // their staff role with the service role before any handler runs; there is no other way in.
 
 export const admin = new Hono<{ Bindings: Env; Variables: { staff: Staff } }>();
-
-const MEDIA_KEY = /^u\/[0-9a-f-]{36}\/[0-9a-f]{64}\.webp$/;
 
 admin.use('/api/admin/*', async (c, next) => {
   c.set('staff', await requireStaff(c.env, c.req.header('authorization')));
@@ -53,7 +52,7 @@ admin.get('/api/admin/flags', async (c) => c.json(await adminFlags(c.env)));
 /** Unreviewed media lives under the private `pending/` prefix; staff see it through here. */
 admin.get('/api/admin/media/*', async (c) => {
   const key = c.req.path.slice('/api/admin/media/'.length);
-  if (!MEDIA_KEY.test(key)) return c.notFound();
+  if (!AdminMediaKey.safeParse(key).success) return c.notFound();
   const object = (await c.env.MEDIA.get(`pending/${key}`)) ?? (await c.env.MEDIA.get(key));
   if (!object) return c.notFound();
   return c.body(object.body, 200, {

@@ -14,5 +14,7 @@ declare global {
     __shipfairAuth?: {
       signInWithPassword(email: string, password: string): Promise<string | null>;
     };
+    /** 'loaded' once the lazy Sentry client started (prompt 15). */
+    __shipfairSentry?: 'loaded';
   }
 }

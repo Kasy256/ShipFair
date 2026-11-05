@@ -1,0 +1,112 @@
+name: Deploy staging
+
+# Every push to Development (INFRASTRUCTURE.md §5): migrate → realtime → web → @smoke against
+# staging. Values come from the GitHub Environment "staging" (docs/RELEASING.md lists them).
+
+on:
+  push:
+    branches: [Development]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WRANGLER_SEND_METRICS: "false"
+  TURBO_TELEMETRY_DISABLED: "1"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: staging
+      url: https://staging.shipfair.xyz
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+      SENTRY_DSN_WORKERS: ${{ vars.SENTRY_DSN_WORKERS }}
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+      VITE_REALTIME_HOST: ${{ vars.REALTIME_HOST }}
+      VITE_MEDIA_HOST: ${{ vars.MEDIA_HOST }}
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+      VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN_BROWSER }}
+      VITE_POSTHOG_KEY: ${{ vars.POSTHOG_KEY }}
+      VITE_POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Assets build
+        run: pnpm assets:build --ci
+
+      - name: Deploy
+        uses: ./.github/actions/deploy
+        with:
+          environment: staging
+          release: ${{ github.sha }}
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          supabase-access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          supabase-db-password: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @shipfair/e2e exec playwright install --with-deps chromium
+
+      # The Workers answer on the new release before the smoke run starts.
+      - name: Wait for the new release
+        run: |
+          for url in https://staging.shipfair.xyz/api/health "https://$VITE_REALTIME_HOST/health"; do
+            if ! timeout 120 bash -c "until curl -sf $url | grep -q '\"release\":\"$GITHUB_SHA\"'; do sleep 3; done"; then
+              echo "$url is not on $GITHUB_SHA"; curl -s "$url"; exit 1
+            fi
+          done
+
+      - name: Smoke (@smoke) against staging
+        env:
+          CI: "1"
+          E2E_BASE_URL: https://staging.shipfair.xyz
+          E2E_REALTIME_URL: https://${{ vars.REALTIME_HOST }}
+          E2E_EXPECT_RELEASE: ${{ github.sha }}
+        run: pnpm --filter @shipfair/e2e exec playwright test --grep @smoke --project=chromium --project=mobile
+
+      - name: Smoke report
+        if: always()
+        run: node e2e/scripts/e2e-report.ts summary e2e/reports/results.json "Staging @smoke" || true
+
+      - name: Sentry deploy marker
+        if: success() && env.SENTRY_ORG != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          npx --yes @sentry/cli@3.8.2 releases finalize "$GITHUB_SHA"
+          npx --yes @sentry/cli@3.8.2 deploys new --release "$GITHUB_SHA" -e staging
+
+      - name: Upload smoke artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-smoke
+          path: |
+            e2e/artifacts
+            e2e/reports
+          retention-days: 7
