@@ -30,6 +30,7 @@ const TOUCH: readonly (readonly [string, string])[] = [
 /**
  * A non-modal card of controls: it doesn't take focus or pause the world. It opens on entering,
  * hides after 10 s, and toggles with `?` or the Help button. The reduced-motion switch lives here.
+ * On touch screens it stops above the joystick (scrolling if it must), so the left thumb works.
  */
 export function ControlsHelp() {
   const isOpen = useUiStore((s) => s.isHelpOpen);
@@ -50,7 +51,7 @@ export function ControlsHelp() {
       id="controls-help"
       aria-labelledby="controls-help-title"
       data-testid="controls-help"
-      className="absolute top-[calc(var(--hud-nav-bottom,6.25rem)+0.5rem)] left-(--safe-left) z-10 w-[min(20rem,calc(100vw-1.5rem))] rounded-xl bg-ink/85 p-4 text-sm shadow-lg backdrop-blur sm:top-auto sm:bottom-(--safe-bottom) sm:pointer-coarse:top-[calc(var(--hud-nav-bottom,6.25rem)+0.5rem)] sm:pointer-coarse:bottom-auto"
+      className="absolute top-[calc(var(--hud-nav-bottom,6.25rem)+0.5rem)] left-(--safe-left) z-10 w-[min(20rem,calc(100vw-1.5rem))] rounded-xl bg-ink/85 p-4 text-sm shadow-lg backdrop-blur sm:top-auto sm:bottom-(--safe-bottom) sm:pointer-coarse:top-[calc(var(--hud-nav-bottom,6.25rem)+0.5rem)] sm:pointer-coarse:bottom-auto pointer-coarse:max-h-[calc(100dvh-var(--hud-nav-bottom,6.25rem)-10.5rem)] pointer-coarse:overflow-y-auto"
     >
       <div className="mb-2 flex items-center justify-between">
         <h2 id="controls-help-title" className="font-bold">
