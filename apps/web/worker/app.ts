@@ -12,6 +12,7 @@ import { claimStamps, mergeGuestPassport } from './passport.ts';
 import { profilePage } from './profile-page.ts';
 import { rateLimit } from './rate-limits.ts';
 import { securityHeaders } from './security-headers.ts';
+import { reportError } from './sentry.ts';
 import { serviceDb } from './service.ts';
 import { sharePage } from './share.ts';
 import { checkBoothUrl, type SubmitContext, submitBooth, submitRevision } from './submissions.ts';
@@ -138,12 +139,18 @@ app.notFound((c) => c.json({ error: { code: 'not_found', message: 'Route not fou
 // The one place errors become `{ error: { code, message } }` (CODING_STANDARDS.md §3).
 app.onError((error, c) => {
   if (error instanceof AppError) {
-    if (error.status >= 500) console.error(`${error.code}: ${error.message}`, error.cause);
+    if (error.status >= 500) {
+      console.error(`${error.code}: ${error.message}`, error.cause);
+      // 503s are an upstream (Supabase) being down: the uptime check on /api/health covers
+      // them, and one outage at peak traffic would use up the month's Sentry quota.
+      if (error.status !== 503) reportError(error);
+    }
     return c.json({ error: { code: error.code, message: error.message } }, error.status);
   }
   if (error instanceof HTTPException && error.status < 500) {
     return c.json({ error: { code: 'bad_request', message: error.message } }, error.status);
   }
   console.error('Unhandled error', error);
+  reportError(error);
   return c.json({ error: { code: 'internal', message: 'Something went wrong on our side' } }, 500);
 });

@@ -1,3 +1,4 @@
+import { createExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import wrangler from '../wrangler.jsonc?raw';
@@ -47,7 +48,7 @@ describe('R2 media cleanup', () => {
 
   it('runs hourly from the scheduled handler, and does nothing on an empty queue', async () => {
     const controller = { scheduledTime: Date.now(), cron: CRONS.mediaCleanup, noRetry() {} };
-    await worker.scheduled(controller, env as Env);
+    await worker.scheduled(controller, env as Env, createExecutionContext());
     expect(await cleanupMedia(env as Env)).toEqual({ deleted: 0, batches: 0 });
   });
 });
@@ -77,7 +78,7 @@ describe('daily jobs', () => {
       },
     });
     const controller = { scheduledTime: Date.now(), cron: CRONS.daily, noRetry() {} };
-    const run = worker.scheduled(controller, env as Env);
+    const run = worker.scheduled(controller, env as Env, createExecutionContext());
     await expect(run).rejects.toBeInstanceOf(StatsSanityError);
     await expect(run).rejects.toThrow(
       'no visit stats for 2026-11-04 after a day with visits; 2 rows with more unique visitors than visits',

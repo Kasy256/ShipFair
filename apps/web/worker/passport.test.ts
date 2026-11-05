@@ -1,3 +1,4 @@
+import { createExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Env } from './env.ts';
@@ -147,7 +148,7 @@ describe('nightly cron', () => {
   it('runs from the scheduled handler', async () => {
     await seed({ tier_changes: [{ booth_id: BOOTH, old_tier: 'booth', new_tier: 'pavilion' }] });
     const controller = { scheduledTime: Date.now(), cron: '0 3 * * *', noRetry() {} };
-    await worker.scheduled(controller, env as Env);
+    await worker.scheduled(controller, env as Env, createExecutionContext());
     expect(await realtimeCalls()).toEqual([['worldUpdate', [BOOTH]]]);
   });
 });

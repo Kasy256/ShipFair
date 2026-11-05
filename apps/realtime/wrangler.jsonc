@@ -4,6 +4,10 @@
   "main": "./src/index.ts",
   // Held back for @cloudflare/vitest-pool-workers 0.23 (TECH_STACK.md "Known version constraints").
   "compatibility_date": "2026-08-15",
+  // AsyncLocalStorage for @sentry/cloudflare (per-request scopes). Nothing else from Node.
+  "compatibility_flags": ["nodejs_als"],
+  // Workers Logs: console output (JSON lines from crons and shards) kept and searchable.
+  "observability": { "enabled": true },
   // STATS_INGEST_SECRET is a secret: `.dev.vars` locally (`pnpm db:dev-vars` writes the same value
   // for web), `wrangler secret put STATS_INGEST_SECRET --env <env>` in staging and production.
   // MAX_PLAYERS_PER_SHARD, AOI_RADIUS_M and CHAT_RADIUS_M may be set for load tests only.

@@ -15,5 +15,11 @@ declare global {
     __shipfairAuth?: {
       signInWithPassword(email: string, password: string): Promise<string | null>;
     };
+    /** Errors caught by index.html's inline handler before Sentry loaded (at most 20). */
+    __sfBootErrors?: unknown[];
+    /** Removes that inline handler once Sentry has its own. */
+    __sfBootErrorsOff?: () => void;
+    /** Non-production builds: whether Sentry has loaded (e2e checks the lazy load). */
+    __shipfairSentry?: 'loaded';
   }
 }

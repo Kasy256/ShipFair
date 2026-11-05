@@ -2,6 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Boot errors wait here until Sentry loads (src/lib/error-reporting.ts). Allowed by its hash in
+         the CSP (worker/security-headers.ts BOOT_SCRIPT_SHA256); change both together. -->
+    <script>((w) => { const q = []; w.__sfBootErrors = q; const k = (e) => { if (q.length < 20) q.push(e); }; const o = (e) => k(e.error || new Error(String(e.message))); const r = (e) => k(e.reason); w.addEventListener("error", o); w.addEventListener("unhandledrejection", r); w.__sfBootErrorsOff = () => { w.removeEventListener("error", o); w.removeEventListener("unhandledrejection", r); }; })(window);</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0b1020" />
     <title>%APP_NAME%</title>

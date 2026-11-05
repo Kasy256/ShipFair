@@ -20,6 +20,8 @@ export * from './rate-limit.ts';
 export * from './result.ts';
 export * from './rng.ts';
 export * from './schemas/index.ts';
+export * from './scrub.ts';
+export * from './sentry-options.ts';
 export * from './text.ts';
 export * from './url.ts';
 export * from './webp.ts';

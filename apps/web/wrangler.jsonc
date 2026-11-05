@@ -4,6 +4,10 @@
   "main": "./worker/index.ts",
   // Held back for @cloudflare/vitest-pool-workers 0.23 (TECH_STACK.md "Known version constraints").
   "compatibility_date": "2026-08-15",
+  // AsyncLocalStorage for @sentry/cloudflare (per-request scopes). Nothing else from Node.
+  "compatibility_flags": ["nodejs_als"],
+  // Workers Logs: console output (JSON lines from crons and shards) kept and searchable.
+  "observability": { "enabled": true },
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
