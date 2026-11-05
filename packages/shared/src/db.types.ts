@@ -826,8 +826,17 @@ export type Database = {
         Args: { logo_key: string; media: Json; owner: string };
         Returns: boolean;
       };
+      booth_stats_sanity: { Args: { check_day?: string }; Returns: Json };
       censor_profanity: { Args: { input: string }; Returns: string };
       delete_account: { Args: { uid: string }; Returns: number };
+      due_media_deletes: {
+        Args: { max_rows?: number };
+        Returns: {
+          id: number;
+          key: string;
+        }[];
+      };
+      finish_media_deletes: { Args: { ids: number[] }; Returns: number };
       handle_available: { Args: { candidate: string }; Returns: boolean };
       has_profanity: { Args: { input: string }; Returns: boolean };
       hook_before_user_created: { Args: { event: Json }; Returns: Json };
@@ -841,6 +850,7 @@ export type Database = {
       };
       passport_earned: { Args: { uid: string }; Returns: string[] };
       prune_passport_evidence: { Args: Record<PropertyKey, never>; Returns: number };
+      purge_report_context: { Args: { keep_days?: number }; Returns: number };
       realtime_player: { Args: { uid: string; with_profile?: boolean }; Returns: Json };
       recompute_booth_tiers: {
         Args: Record<PropertyKey, never>;

@@ -1,9 +1,9 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import type { FeatureFlags, PlayerRecord, WorldSnapshot } from '@shipfair/shared';
 import { app } from './app.ts';
+import { runScheduled } from './cron.ts';
 import type { Env } from './env.ts';
 import { readFlags } from './flags.ts';
-import { runNightly } from './passport.ts';
 import { getPlayer, type IngestResult, ingestStats, worldForRealtime } from './realtime-rpc.ts';
 import { bumpWorldVersion } from './world.ts';
 
@@ -43,12 +43,12 @@ export class WebRpc extends WorkerEntrypoint<Env> {
 }
 
 // Only /api/*, /b/* and /u/* reach the Worker (`run_worker_first`). Everything else is served
-// from static assets, and unknown paths fall back to index.html. `scheduled` is the nightly tier
-// job (wrangler.jsonc `triggers.crons`, 03:00 UTC).
+// from static assets, and unknown paths fall back to index.html. `scheduled` runs the job for
+// each Cron Trigger (cron.ts, wrangler.jsonc `triggers.crons`).
 export default {
   fetch: app.fetch,
   // Awaited, so a failure marks the cron run as failed in the dashboard.
-  async scheduled(_controller, env) {
-    await runNightly(env);
+  async scheduled(controller, env) {
+    await runScheduled(controller.cron, env);
   },
 } satisfies ExportedHandler<Env>;

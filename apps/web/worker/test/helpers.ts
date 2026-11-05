@@ -28,7 +28,7 @@ export const resetStub = async () => {
   await realtimeCalls();
   return stub('/__mode', { method: 'POST', body: 'ok' });
 };
-export const seed = (tables: Record<string, unknown[]>) =>
+export const seed = (tables: Record<string, unknown>) =>
   stub('/__seed', { method: 'POST', body: JSON.stringify(tables) });
 export const table = async <T = Record<string, unknown>>(name: string) =>
   (await (await stub(`/__table/${name}`)).json()) as T[];

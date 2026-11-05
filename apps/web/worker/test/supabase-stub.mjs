@@ -107,6 +107,19 @@ const defaultStore = () => ({
   evidence: [],
   tier_changes: [],
   try_clicks: [],
+  // Scheduled jobs (prompt 15). `media_queue`: {id, key, due}; `report_contexts`: how many
+  // reports purge_report_context clears; `stats_sanity`: what booth_stats_sanity returns.
+  media_queue: [],
+  report_contexts: 0,
+  stats_sanity: {
+    day: '2026-11-04',
+    rows: 3,
+    visits: 12,
+    tryClicks: 2,
+    uniqueOverVisits: 0,
+    futureRows: 0,
+    gap: false,
+  },
 });
 
 // Stand-ins for award_stamps and merge_guest_passport (…_passport_and_tiers.sql).
@@ -349,6 +362,23 @@ export default {
         return Response.json(changes);
       }
       if (rpc && name === 'prune_passport_evidence') return Response.json(0);
+      if (rpc && name === 'due_media_deletes') {
+        const { max_rows } = await request.json();
+        const due = store.media_queue.filter((r) => r.due).slice(0, max_rows);
+        return Response.json(due.map(({ id, key }) => ({ id, key })));
+      }
+      if (rpc && name === 'finish_media_deletes') {
+        const { ids } = await request.json();
+        const before = store.media_queue.length;
+        store.media_queue = store.media_queue.filter((r) => !(r.due && ids.includes(r.id)));
+        return Response.json(before - store.media_queue.length);
+      }
+      if (rpc && name === 'purge_report_context') {
+        const cleared = store.report_contexts;
+        store.report_contexts = 0;
+        return Response.json(cleared);
+      }
+      if (rpc && name === 'booth_stats_sanity') return Response.json(store.stats_sanity);
       if (rpc && name === 'record_try_click') {
         const { booth } = await request.json();
         store.try_clicks.push(booth);
