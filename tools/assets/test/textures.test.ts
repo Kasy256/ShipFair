@@ -1,9 +1,15 @@
-import { Document, ImageUtils } from '@gltf-transform/core';
+import { Document } from '@gltf-transform/core';
 import { describe, expect, it } from 'vitest';
 import { encodePng } from '../lib/png.ts';
 import { findToktx, needsKtx2, processTextures, TEXTURE_MAX_PX } from '../lib/textures.ts';
 
 const PALETTE = 'M_Palette';
+
+/** Width and height from a KTX2 header (pixelWidth and pixelHeight, little-endian u32 at 20, 24). */
+function ktx2Size(bytes: Uint8Array): [number, number] {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return [view.getUint32(20, true), view.getUint32(24, true)];
+}
 
 /** A document with one material using a `size`² PNG as its base colour. */
 function texturedDoc(material: string, size: number): Document {
@@ -41,7 +47,7 @@ describe('KTX2 textures (prompt 14)', () => {
       expect(texture?.getMimeType()).toBe('image/ktx2');
       expect(texture?.getURI()).toBe('albedo.ktx2');
       const image = texture?.getImage();
-      const [w = 0, h = 0] = (image && ImageUtils.getSize(image, 'image/ktx2')) ?? [];
+      const [w, h] = image ? ktx2Size(image) : [0, 0];
       expect(Math.max(w, h)).toBe(maxPx);
     }
   });
