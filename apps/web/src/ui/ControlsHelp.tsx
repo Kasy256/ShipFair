@@ -23,7 +23,7 @@ const TOUCH: readonly (readonly [string, string])[] = [
   ['Look', 'Drag with your right thumb'],
   ['Jump', 'Jump button'],
   ['Visit a booth', 'Tap the prompt or the Use button'],
-  ['Emotes', 'Hold the Use button'],
+  ['Emotes', 'The Emote button'],
   ['Map and search', 'Map button'],
 ];
 
@@ -50,7 +50,7 @@ export function ControlsHelp() {
       id="controls-help"
       aria-labelledby="controls-help-title"
       data-testid="controls-help"
-      className="absolute top-[calc(var(--safe-top)+6.25rem)] left-(--safe-left) z-10 w-[min(20rem,calc(100vw-1.5rem))] rounded-xl bg-ink/85 p-4 text-sm shadow-lg backdrop-blur sm:top-auto sm:bottom-(--safe-bottom)"
+      className="absolute top-[calc(var(--hud-nav-bottom,6.25rem)+0.5rem)] left-(--safe-left) z-10 w-[min(20rem,calc(100vw-1.5rem))] rounded-xl bg-ink/85 p-4 text-sm shadow-lg backdrop-blur sm:top-auto sm:bottom-(--safe-bottom) sm:pointer-coarse:top-[calc(var(--hud-nav-bottom,6.25rem)+0.5rem)] sm:pointer-coarse:bottom-auto"
     >
       <div className="mb-2 flex items-center justify-between">
         <h2 id="controls-help-title" className="font-bold">
