@@ -24,6 +24,16 @@ describe('settings store', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it('reset restores display settings but keeps the analytics choice', () => {
+    useSettingsStore.getState().update({ quality: 'low', analytics: 'off' });
+    useSettingsStore.getState().reset();
+    expect(useSettingsStore.getState().settings).toEqual({
+      ...DEFAULT_PLAYER_SETTINGS,
+      analytics: 'off',
+    });
+    useSettingsStore.getState().update({ analytics: 'anonymous' });
+  });
+
   it('saves changes and loads them back', () => {
     useSettingsStore.getState().update({ quality: 'low', fovDeg: 72 });
     expect(useSettingsStore.getState().settings).toMatchObject({ quality: 'low', fovDeg: 72 });

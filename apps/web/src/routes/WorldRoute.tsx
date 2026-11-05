@@ -1,6 +1,6 @@
 import type { Engine } from '@shipfair/engine';
 import { useEffect, useRef, useState } from 'react';
-import { track } from '../lib/analytics.ts';
+import { setAnalyticsContext, track } from '../lib/analytics.ts';
 import { worldBooted } from '../lib/boot.ts';
 import { loadEngineModule } from '../lib/engine-loader.ts';
 import { WorldLoadError } from '../lib/world-source.ts';
@@ -37,6 +37,9 @@ import { Toasts } from '../ui/Toasts.tsx';
 import { TouchControls } from '../ui/TouchControls.tsx';
 import { UpdateBanner } from '../ui/UpdateBanner.tsx';
 import { WorldCanvas } from '../ui/WorldCanvas.tsx';
+
+/** Seconds after entering the city when the one `perf_sample` event is taken. */
+const PERF_SAMPLE_S = 60;
 
 const DEV_HINT =
   import.meta.env.MODE !== 'production'
@@ -111,11 +114,28 @@ export function WorldRoute() {
     if (!engine || stage !== 'ready' || hasTracked.current) return;
     hasTracked.current = true;
     const loadMs = Math.round(performance.now() - startedAt.current);
+    setAnalyticsContext({ tier: engine.quality });
     track({
       name: 'world_loaded',
       props: { loadMs, tier: engine.quality, booths: boothCount ?? 0 },
     });
   }, [engine, stage, boothCount]);
+
+  // One fps sample a minute after entering, for "average fps by tier" (docs/ANALYTICS.md). The
+  // adaptive controller's 3-second average; a hidden tab pauses the loop, so it may be 0.
+  useEffect(() => {
+    if (!engine || !hasEntered) return;
+    const timer = setTimeout(() => {
+      const fps = engine.runtime?.perf.adaptive.fps ?? 0;
+      if (fps > 0) {
+        track({
+          name: 'perf_sample',
+          props: { fps: Math.round(fps), tier: engine.quality, seconds: PERF_SAMPLE_S },
+        });
+      }
+    }, PERF_SAMPLE_S * 1000);
+    return () => clearTimeout(timer);
+  }, [engine, hasEntered]);
 
   const enter = () => {
     engine?.unlockAudio().catch((error: unknown) => console.warn('Audio unlock failed', error));

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router';
 import { loadSupabase } from '../lib/supabase.ts';
+import { useAnalytics } from '../state/use-analytics.ts';
 import { useAuthSync } from '../state/use-auth-sync.ts';
 import { OnboardingSheet } from '../ui/auth/OnboardingSheet.tsx';
 import { SignInSheet } from '../ui/auth/SignInSheet.tsx';
@@ -23,9 +24,13 @@ function installTestAuth(): () => void {
   };
 }
 
-/** Every route: keeps the session in step with Supabase and hosts sign-in and onboarding. */
+/**
+ * Every route: keeps the session in step with Supabase, applies the analytics choice, and hosts
+ * sign-in and onboarding.
+ */
 export function RootLayout() {
   useAuthSync();
+  useAnalytics();
   useEffect(() => (import.meta.env.MODE !== 'production' ? installTestAuth() : undefined), []);
   return (
     <>

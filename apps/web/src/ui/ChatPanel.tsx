@@ -1,6 +1,7 @@
 import { CHAT_MAX_CHARS } from '@shipfair/shared';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
+import { track } from '../lib/analytics.ts';
 import { isCoarsePointer } from '../lib/device.ts';
 import { useChatStore } from '../state/chat-store.ts';
 import { engineBus } from '../state/engine-bus.ts';
@@ -60,7 +61,11 @@ export function ChatPanel() {
   const send = (e: FormEvent) => {
     e.preventDefault();
     const message = text.trim();
-    if (message !== '') engineBus.emit('chat:send', { text: message });
+    if (message !== '') {
+      engineBus.emit('chat:send', { text: message });
+      // The length only: chat text never goes to analytics.
+      track({ name: 'chat_sent', props: { length: message.length } });
+    }
     close();
   };
 
