@@ -21,5 +21,7 @@ declare global {
     __sfBootErrorsOff?: () => void;
     /** Non-production builds: whether Sentry has loaded (e2e checks the lazy load). */
     __shipfairSentry?: 'loaded';
+    /** Non-production builds: the PostHog client once loaded (e2e checks its config). */
+    __shipfairPosthog?: import('posthog-js/dist/module.no-external').PostHog;
   }
 }

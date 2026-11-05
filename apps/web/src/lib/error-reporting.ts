@@ -1,9 +1,13 @@
+import { isTelemetryE2e } from './analytics.ts';
+
 // Browser error reporting (prompt 15). The Sentry client (sentry-client.ts) isn't in the first
 // load: it is imported after the first interaction (or after IDLE_LOAD_MS without one). Errors
 // from before that are queued by the inline script in index.html and sent once it has loaded.
 // Release = the git sha the build was made from (VITE_RELEASE, set by CI).
 
 const INTERACTIONS = ['pointerdown', 'keydown', 'touchstart'] as const;
+/** `?telemetry=e2e` (non-production): a DSN whose ingest host the e2e spec intercepts. */
+export const E2E_SENTRY_DSN = 'https://e2e@o1.ingest.de.sentry.io/1';
 /** A visitor who never interacts (a broken boot, say) still reports, a little later. */
 export const IDLE_LOAD_MS = 15_000;
 
@@ -18,7 +22,7 @@ export interface ErrorReportingConfig {
 
 export function readConfig(): ErrorReportingConfig {
   return {
-    dsn: import.meta.env.VITE_SENTRY_DSN || undefined,
+    dsn: import.meta.env.VITE_SENTRY_DSN || (isTelemetryE2e() ? E2E_SENTRY_DSN : undefined),
     release: import.meta.env.VITE_RELEASE || undefined,
     environment: import.meta.env.MODE,
   };

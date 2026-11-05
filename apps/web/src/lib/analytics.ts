@@ -51,9 +51,16 @@ export const IDLE_LOAD_MS = 15_000;
 const MAX_BUFFERED = 200;
 const INTERACTIONS = ['pointerdown', 'keydown', 'touchstart'] as const;
 
+/** Non-production builds only: `?telemetry=e2e` turns PostHog and Sentry on with test keys. */
+export const E2E_POSTHOG_KEY = 'phc_e2e_test_key';
+export const isTelemetryE2e = (): boolean =>
+  import.meta.env.MODE !== 'production' &&
+  typeof location !== 'undefined' &&
+  new URLSearchParams(location.search).get('telemetry') === 'e2e';
+
 export function readAnalyticsConfig(): AnalyticsConfig {
   return {
-    key: import.meta.env.VITE_POSTHOG_KEY || undefined,
+    key: import.meta.env.VITE_POSTHOG_KEY || (isTelemetryE2e() ? E2E_POSTHOG_KEY : undefined),
     host: import.meta.env.VITE_POSTHOG_HOST || DEFAULT_POSTHOG_HOST,
     release: import.meta.env.VITE_RELEASE || undefined,
     environment: import.meta.env.MODE,
@@ -170,12 +177,14 @@ async function load(): Promise<PostHog | null> {
     ({ default: posthog }) => {
       // The mode may have changed while the SDK downloaded.
       if (mode === 'off') return null;
-      posthog.init(
-        config.key ?? '',
-        posthogOptions(config, mode === 'remember' ? 'remember' : 'anonymous'),
-      );
+      posthog.init(config.key ?? '', {
+        ...posthogOptions(config, mode === 'remember' ? 'remember' : 'anonymous'),
+        // PostHog drops headless browsers as bots; e2e (`?telemetry=e2e`) is one on purpose.
+        ...(isTelemetryE2e() ? { opt_out_useragent_filter: true } : {}),
+      });
       posthog.register({ release: config.release ?? 'dev', environment: config.environment });
       client = posthog;
+      if (import.meta.env.MODE !== 'production') window.__shipfairPosthog = posthog;
       for (const { event, props } of pending.splice(0)) posthog.capture(event.name, props);
       return posthog;
     },
