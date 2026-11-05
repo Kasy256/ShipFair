@@ -115,7 +115,7 @@ export class BoothKit {
     materials: PaletteMaterials,
   ): Promise<BoothKit> {
     const kit = manifest?.boothKit;
-    const asset = await assets.load(ASSET_ID, kit?.url ?? null, fallbackKitAsset);
+    const asset = await assets.load(ASSET_ID, assets.urlOf(kit), fallbackKitAsset);
     // No manifest means no url, so the asset is the code-built fallback in both cases.
     if (!kit || asset.isPlaceholder) {
       return new BoothKit({

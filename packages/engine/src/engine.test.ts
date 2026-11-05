@@ -18,11 +18,21 @@ describe('Engine', () => {
     expect(engine.layout).toBeNull();
   });
 
-  it('accepts frame listeners and reduced motion before start', async () => {
-    const engine = new Engine({ ...options(), isReducedMotion: true });
+  it('accepts frame listeners and settings before start', async () => {
+    const engine = new Engine({ ...options(), isReducedMotion: true, fovDeg: 70 });
     const views: unknown[] = [];
     engine.onFrame((view) => views.push({ ...view }));
-    engine.setReducedMotion(false);
+    expect(engine.settings).toEqual({
+      isAutoQuality: true,
+      renderScale: 1,
+      fovDeg: 70,
+      volume: 1,
+      isReducedMotion: true,
+    });
+    engine.applySettings({ isReducedMotion: false, volume: 0.25, isAutoQuality: false });
+    expect(engine.settings).toMatchObject({ isReducedMotion: false, volume: 0.25, fovDeg: 70 });
+    expect(engine.settings.isAutoQuality).toBe(false);
+    engine.setHidden(true);
     engine.step(1 / 60, 3);
     expect(views).toEqual([]);
     // No AudioContext in Node: unlocking reports false instead of throwing.

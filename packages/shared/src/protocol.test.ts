@@ -1,6 +1,14 @@
 import { pack } from 'msgpackr';
 import { describe, expect, it } from 'vitest';
 import {
+  decodeClient,
+  decodeServer,
+  encodeClient,
+  encodeServer,
+  encodeSnap,
+  encodeSnapEntry,
+} from './codec.ts';
+import {
   AVATAR_MAX_BYTES,
   BOOTHS_PER_USER_MAX,
   MAX_CLIENT_MSG_BYTES,
@@ -9,12 +17,6 @@ import {
 } from './constants.ts';
 import {
   type ClientMessage,
-  decodeClient,
-  decodeServer,
-  encodeClient,
-  encodeServer,
-  encodeSnap,
-  encodeSnapEntry,
   fromNetPos,
   fromNetYaw,
   isProtocolSupported,

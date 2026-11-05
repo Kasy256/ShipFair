@@ -1,7 +1,6 @@
 import {
   type AvatarStyleV2,
   type ClientMessage,
-  encodeClient,
   layoutCity,
   PROTOCOL_VERSION,
   randomAvatarStyle,
@@ -9,6 +8,7 @@ import {
   toNetPos,
   toNetYaw,
 } from '@shipfair/shared';
+import { encodeClient } from '@shipfair/shared/codec';
 import { fakeWorld } from '@shipfair/shared/fake-world';
 import { unpack } from 'msgpackr';
 import { PartySocket } from 'partysocket';

@@ -37,7 +37,7 @@ export class AnimationSet {
     manifest: GeneratedAssetManifest | null,
   ): Promise<AnimationSet> {
     const empty = (): LoadedAsset => ({ scene: new Group(), animations: [], isPlaceholder: true });
-    const asset = await assets.load(ASSET_ID, manifest?.animations.url ?? null, empty);
+    const asset = await assets.load(ASSET_ID, assets.urlOf(manifest?.animations), empty);
     return new AnimationSet(asset.animations, manifest, () => assets.release(ASSET_ID));
   }
 

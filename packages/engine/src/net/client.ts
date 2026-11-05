@@ -3,9 +3,7 @@ import {
   CHAT_MAX_CHARS,
   CLIENT_SEND_HZ,
   type ClientMessage,
-  decodeServer,
   type EventBus,
-  encodeClient,
   fromNetPos,
   fromNetYaw,
   IDLE_HEARTBEAT_HZ,
@@ -28,6 +26,7 @@ import {
 import type { ClockSync } from '../core/clock-sync.ts';
 import type { System } from '../core/loop.ts';
 import { shortestArc } from '../core/snapshot-buffer.ts';
+import { loadCodec, loadedCodec } from './codec.ts';
 import { joinShard, openSocket, type SocketLike, TERMINAL_CLOSES } from './socket.ts';
 
 // The realtime client (ARCHITECTURE.md §7). Asks the coordinator for a shard, connects with
@@ -261,7 +260,8 @@ export class NetClient implements System {
     if (!options) return;
     let shard: string;
     try {
-      shard = await this.#join(options.host, isLocalHost(options.host), options.shard ?? null);
+      const join = this.#join(options.host, isLocalHost(options.host), options.shard ?? null);
+      [shard] = await Promise.all([join, loadCodec()]);
     } catch (error) {
       if (session !== this.#session) return;
       console.warn(`Realtime join failed; exploring solo, retrying in ${this.#retryS} s`, error);
@@ -341,7 +341,9 @@ export class NetClient implements System {
   }
 
   #receive(data: ArrayBuffer): void {
-    const decoded = decodeServer(data);
+    const codec = loadedCodec();
+    if (!codec) return; // never: the socket opens after the codec has loaded
+    const decoded = codec.decodeServer(data);
     if (!decoded.ok) {
       this.stats.invalid++;
       console.warn('Realtime: dropped a server frame', decoded.error);
@@ -464,8 +466,9 @@ export class NetClient implements System {
 
   #send(msg: ClientMessage): void {
     const socket = this.#socket;
-    if (!socket?.isOpen) return;
-    socket.send(encodeClient(msg));
+    const codec = loadedCodec();
+    if (!socket?.isOpen || !codec) return;
+    socket.send(codec.encodeClient(msg));
     this.stats.sent++;
   }
 

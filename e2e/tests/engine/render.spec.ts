@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { loadBudgets } from '../perf/budgets.ts';
 import { boot, DT, report } from './helpers.ts';
 
 /** The bits of three.js the dispose baseline uses (e2e has no three typings). */
@@ -29,10 +30,9 @@ for (const tier of ['high', 'low'] as const) {
     }, DT);
     report('drawCalls', counts.calls);
     report('triangles', counts.triangles);
-    const budget =
-      tier === 'high' ? { calls: 400, tris: 1_500_000 } : { calls: 150, tris: 400_000 };
-    expect(counts.calls).toBeLessThanOrEqual(budget.calls);
-    expect(counts.triangles).toBeLessThanOrEqual(budget.tris);
+    const budget = loadBudgets().tiers[tier];
+    expect(counts.calls).toBeLessThanOrEqual(budget.drawCalls);
+    expect(counts.triangles).toBeLessThanOrEqual(budget.triangles);
   });
 }
 
@@ -88,6 +88,10 @@ test('debug overlay: ?debug=perf shows live numbers', async ({ page }) => {
   await expect(overlay).toContainText('fps', { timeout: 30_000 });
   await expect(overlay).toContainText(/draws [1-9]\d*/);
   await expect(overlay).toContainText(/geo [1-9]\d*/);
+  // Prompt 14: estimated texture memory (with its peak), JS heap and the rolling graph.
+  await expect(overlay).toContainText(/texMB \d+\.\d \(peak \d+\.\d\)/);
+  await expect(overlay).toContainText(/heapMB \d+/);
+  await expect(page.getByTestId('perf-memory-graph')).toBeVisible();
   report('overlayText', ((await overlay.textContent()) ?? '').replaceAll('\n', ' | '));
 });
 

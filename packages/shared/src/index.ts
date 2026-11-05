@@ -13,6 +13,7 @@ export {
 export * from './guest.ts';
 export * from './layout.ts';
 export * from './layout-query.ts';
+export * from './normalise.ts';
 export * from './profile-links.ts';
 export * from './protocol.ts';
 export * from './rate-limit.ts';

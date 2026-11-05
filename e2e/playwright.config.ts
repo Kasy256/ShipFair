@@ -23,7 +23,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /\.mobile\.spec\.ts$/,
+      testIgnore: [/\.mobile\.spec\.ts$/, /\.perf\.spec\.ts$/],
+      use: { ...devices['Desktop Chrome'], launchOptions: swiftshader },
+    },
+    // Prompt 14: render budgets (e2e/perf-budgets.json). Its own CI job; it needs only the web
+    // dev server (fake world, test mode), not Supabase or realtime.
+    {
+      name: 'perf',
+      testMatch: /\.perf\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'], launchOptions: swiftshader },
     },
     {

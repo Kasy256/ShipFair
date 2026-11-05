@@ -50,24 +50,43 @@ describe('tierAfterBenchmark / tierFromQuery', () => {
 });
 
 describe('settingsFor', () => {
-  const s = (): QualitySettings => ({ renderScale: 0, shadows: false, bloom: false });
+  const s = (): QualitySettings => ({
+    renderScale: 0,
+    shadows: false,
+    bloom: false,
+    nameTagDistanceM: 0,
+    streamRadiusM: 0,
+  });
+  const walk = (tier: 'high' | 'low') =>
+    Array.from({ length: maxLevel(tier) + 1 }, (_, l) => {
+      const { renderScale, shadows, bloom, nameTagDistanceM, streamRadiusM } = settingsFor(
+        tier,
+        l,
+        s(),
+      );
+      return [renderScale, shadows, bloom, nameTagDistanceM, streamRadiusM];
+    });
 
-  it('walks high down: scale 1 → 0.75 → 0.6, then shadows, then bloom', () => {
-    const steps = Array.from({ length: maxLevel('high') + 1 }, (_, l) => ({
-      ...settingsFor('high', l, s()),
-    }));
-    expect(steps).toEqual([
-      { renderScale: 1, shadows: true, bloom: true },
-      { renderScale: 0.75, shadows: true, bloom: true },
-      { renderScale: 0.6, shadows: true, bloom: true },
-      { renderScale: 0.6, shadows: false, bloom: true },
-      { renderScale: 0.6, shadows: false, bloom: false },
+  it('walks high down: scale 1 → 0.75 → 0.6, shadows, bloom, name tags, stream radius', () => {
+    expect(walk('high')).toEqual([
+      [1, true, true, 25, 35],
+      [0.75, true, true, 25, 35],
+      [0.6, true, true, 25, 35],
+      [0.6, false, true, 25, 35],
+      [0.6, false, false, 25, 35],
+      [0.6, false, false, 15, 35],
+      [0.6, false, false, 15, 20],
     ]);
   });
 
-  it('low never has shadows or bloom and stops at 0.6', () => {
-    expect(maxLevel('low')).toBe(2);
-    expect(settingsFor('low', 0, s())).toEqual({ renderScale: 1, shadows: false, bloom: false });
+  it('low never has shadows or bloom, and shortens tags then streaming after 0.6', () => {
+    expect(walk('low')).toEqual([
+      [1, false, false, 25, 35],
+      [0.75, false, false, 25, 35],
+      [0.6, false, false, 25, 35],
+      [0.6, false, false, 15, 35],
+      [0.6, false, false, 15, 20],
+    ]);
   });
 });
 
@@ -95,7 +114,38 @@ describe('AdaptiveQuality', () => {
     expect(q.settings.renderScale).toBe(0.75);
     run(q, 40, ADAPT_WINDOW_S * 10);
     expect(q.level).toBe(maxLevel('high'));
-    expect(q.settings).toEqual({ renderScale: 0.6, shadows: false, bloom: false });
+    expect(q.settings).toEqual({
+      renderScale: 0.6,
+      shadows: false,
+      bloom: false,
+      nameTagDistanceM: 15,
+      streamRadiusM: 20,
+    });
+  });
+
+  it(`needs ${ADAPT_UP_S} s at target before stepping up; one slow second restarts the count`, () => {
+    expect(ADAPT_UP_S).toBe(5);
+    const q = new AdaptiveQuality('high');
+    run(q, 40, ADAPT_WINDOW_S);
+    expect(q.level).toBe(1);
+    run(q, 60, ADAPT_UP_S - 1);
+    run(q, 50, 1); // under target × ADAPT_UP_RATIO, but the 3 s average stays above the down line
+    run(q, 60, ADAPT_UP_S - 1);
+    expect(q.level).toBe(1);
+    run(q, 60, 1);
+    expect(q.level).toBe(0);
+  });
+
+  it('only measures when not automatic (the player chose High or Low)', () => {
+    const q = new AdaptiveQuality('high');
+    q.setAuto(false);
+    run(q, 20, ADAPT_WINDOW_S * 5);
+    expect(q.fps).toBeCloseTo(20, 0);
+    expect(q.level).toBe(0);
+    expect(q.settings.shadows).toBe(true);
+    q.setAuto(true);
+    run(q, 20, ADAPT_WINDOW_S);
+    expect(q.level).toBe(1);
   });
 
   it(`steps back up after ${ADAPT_UP_S} good seconds, but never above the chosen tier`, () => {

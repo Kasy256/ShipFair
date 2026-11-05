@@ -1,9 +1,7 @@
 import {
   BOOTH_VISIT_RADIUS_M,
   type ClientMessage,
-  decodeClient,
   districtAt,
-  encodeServer,
   fromNetPos,
   guestName,
   isProtocolSupported,
@@ -20,6 +18,7 @@ import {
   withoutLockedItems,
   wornLockedItems,
 } from '@shipfair/shared';
+import { decodeClient, encodeServer } from '@shipfair/shared/codec';
 import { getServerByName } from 'partyserver';
 import { verifyAccessToken } from './auth.ts';
 import { type Config, readConfig } from './config.ts';

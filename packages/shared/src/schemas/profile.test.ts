@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DeleteAccountRequest, DeleteAccountResponse } from './api.ts';
 import { DEFAULT_AVATAR_STYLE } from './avatar.ts';
-import {
-  DisplayNameInput,
-  HandleInput,
-  OwnProfile,
-  ProfilePublic,
-  ProfileUpdate,
-} from './profile.ts';
+import { OwnProfile, ProfilePublic } from './profile.ts';
+import { DisplayNameInput, HandleInput, ProfileUpdate } from './profile-input.ts';
 
 const id = '00000000-0000-4000-8000-000000000001';
 

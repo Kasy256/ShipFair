@@ -41,8 +41,9 @@ describe('GET /b/:slug', () => {
     expect(meta(html, 'name', 'twitter:description')).toBe(tagline);
     expect(meta(html, 'name', 'twitter:image')).toBe('https://web.test/og-placeholder.png');
     expect(html).toContain('<link rel="canonical" href="https://web.test/b/example-pretend-pilot"');
-    // The SPA itself is still there.
-    expect(html).toContain('<div id="root"></div>');
+    // The SPA itself is still there, with the static loading placeholder in its root (prompt 14).
+    expect(html).toContain('<div id="root">');
+    expect(html).toContain('aria-busy="true"');
     expect(res.headers.get('content-security-policy')).toContain("object-src 'none'");
   });
 

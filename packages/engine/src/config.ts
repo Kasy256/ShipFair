@@ -1,3 +1,5 @@
+import { FOV_DEFAULT_DEG } from '@shipfair/shared';
+
 // Client-only tunables (CODING_STANDARDS.md §1). Shared ones (walk/run speeds) live in
 // @shipfair/shared constants. Units are in the names: _M metres, _S seconds, _MPS metres per
 // second, _MPS2 metres per second², _RAD radians, _HZ per second, _PX CSS pixels, _MS milliseconds.
@@ -48,7 +50,12 @@ export const WAVE_DURATION_S = 1.6;
 export const STEP_UP_SMOOTH_HZ = 18;
 
 // Camera (prompt 04 §8, prototype updateCamera)
-export const CAMERA_FOV_DEG = 62;
+/** Vertical field of view in landscape; the settings menu changes it. */
+export const CAMERA_FOV_DEG = FOV_DEFAULT_DEG;
+/** In portrait the vertical FOV widens until the horizontal one reaches this… */
+export const CAMERA_MIN_HFOV_DEG = 56;
+/** …but never past this, where the edges start to look stretched. */
+export const CAMERA_MAX_VFOV_DEG = 85;
 export const CAMERA_NEAR_M = 0.1;
 export const CAMERA_FAR_M = 2000;
 export const CAMERA_TARGET_HEIGHT_M = 1.55;
@@ -102,9 +109,15 @@ export const ADAPT_DOWN_RATIO = 0.9;
 /** … and above target × this for ADAPT_UP_S before it steps back up (never past the chosen tier). */
 export const ADAPT_UP_RATIO = 0.97;
 export const ADAPT_WINDOW_S = 3;
-export const ADAPT_UP_S = 10;
+export const ADAPT_UP_S = 5;
 export const PERF_SAMPLE_S = 1;
 export const RENDER_SCALES = [1, 0.75, 0.6] as const;
+/** The last two adaptive steps (after render scale, shadows and bloom): a shorter name tag range… */
+export const NAME_TAG_REDUCED_DISTANCE_M = 15;
+/** …then booth images stream within a smaller radius (the full one is TEXTURE_STREAM_RADIUS_M). */
+export const TEXTURE_STREAM_REDUCED_RADIUS_M = 20;
+/** A hidden tab stops rendering; the realtime client still ticks this often (heartbeats only). */
+export const BACKGROUND_TICK_S = 1;
 
 // Art assets (prompt 04b, ARCHITECTURE.md §4). The URL is shared: the avatar editor reads it too.
 export { ASSET_MANIFEST_URL } from '@shipfair/shared';

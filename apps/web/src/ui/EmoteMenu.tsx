@@ -12,8 +12,8 @@ interface EmoteMenuProps {
 }
 
 /**
- * The touch emote wheel (long-press the Use button): six buttons on a circle around where the
- * Use button is. Picking one plays it on your avatar and sends it to everyone nearby.
+ * The touch emote wheel (the Emote button): six buttons on a circle above the right-thumb
+ * controls. Picking one plays it on your avatar and sends it to everyone nearby.
  */
 export function EmoteMenu({ onClose }: EmoteMenuProps) {
   const firstRef = useRef<HTMLButtonElement>(null);
@@ -37,7 +37,7 @@ export function EmoteMenu({ onClose }: EmoteMenuProps) {
       role="menu"
       aria-label="Emotes"
       data-testid="emote-menu"
-      className="pointer-events-auto absolute right-14 bottom-36 z-30 h-0 w-0"
+      className="pointer-events-auto absolute right-[calc(var(--safe-right)+2.75rem)] bottom-[calc(var(--safe-bottom)+8.5rem)] z-30 h-0 w-0"
     >
       {EMOTES.map((label, e) => {
         // From straight up, round to the lower left: away from the right and bottom edges.

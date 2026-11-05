@@ -103,3 +103,16 @@ describe('AssetManager', () => {
     expect(disposed.count).toBe(1);
   });
 });
+
+describe('AssetManager.urlOf (prompt 14)', () => {
+  it('prefers the 512 px copy on the low tier, when the build made one', () => {
+    const assets = new AssetManager(createBus<EngineEvents>(), { load: () => Promise.reject() });
+    const textured = { url: '/assets/a.1.glb', urlLow: '/assets/a.low.2.glb' };
+    const plain = { url: '/assets/b.3.glb' };
+    expect(assets.urlOf(textured)).toBe(textured.url);
+    assets.isLowTier = true;
+    expect(assets.urlOf(textured)).toBe(textured.urlLow);
+    expect(assets.urlOf(plain)).toBe(plain.url);
+    expect(assets.urlOf(undefined)).toBeNull();
+  });
+});

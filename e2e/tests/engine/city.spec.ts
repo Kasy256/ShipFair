@@ -1,59 +1,17 @@
 import { expect, type Page, test } from '@playwright/test';
 import { fakeLateBooths } from '@shipfair/shared/fake-world';
+import { loadBudgets } from '../perf/budgets.ts';
+import { along, districts, VIEWS } from '../perf/route.ts';
 import { bootCity, serveFakeMedia } from './city-helpers.ts';
 import { DT, report } from './helpers.ts';
 
 // Prompt 05: the city built from a 500-booth fake snapshot (`?debug=fake500`).
 
-const BUDGET = { high: { calls: 400, tris: 1_500_000 }, low: { calls: 150, tris: 400_000 } };
-
-interface View {
-  name: string;
-  /** Player position and facing yaw; the camera looks the same way from behind. */
-  at: (d: Districts) => { x: number; z: number; yaw: number };
-  pitch: number;
-  distance: number;
-}
-type Districts = Awaited<ReturnType<typeof districts>>;
-
-async function districts(page: Page) {
-  return page.evaluate(() => window.__shipfair?.city.districts() ?? []);
-}
-
-const along = (d: Districts[number], m: number) => ({
-  x: d.entrance.x + d.outward.x * m,
-  z: d.entrance.z + d.outward.z * m,
-});
-const yawOf = (dx: number, dz: number) => Math.atan2(dx, dz);
-
-const VIEWS: View[] = [
-  { name: 'plaza spawn', at: () => ({ x: 0, z: 0, yaw: 0 }), pitch: 0.22, distance: 4.6 },
-  {
-    name: 'AI Agents gate, up the spine',
-    at: (d) => ({ ...along(d[0] as Districts[number], 4), yaw: yawOf(0, 1) }),
-    pitch: 0.18,
-    distance: 6,
-  },
-  {
-    name: 'Dev Tools mid-spine',
-    at: (d) => ({ ...along(d[1] as Districts[number], 180), yaw: yawOf(1, 0) }),
-    pitch: 0.3,
-    distance: 8,
-  },
-  {
-    name: 'Productivity far end, looking back',
-    at: (d) => {
-      const p = d[2] as Districts[number];
-      return {
-        x: p.spineEnd.x - p.outward.x * 4,
-        z: p.spineEnd.z - p.outward.z * 4,
-        yaw: yawOf(-p.outward.x, -p.outward.z),
-      };
-    },
-    pitch: 0.6,
-    distance: 10,
-  },
-];
+const budgets = loadBudgets().tiers;
+const BUDGET = {
+  high: { calls: budgets.high.drawCalls, tris: budgets.high.triangles },
+  low: { calls: budgets.low.drawCalls, tris: budgets.low.triangles },
+};
 
 /** Puts the player at `view`, lets streaming settle, renders, and returns the counters. */
 async function measure(

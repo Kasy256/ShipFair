@@ -32,7 +32,7 @@ export function DistrictBanner() {
       key={shown.key}
       role="status"
       data-testid="district-banner"
-      className={`pointer-events-none absolute inset-x-0 top-20 z-10 text-center ${isReducedMotion ? '' : 'animate-banner'}`}
+      className={`pointer-events-none absolute inset-x-0 top-[calc(var(--hud-nav-bottom,4.25rem)+0.75rem)] z-10 text-center ${isReducedMotion ? '' : 'animate-banner'}`}
     >
       <p className="inline-block rounded-2xl bg-ink/75 px-6 py-3 backdrop-blur">
         <span className="block text-muted text-xs uppercase tracking-[0.2em]">Now entering</span>

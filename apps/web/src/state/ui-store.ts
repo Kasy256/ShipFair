@@ -42,6 +42,8 @@ interface UiState {
   isPassportOpen: boolean;
   /** The Just Launched list (interact at the plaza wall). */
   isLaunchesOpen: boolean;
+  /** The settings menu (prompt 14). */
+  isSettingsOpen: boolean;
   isReducedMotion: boolean;
   toasts: readonly Toast[];
   openBooth(id: string): void;
@@ -56,6 +58,7 @@ interface UiState {
   selectPlayer(player: SelectedPlayer | null): void;
   setPassportOpen(isOpen: boolean): void;
   setLaunchesOpen(isOpen: boolean): void;
+  setSettingsOpen(isOpen: boolean): void;
   setReducedMotion(isReduced: boolean): void;
   showToast(text: string): void;
   dismissToast(id: number): void;
@@ -76,7 +79,7 @@ function initialReducedMotion(): boolean {
 
 let nextToastId = 1;
 
-/** Panels, overlays, toasts and the reduced-motion setting. */
+/** Panels, overlays, toasts and the reduced-motion setting (the other settings: settings-store.ts). */
 export const useUiStore = create<UiState>()((set, get) => ({
   openBoothId: null,
   isMapOpen: false,
@@ -90,6 +93,7 @@ export const useUiStore = create<UiState>()((set, get) => ({
   selectedPlayer: null,
   isPassportOpen: false,
   isLaunchesOpen: false,
+  isSettingsOpen: false,
   isReducedMotion: initialReducedMotion(),
   toasts: [],
   // One overlay at a time: opening a booth closes the map, and the other way round.
@@ -151,6 +155,20 @@ export const useUiStore = create<UiState>()((set, get) => ({
         ? { isLaunchesOpen: true, openBoothId: null, isMapOpen: false, isPassportOpen: false }
         : { isLaunchesOpen: false },
     ),
+  setSettingsOpen: (isOpen) =>
+    set(
+      isOpen
+        ? {
+            isSettingsOpen: true,
+            openBoothId: null,
+            isMapOpen: false,
+            isClaimOpen: false,
+            isPassportOpen: false,
+            isLaunchesOpen: false,
+            selectedPlayer: null,
+          }
+        : { isSettingsOpen: false },
+    ),
   setReducedMotion(isReduced) {
     set({ isReducedMotion: isReduced });
     try {
@@ -177,4 +195,5 @@ export const selectIsOverlayOpen = (s: UiState): boolean =>
   s.isAvatarOpen ||
   s.isPassportOpen ||
   s.isLaunchesOpen ||
+  s.isSettingsOpen ||
   s.selectedPlayer !== null;

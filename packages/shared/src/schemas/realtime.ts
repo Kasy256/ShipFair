@@ -1,12 +1,11 @@
 import * as z from 'zod';
+import { DISPLAY_NAME_MAX_CHARS } from '../constants.ts';
 import { ShardId } from '../protocol.ts';
 import { Handle, Timestamp, Uuid } from './common.ts';
 import { PassportEvidenceList } from './passport.ts';
 
 // Payloads of the realtime ↔ web RPC calls (ARCHITECTURE.md §6). Both sides parse them: an RPC
 // argument crosses a Worker boundary, so it is external input like any other.
-
-const DISPLAY_NAME_MAX_CHARS = 32;
 
 /** `GET /parties/coordinator/main/join`: the shard the client should connect to. */
 export const CoordinatorJoin = z.object({ shard: ShardId });

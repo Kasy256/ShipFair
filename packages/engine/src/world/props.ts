@@ -79,7 +79,7 @@ export class PropField {
       ids.map(async (id) => {
         const entry = entries.get(id);
         const assetId = `prop:${id}`;
-        const asset = await assets.load(assetId, entry?.url ?? null, () => ({
+        const asset = await assets.load(assetId, assets.urlOf(entry), () => ({
           scene: new Group(),
           animations: [],
           isPlaceholder: true,

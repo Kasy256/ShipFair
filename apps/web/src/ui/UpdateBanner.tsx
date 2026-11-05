@@ -9,7 +9,7 @@ export function UpdateBanner() {
     <div
       role="alert"
       data-testid="update-banner"
-      className="absolute top-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-ink/90 px-4 py-2 text-sm backdrop-blur"
+      className="absolute top-(--safe-top) left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-ink/90 px-4 py-2 text-sm backdrop-blur"
     >
       <span>{netNoticeText('update_required', null)}</span>
       <button

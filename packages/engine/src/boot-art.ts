@@ -35,7 +35,7 @@ export interface ArtBoot {
 export async function loadArt(host: ArtHost, boot: ArtBoot): Promise<Art | null> {
   const { renderer, player } = boot;
   try {
-    const art = await Art.load(boot.bus, renderer.renderer);
+    const art = await Art.load(boot.bus, renderer.renderer, undefined, boot.tier());
     const runtime = boot.runtime();
     if (!runtime) {
       art.dispose();

@@ -4,6 +4,7 @@ import { loadEngineModule } from '../lib/engine-loader.ts';
 import type { WorldSource } from '../lib/world-source.ts';
 import { engineBus } from '../state/engine-bus.ts';
 import { selectName, selectStyle, useSessionStore } from '../state/session-store.ts';
+import { useSettingsStore } from '../state/settings-store.ts';
 import { useUiStore } from '../state/ui-store.ts';
 
 type Status = 'loading' | 'ready' | 'error';
@@ -39,12 +40,18 @@ export function WorldCanvas({ source, onStage, onEngine, onError }: WorldCanvasP
     loadEngineModule()
       .then(async (mod) => {
         if (!isCurrent) return;
-        const forcedTier = mod.tierFromQuery(search);
+        // `?quality=` (tests, support) beats the saved choice; Auto starts from the device guess.
+        const settings = useSettingsStore.getState().settings;
+        const chosenTier = settings.quality === 'auto' ? undefined : settings.quality;
+        const forcedTier = mod.tierFromQuery(search) ?? chosenTier;
         const started = new mod.Engine({
           canvas,
           bus: engineBus,
           quality: forcedTier ?? mod.guessTier(mod.readDeviceInfo()),
           isAutoQuality: forcedTier === undefined && !isTestMode,
+          renderScale: settings.renderScale,
+          fovDeg: settings.fovDeg,
+          volume: settings.volume,
           isTestMode,
           debug: mod.debugFlags(search),
           mediaHost: source.mediaHost,
@@ -82,7 +89,7 @@ export function WorldCanvas({ source, onStage, onEngine, onError }: WorldCanvasP
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 block h-full w-full outline-none"
+      className="absolute inset-0 block h-full w-full touch-none select-none outline-none"
       data-testid="world-canvas"
       data-status={status}
       aria-label="3D world. Click to look around with the mouse; move with WASD or the arrow keys."

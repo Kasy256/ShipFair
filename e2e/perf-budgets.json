@@ -1,0 +1,24 @@
+{
+  "$comment": "Count-based render budgets (ARCHITECTURE.md §4), enforced in CI by tests/perf/budgets.perf.spec.ts. SwiftShader fps means nothing, so only counts are checked: draw calls (shadow-pass draws included), triangles and the estimated resident texture memory. Change a number only with a reason in the PR. firstLoadJsGzipKb is checked after the build by tools/bundle-budget.ts (Rapier chunk excluded).",
+  "firstLoadJsGzipKb": 450,
+  "scenario": {
+    "booths": 500,
+    "remotes": 60,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "tiers": {
+    "high": {
+      "drawCalls": 400,
+      "triangles": 1500000,
+      "textureMb": 220
+    },
+    "low": {
+      "drawCalls": 150,
+      "triangles": 400000,
+      "textureMb": 90
+    }
+  }
+}

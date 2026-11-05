@@ -1,6 +1,7 @@
 import { CHAT_MAX_CHARS } from '@shipfair/shared';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
+import { isCoarsePointer } from '../lib/device.ts';
 import { useChatStore } from '../state/chat-store.ts';
 import { engineBus } from '../state/engine-bus.ts';
 import { useSessionStore } from '../state/session-store.ts';
@@ -28,7 +29,8 @@ function useNow(isTicking: boolean): number {
 
 /**
  * Proximity chat (prompt 12), bottom left: the last 30 lines heard within 15 m, and the composer
- * (Enter or the Chat button opens it; Enter sends, Esc closes). The log is a polite live region;
+ * (Enter or the Chat button opens it; Enter sends, Esc closes). On touch screens the Chat button
+ * is with the right-thumb controls and the log sits above the joystick, which owns this corner. The log is a polite live region;
  * the bubbles in the world are decorative. Text is only ever rendered as text: links arrive
  * de-linked from the server and are never made clickable here.
  */
@@ -70,17 +72,18 @@ export function ChatPanel() {
         ? 'Say something to people nearby'
         : 'Chat opens when you are connected';
   const canType = !isGuest && !isMuted && isOnline;
+  const isTouch = isCoarsePointer();
 
   return (
     <section
       aria-label="Nearby chat"
-      className="pointer-events-none absolute bottom-24 left-3 z-10 w-[min(80vw,21rem)] sm:bottom-3"
+      className="pointer-events-none absolute bottom-[calc(var(--safe-bottom)+9.5rem)] left-(--safe-left) z-10 w-[min(80vw,21rem)] sm:bottom-(--safe-bottom)"
     >
       <ol
         role="log"
         aria-live="polite"
         aria-label="Chat messages from people nearby"
-        className="mb-2 grid max-h-48 gap-0.5 overflow-y-auto text-sm"
+        className="mb-2 grid max-h-[min(12rem,28dvh)] gap-0.5 overflow-y-auto text-sm"
         data-testid="chat-log"
       >
         {lines.map((line) => (
@@ -130,7 +133,7 @@ export function ChatPanel() {
             Send
           </button>
         </form>
-      ) : isGuest ? (
+      ) : isTouch ? null : isGuest ? (
         <div className="pointer-events-auto flex gap-2">
           <input
             disabled

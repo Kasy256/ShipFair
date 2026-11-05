@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { boothSlugBase, filterProfanity, normaliseText, slugify } from './text.ts';
+import { boothSlugBase, normaliseText, slugify } from './normalise.ts';
+import { filterProfanity } from './text.ts';
 import { isHttpsUrl } from './url.ts';
 
 describe('filterProfanity', () => {

@@ -1,28 +1,42 @@
-import type { QualityTier } from '@shipfair/shared';
+import { type QualityTier, TEXTURE_STREAM_RADIUS_M } from '@shipfair/shared';
 import {
   ADAPT_DOWN_RATIO,
   ADAPT_UP_RATIO,
   ADAPT_UP_S,
   ADAPT_WINDOW_S,
   MAX_FRAME_S,
+  NAME_TAG_MAX_DISTANCE_M,
+  NAME_TAG_REDUCED_DISTANCE_M,
   PERF_SAMPLE_S,
   RENDER_SCALES,
   TARGET_FPS,
+  TEXTURE_STREAM_REDUCED_RADIUS_M,
 } from '../config.ts';
 
-/** What the renderer applies. Each visual feature declares the tiers it runs on here. */
+/** What the renderer and the world apply. Each visual feature declares its tiers here. */
 export interface QualitySettings {
   renderScale: number;
   shadows: boolean;
   bloom: boolean;
+  /** Remote players' name tags (and chat bubbles) show within this distance. */
+  nameTagDistanceM: number;
+  /** Booth logos and screenshots stream within this radius. */
+  streamRadiusM: number;
 }
+
+type Step = 'shadows' | 'bloom' | 'nameTags' | 'stream';
+/** What gets switched off after render scale bottoms out, in order. `low` has no shadows or bloom. */
+const STEPS: Record<QualityTier, readonly Step[]> = {
+  high: ['shadows', 'bloom', 'nameTags', 'stream'],
+  low: ['nameTags', 'stream'],
+};
 
 /**
  * Levels step down in the order ARCHITECTURE.md §4 gives: render scale 1 → 0.75 → 0.6, then
- * shadows off, then bloom off. `low` has neither shadows nor bloom, so it stops at 0.6.
+ * shadows off, bloom off, name tags to 15 m, booth images to a 20 m radius.
  */
 export function maxLevel(tier: QualityTier): number {
-  return tier === 'high' ? RENDER_SCALES.length + 1 : RENDER_SCALES.length - 1;
+  return RENDER_SCALES.length - 1 + STEPS[tier].length;
 }
 
 export function settingsFor(
@@ -31,9 +45,15 @@ export function settingsFor(
   out: QualitySettings,
 ): QualitySettings {
   const scaleIndex = Math.min(level, RENDER_SCALES.length - 1);
+  const steps = STEPS[tier];
+  const offCount = Math.max(0, level - (RENDER_SCALES.length - 1));
+  // A step the tier doesn't list is never on (shadows and bloom on `low`).
+  const isOn = (step: Step) => steps.indexOf(step) >= offCount;
   out.renderScale = RENDER_SCALES[scaleIndex] ?? 1;
-  out.shadows = tier === 'high' && level < RENDER_SCALES.length;
-  out.bloom = tier === 'high' && level < RENDER_SCALES.length + 1;
+  out.shadows = isOn('shadows');
+  out.bloom = isOn('bloom');
+  out.nameTagDistanceM = isOn('nameTags') ? NAME_TAG_MAX_DISTANCE_M : NAME_TAG_REDUCED_DISTANCE_M;
+  out.streamRadiusM = isOn('stream') ? TEXTURE_STREAM_RADIUS_M : TEXTURE_STREAM_REDUCED_RADIUS_M;
   return out;
 }
 
@@ -41,13 +61,21 @@ export function settingsFor(
  * The adaptive quality controller. Feed it every frame's length; once per second it completes
  * a sample (`fps` is then fresh). When the 3-second average is under the tier's target it steps
  * quality down; after ADAPT_UP_S seconds comfortably at target it steps back up, but never past
- * the tier the user (or boot detection) chose.
+ * the tier the user (or boot detection) chose. With `isAuto` off (the player picked High or Low)
+ * it only measures.
  */
 export class AdaptiveQuality {
-  readonly settings: QualitySettings = { renderScale: 1, shadows: false, bloom: false };
+  readonly settings: QualitySettings = {
+    renderScale: 1,
+    shadows: false,
+    bloom: false,
+    nameTagDistanceM: NAME_TAG_MAX_DISTANCE_M,
+    streamRadiusM: TEXTURE_STREAM_RADIUS_M,
+  };
   /** Frames per second over the last completed sample. */
   fps = 0;
   #tier: QualityTier;
+  #isAuto = true;
   #level = 0;
   readonly #window = new Float64Array(ADAPT_WINDOW_S);
   #windowCount = 0;
@@ -69,9 +97,19 @@ export class AdaptiveQuality {
     return this.#level;
   }
 
+  get isAuto(): boolean {
+    return this.#isAuto;
+  }
+
   /** A new chosen tier resets to its best settings. */
   setTier(tier: QualityTier): void {
     this.#tier = tier;
+    this.#setLevel(0);
+  }
+
+  /** Off: the chosen tier's best settings, kept whatever the frame rate. */
+  setAuto(isAuto: boolean): void {
+    this.#isAuto = isAuto;
     this.#setLevel(0);
   }
 
@@ -89,7 +127,7 @@ export class AdaptiveQuality {
     this.fps = (this.#sampleFrames * 1000) / this.#sampleMs;
     this.#sampleMs = 0;
     this.#sampleFrames = 0;
-    this.#decide(this.fps);
+    if (this.#isAuto) this.#decide(this.fps);
     return true;
   }
 

@@ -34,6 +34,8 @@ export class AssetManager {
   readonly #missing = new Set<string>();
   #isDisposed = false;
   manifest: GeneratedAssetManifest | null = null;
+  /** Low tier: entries with a 512 px texture copy (`urlLow`) load that instead (prompt 14). */
+  isLowTier = false;
 
   constructor(bus: EventBus, loader: AssetLoader) {
     this.#bus = bus;
@@ -43,6 +45,12 @@ export class AssetManager {
   /** Ids that failed to load (or had no url) this session. */
   get missing(): ReadonlySet<string> {
     return this.#missing;
+  }
+
+  /** The url to load for a manifest entry on this tier, or null for a missing entry. */
+  urlOf(entry: { url: string; urlLow?: string | undefined } | null | undefined): string | null {
+    if (!entry) return null;
+    return this.isLowTier && entry.urlLow ? entry.urlLow : entry.url;
   }
 
   /** Number of references held on `id` (0 when not loaded). */

@@ -14,6 +14,8 @@ import type { GroundPattern } from './themes.ts';
 
 const SIZE_PX = 256;
 const NOISE = 26;
+/** #d0d0d0, the grey the noise sits on. */
+const BASE_GREY = 0xd0;
 
 export function createCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
@@ -22,8 +24,15 @@ export function createCanvas(width: number, height: number): HTMLCanvasElement {
   return canvas;
 }
 
-export function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
-  const ctx = canvas.getContext('2d');
+/**
+ * `willReadFrequently` keeps the canvas on the CPU: for one read back with `getImageData`,
+ * where a GPU-backed canvas would stall on a readback each time (207 ms each under SwiftShader).
+ */
+export function context2d(
+  canvas: HTMLCanvasElement,
+  options?: CanvasRenderingContext2DSettings,
+): CanvasRenderingContext2D {
+  const ctx = canvas.getContext('2d', options);
   if (!ctx) throw new Error('2D canvas is unavailable');
   return ctx;
 }
@@ -31,15 +40,16 @@ export function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 function draw(pattern: GroundPattern | 'plain', ctx: CanvasRenderingContext2D, seed: number): void {
   const s = SIZE_PX;
   const random = rng(seed);
-  ctx.fillStyle = '#d0d0d0';
-  ctx.fillRect(0, 0, s, s);
-  const img = ctx.getImageData(0, 0, s, s);
+  // Built on the CPU and written once: reading a GPU canvas back (getImageData) stalls the boot
+  // (prompt 14 measured ~9 s for the city's ground textures under SwiftShader).
+  const img = new ImageData(s, s);
   const d = img.data;
   for (let i = 0; i < d.length; i += 4) {
     const n = (random() - 0.5) * NOISE;
-    d[i] = (d[i] ?? 0) + n;
-    d[i + 1] = (d[i + 1] ?? 0) + n;
-    d[i + 2] = (d[i + 2] ?? 0) + n;
+    d[i] = BASE_GREY + n;
+    d[i + 1] = BASE_GREY + n;
+    d[i + 2] = BASE_GREY + n;
+    d[i + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
   ctx.strokeStyle = 'rgba(0,0,0,0.28)';

@@ -2,12 +2,12 @@ import { parseArgs } from 'node:util';
 import {
   BOOTH_VISIT_RADIUS_M,
   DEFAULT_AVATAR_STYLE,
-  encodeServer,
   layoutCity,
   nearestBooth,
   rng,
   toNetPos,
 } from '@shipfair/shared';
+import { encodeServer } from '@shipfair/shared/codec';
 import { fakeWorld } from '@shipfair/shared/fake-world';
 import { AOI_CELL_M } from '../../apps/realtime/src/limits.ts';
 import { AoiGrid } from '../../apps/realtime/src/shard/aoi-grid.ts';

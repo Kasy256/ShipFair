@@ -10,14 +10,16 @@ import {
   type WebGLInfo,
   WebGLRenderer,
 } from 'three';
-import { PIXEL_RATIO_CAP, TONE_MAPPING_EXPOSURE } from '../config.ts';
+import { CAMERA_FOV_DEG, PIXEL_RATIO_CAP, TONE_MAPPING_EXPOSURE } from '../config.ts';
 import type { System } from '../core/loop.ts';
 import type { QualitySettings } from '../quality/adaptive.ts';
+import { fovForAspect } from './fov.ts';
 import { BloomPipeline } from './post.ts';
 
 /**
  * WebGL renderer: sRGB output, ACES tone mapping, pixel ratio capped by tier and scaled by the
- * adaptive controller, sized by a ResizeObserver on the canvas. Renders as the last system of
+ * adaptive controller and the player's render scale setting, sized by a ResizeObserver on the
+ * canvas (which also widens the FOV in portrait, see fovForAspect). Renders as the last system of
  * every frame unless `isAutoRendering` is off (test mode renders on demand).
  */
 export class Renderer implements System {
@@ -29,6 +31,10 @@ export class Renderer implements System {
   #bloom: BloomPipeline | undefined;
   #tier: QualityTier;
   #renderScale = 1;
+  /** The player's cap (settings menu), multiplied with the adaptive scale. */
+  #userScale = 1;
+  /** The chosen vertical FOV; portrait screens may get a wider one. */
+  #fovDeg = CAMERA_FOV_DEG;
   #width = 1;
   #height = 1;
   isAutoRendering = true;
@@ -67,7 +73,7 @@ export class Renderer implements System {
 
   get pixelRatio(): number {
     const dpr = typeof devicePixelRatio === 'number' ? devicePixelRatio : 1;
-    return Math.min(dpr, PIXEL_RATIO_CAP[this.#tier]) * this.#renderScale;
+    return Math.min(dpr, PIXEL_RATIO_CAP[this.#tier]) * this.#renderScale * this.#userScale;
   }
 
   /** Applies a tier and the adaptive controller's settings. */
@@ -92,6 +98,17 @@ export class Renderer implements System {
     this.resize();
   }
 
+  /** The settings menu's render scale (RENDER_SCALE_MIN..1), on top of the adaptive one. */
+  setUserScale(scale: number): void {
+    this.#userScale = scale;
+    this.resize();
+  }
+
+  setFov(verticalDeg: number): void {
+    this.#fovDeg = verticalDeg;
+    this.resize();
+  }
+
   resize(): void {
     const width = Math.max(1, this.#canvas.clientWidth || this.#canvas.width);
     const height = Math.max(1, this.#canvas.clientHeight || this.#canvas.height);
@@ -108,6 +125,7 @@ export class Renderer implements System {
     }
     this.#bloom?.setSize(width, height, pixelRatio);
     this.#camera.aspect = width / height;
+    this.#camera.fov = fovForAspect(this.#fovDeg, this.#camera.aspect);
     this.#camera.updateProjectionMatrix();
   }
 

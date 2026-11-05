@@ -1,6 +1,7 @@
 import type { Engine } from '@shipfair/engine';
 import { useEffect, useRef, useState } from 'react';
 import { track } from '../lib/analytics.ts';
+import { worldBooted } from '../lib/boot.ts';
 import { loadEngineModule } from '../lib/engine-loader.ts';
 import { WorldLoadError } from '../lib/world-source.ts';
 import { attachPlayerView } from '../state/player-view.ts';
@@ -8,6 +9,7 @@ import { selectIsOverlayOpen, useUiStore } from '../state/ui-store.ts';
 import { useBoothNotices } from '../state/use-booth-notices.ts';
 import { useDeepLinks } from '../state/use-deep-links.ts';
 import { useEngineBridge } from '../state/use-engine-bridge.ts';
+import { useEngineSettings, useHiddenPause } from '../state/use-engine-settings.ts';
 import { useInputLock } from '../state/use-input-lock.ts';
 import { useLocalPlayer } from '../state/use-local-player.ts';
 import { usePassport } from '../state/use-passport.ts';
@@ -30,6 +32,7 @@ import { Minimap } from '../ui/Minimap.tsx';
 import { PlayerCard } from '../ui/PlayerCard.tsx';
 import { PromptPill } from '../ui/PromptPill.tsx';
 import { PassportBook } from '../ui/passport/PassportBook.tsx';
+import { SettingsSheet } from '../ui/SettingsSheet.tsx';
 import { Toasts } from '../ui/Toasts.tsx';
 import { TouchControls } from '../ui/TouchControls.tsx';
 import { UpdateBanner } from '../ui/UpdateBanner.tsx';
@@ -39,6 +42,22 @@ const DEV_HINT =
   import.meta.env.MODE !== 'production'
     ? 'Local development: run `pnpm db:start` for the seeded city, or open /?debug=fake40 for a fake one.'
     : null;
+
+/**
+ * iOS Safari ignores `user-scalable=no` and `touch-action` for pinch, so a two-finger look would
+ * zoom the page. Its non-standard gesture events can be cancelled; only while the city is shown.
+ */
+function usePinchGuard(): void {
+  useEffect(() => {
+    const cancel = (e: Event) => e.preventDefault();
+    document.addEventListener('gesturestart', cancel);
+    document.addEventListener('gesturechange', cancel);
+    return () => {
+      document.removeEventListener('gesturestart', cancel);
+      document.removeEventListener('gesturechange', cancel);
+    };
+  }, []);
+}
 
 /**
  * The city: one engine for `/`, `/b/:slug` and `/d/:district` (it stays mounted as those change),
@@ -54,10 +73,12 @@ export function WorldRoute() {
   const [hasEntered, setHasEntered] = useState(false);
   const startedAt = useRef(performance.now());
   const setWorld = useWorldStore((s) => s.setWorld);
-  const isReducedMotion = useUiStore((s) => s.isReducedMotion);
   const isOverlayOpen = useUiStore(selectIsOverlayOpen);
 
   useEngineBridge();
+  useEngineSettings(engine);
+  useHiddenPause(engine);
+  usePinchGuard();
   useLocalPlayer(engine);
   useDeepLinks(engine, hasEntered);
   useWorldShortcuts(hasEntered);
@@ -68,20 +89,21 @@ export function WorldRoute() {
   useInputLock(!hasEntered);
 
   useEffect(() => {
-    // Download the engine while the world is fetched. A failure here resurfaces (and is shown)
-    // when WorldCanvas awaits the same import.
+    // Download the engine while the world is fetched (main.tsx already started it on a first
+    // visit; this covers arriving from another page). A failure resurfaces in WorldCanvas.
     loadEngineModule().catch(() => undefined);
   }, []);
+
+  // Sign-in (Supabase) waits for this on a first visit; see lib/boot.ts.
+  useEffect(() => {
+    if (stage === 'ready' || hasEngineFailed || world.error) worldBooted();
+  }, [stage, hasEngineFailed, world.error]);
 
   useEffect(() => {
     if (world.data) setWorld(world.data);
   }, [world.data, setWorld]);
 
   useEffect(() => (engine ? attachPlayerView(engine) : undefined), [engine]);
-
-  useEffect(() => {
-    engine?.setReducedMotion(isReducedMotion);
-  }, [engine, isReducedMotion]);
 
   const boothCount = world.data?.snapshot?.booths.length ?? null;
   const hasTracked = useRef(false);
@@ -111,7 +133,10 @@ export function WorldRoute() {
   };
 
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-ink font-sans text-paper">
+    <main
+      data-world-page
+      className="relative h-dvh w-full overflow-hidden bg-ink font-sans text-paper"
+    >
       <WorldCanvas
         source={world.data}
         onStage={setStage}
@@ -145,6 +170,7 @@ export function WorldRoute() {
           <AvatarSheet />
           <PassportBook />
           <LaunchesSheet engine={engine} />
+          <SettingsSheet />
           {!isOverlayOpen && <Toasts />}
         </>
       )}

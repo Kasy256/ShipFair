@@ -149,6 +149,8 @@ export class RemotePlayers implements System, RemoteSink {
   #factory: CharacterFactory | null = null;
   #animations: AnimationSet | null = null;
   #tier: QualityTier;
+  /** Name tags and chat bubbles show within this distance (adaptive quality shortens it). */
+  nameTagDistanceM = NAME_TAG_MAX_DISTANCE_M;
   #distances = new Float32Array(STAND_IN_CHUNK);
   #lods = new Uint8Array(STAND_IN_CHUNK);
   #scratch: LodScratch = createLodScratch(STAND_IN_CHUNK);
@@ -363,7 +365,7 @@ export class RemotePlayers implements System, RemoteSink {
       const dz = s.z - v.z;
       // Not Math.hypot: it is variadic and allocates in V8.
       const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (distance <= NAME_TAG_MAX_DISTANCE_M) {
+      if (distance <= this.nameTagDistanceM) {
         this.#tags.add(
           r.tag,
           r.isGuest,

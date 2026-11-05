@@ -36,6 +36,8 @@ interface WorldState {
   makersHere: ReadonlyMap<string, number>;
   /** Standing at the plaza's Just Launched wall (`launches:near`): the prompt pill offers it. */
   isAtWall: boolean;
+  /** At the plaza's "Claim a booth" kiosk (touch shows Use). */
+  isAtKiosk: boolean;
   setWorld(source: WorldSource): void;
   /** A newer snapshot of the same world (after `world_update`): the lookups change, the view doesn't. */
   refreshWorld(snapshot: WorldSnapshot): void;
@@ -46,6 +48,7 @@ interface WorldState {
   setDistrict(id: number | null): void;
   setFocusedBooth(id: string | null): void;
   setAtWall(isNear: boolean): void;
+  setAtKiosk(isNear: boolean): void;
 }
 
 const empty = new Map();
@@ -67,6 +70,7 @@ export const useWorldStore = create<WorldState>()((set) => ({
   isUpdateRequired: false,
   makersHere: empty,
   isAtWall: false,
+  isAtKiosk: false,
   setWorld({ snapshot, mediaHost }) {
     const booths = snapshot?.booths ?? [];
     set({
@@ -100,4 +104,9 @@ export const useWorldStore = create<WorldState>()((set) => ({
   setDistrict: (id) => set({ currentDistrictId: id }),
   setFocusedBooth: (id) => set({ focusedBoothId: id }),
   setAtWall: (isNear) => set({ isAtWall: isNear }),
+  setAtKiosk: (isNear) => set({ isAtKiosk: isNear }),
 }));
+
+/** Something the Use button (or E) would open: a booth in focus, the kiosk or the wall. */
+export const selectCanUse = (s: WorldState): boolean =>
+  s.focusedBoothId !== null || s.isAtWall || s.isAtKiosk;

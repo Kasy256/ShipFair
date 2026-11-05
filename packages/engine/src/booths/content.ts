@@ -69,7 +69,8 @@ interface Content {
 }
 
 /**
- * Booth logos and screenshots (ARCHITECTURE.md §4). Only booths within TEXTURE_STREAM_RADIUS_M
+ * Booth logos and screenshots (ARCHITECTURE.md §4). Only booths within `radiusM` (normally
+ * TEXTURE_STREAM_RADIUS_M; the adaptive controller's last step shortens it)
  * get content meshes (the one place per-booth meshes are allowed); each shows a generated
  * monogram until its images arrive through the LRU. Screens cycle every SCREEN_CYCLE_S within
  * SCREEN_CYCLE_RADIUS_M. Images come from the media host only.
@@ -86,6 +87,7 @@ export class ContentStreamer {
   readonly #ids: string[] = new Array<string>(MAX_CANDIDATES).fill('');
   readonly #dist = new Float32Array(MAX_CANDIDATES);
   #tier: QualityTier;
+  #radiusM = TEXTURE_STREAM_RADIUS_M;
   #sincePass = Number.POSITIVE_INFINITY;
   #pass = 0;
 
@@ -125,6 +127,13 @@ export class ContentStreamer {
   setTier(tier: QualityTier): void {
     this.#tier = tier;
     this.cache.setMax(TEXTURE_CACHE_MAX[tier]);
+  }
+
+  /** Booths farther than this lose their content on the next pass (and their images in time). */
+  setRadius(radiusM: number): void {
+    if (radiusM === this.#radiusM) return;
+    this.#radiusM = radiusM;
+    this.#sincePass = Number.POSITIVE_INFINITY;
   }
 
   /** Drops a booth's content (removed or changed); it is rebuilt on the next pass if in range. */
@@ -177,7 +186,7 @@ export class ContentStreamer {
     this.#sincePass = 0;
     const pass = ++this.#pass;
     // In-range booths, nearest first (insertion sort into fixed arrays: no allocation).
-    const r2 = TEXTURE_STREAM_RADIUS_M * TEXTURE_STREAM_RADIUS_M;
+    const r2 = this.#radiusM * this.#radiusM;
     let n = 0;
     for (const a of anchors) {
       const dx = a.x - x;

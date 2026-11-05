@@ -25,6 +25,7 @@ export type { InputAction } from './input/manager.ts';
 export type { JoystickView } from './input/touch.ts';
 export { readJoystick } from './input/touch.ts';
 export type { NetConnectOptions, NetIdentity } from './net/client.ts';
+export { initPhysics } from './physics/world.ts';
 export type { AvatarView } from './player/avatar.ts';
 export { EMOTE_WAVE } from './player/avatar.ts';
 export { guessTier, readDeviceInfo, tierFromQuery } from './quality/detect.ts';
