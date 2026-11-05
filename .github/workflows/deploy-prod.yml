@@ -1,0 +1,142 @@
+name: Deploy production
+
+# A `v*` tag on a commit reachable from main (INFRASTRUCTURE.md §5). The "production" GitHub
+# Environment requires a reviewer's approval before the deploy job starts: that is the one
+# reviewed click. Order: DB dump (artifact) → migrate → realtime → web → smoke → Sentry release.
+# Rollback: docs/RELEASING.md.
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WRANGLER_SEND_METRICS: "false"
+  TURBO_TELEMETRY_DISABLED: "1"
+
+jobs:
+  # Cheap and unprivileged: refuse tags that aren't on main before anyone is asked to approve.
+  check-tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: The tag is reachable from main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME ($GITHUB_SHA) is not on main. Tag a commit on main."
+            exit 1
+          fi
+
+  deploy:
+    needs: check-tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+      SENTRY_DSN_WORKERS: ${{ vars.SENTRY_DSN_WORKERS }}
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+      VITE_REALTIME_HOST: ${{ vars.REALTIME_HOST }}
+      VITE_MEDIA_HOST: ${{ vars.MEDIA_HOST }}
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+      VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN_BROWSER }}
+      VITE_POSTHOG_KEY: ${{ vars.POSTHOG_KEY }}
+      VITE_POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Before any migration (INFRASTRUCTURE.md §9): schema and data, kept 30 days, private.
+      - name: Database dump
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          mkdir -p db-dump
+          pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          pnpm exec supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" -f db-dump/schema.sql
+          pnpm exec supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" --data-only --use-copy -f db-dump/data.sql
+          ls -la db-dump
+
+      - name: Keep the dump
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-dump-${{ github.ref_name }}
+          path: db-dump
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Assets build
+        run: pnpm assets:build --ci
+
+      - name: Deploy
+        uses: ./.github/actions/deploy
+        with:
+          environment: production
+          release: ${{ github.sha }}
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          supabase-access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          supabase-db-password: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @shipfair/e2e exec playwright install --with-deps chromium
+
+      - name: Wait for the new release
+        run: |
+          for url in "${{ vars.SITE_URL }}/api/health" "https://$VITE_REALTIME_HOST/health"; do
+            if ! timeout 120 bash -c "until curl -sf $url | grep -q '\"release\":\"$GITHUB_SHA\"'; do sleep 3; done"; then
+              echo "$url is not on $GITHUB_SHA"; curl -s "$url"; exit 1
+            fi
+          done
+
+      # Production builds have no in-page test API, so only the @prod smoke tests apply:
+      # health on this release, the home page, and share pages.
+      - name: Smoke (@prod) against production
+        env:
+          CI: "1"
+          E2E_BASE_URL: ${{ vars.SITE_URL }}
+          E2E_REALTIME_URL: https://${{ vars.REALTIME_HOST }}
+          E2E_EXPECT_RELEASE: ${{ github.sha }}
+        run: pnpm --filter @shipfair/e2e exec playwright test --grep @prod --project=chromium
+
+      - name: Smoke report
+        if: always()
+        run: node e2e/scripts/e2e-report.ts summary e2e/reports/results.json "Production @prod" || true
+
+      - name: Sentry release
+        if: success() && env.SENTRY_ORG != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          npx --yes @sentry/cli@3.8.2 releases set-commits "$GITHUB_SHA" --auto --ignore-missing
+          npx --yes @sentry/cli@3.8.2 releases finalize "$GITHUB_SHA"
+          npx --yes @sentry/cli@3.8.2 deploys new --release "$GITHUB_SHA" -e production

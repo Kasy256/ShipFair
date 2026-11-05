@@ -25,9 +25,9 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Coordinator", "WorldShard"] }],
   // RPC to the web Worker. Locally this resolves through wrangler's dev registry.
   "services": [{ "binding": "WEB", "service": "shipfair-web", "entrypoint": "WebRpc" }],
-  // SUPABASE_JWKS_URL for staging and production is `https://<project-ref>.supabase.co/auth/v1/
-  // .well-known/jwks.json`; prompt 15 adds it once the projects exist. Until then the shard refuses
-  // to start there with a clear RealtimeEnv error rather than trusting a guessed URL.
+  // SUPABASE_JWKS_URL (`https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json`),
+  // SENTRY_DSN and RELEASE for staging and production are passed with `--var` by the deploy
+  // workflows; without the JWKS URL the shard refuses to start with a RealtimeEnv error.
   "env": {
     "staging": {
       "vars": { "ENVIRONMENT": "staging" },
@@ -40,9 +40,10 @@
       },
       "services": [{ "binding": "WEB", "service": "shipfair-web-staging", "entrypoint": "WebRpc" }]
     },
+    // No public DNS yet: workers.dev until launch, then the `rt.shipfair.xyz` custom domain.
     "production": {
       "vars": { "ENVIRONMENT": "production" },
-      "routes": [{ "pattern": "rt.shipfair.xyz", "custom_domain": true }],
+      "workers_dev": true,
       "durable_objects": {
         "bindings": [
           { "name": "Coordinator", "class_name": "Coordinator" },

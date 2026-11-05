@@ -32,9 +32,14 @@
   "services": [
     { "binding": "REALTIME", "service": "shipfair-realtime", "entrypoint": "RealtimeRpc" }
   ],
-  // Routes, SUPABASE_* values and secrets arrive with prompt 15.
+  // Public per-environment values (SUPABASE_URL, SUPABASE_ANON_KEY, SENTRY_DSN, RELEASE) are
+  // passed with `--var` by the deploy workflows from GitHub Environment variables; secrets are
+  // set once with `wrangler secret put --env <env>` (docs/RELEASING.md).
   "env": {
     "staging": {
+      "routes": [{ "pattern": "staging.shipfair.xyz", "custom_domain": true }],
+      // PR previews (`wrangler versions upload --preview-alias pr-<n>`) run on workers.dev.
+      "preview_urls": true,
       "vars": { "ENVIRONMENT": "staging", "R2_BUCKET": "shipfair-media-staging" },
       "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "shipfair-media-staging" }],
       "kv_namespaces": [{ "binding": "KV" }],
@@ -46,7 +51,10 @@
         }
       ]
     },
+    // No public DNS yet: production answers on workers.dev only. At launch add
+    // "routes": [{ "pattern": "shipfair.xyz", "custom_domain": true }] (docs/RELEASING.md).
     "production": {
+      "workers_dev": true,
       "vars": { "ENVIRONMENT": "production", "R2_BUCKET": "shipfair-media" },
       "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "shipfair-media" }],
       "kv_namespaces": [{ "binding": "KV" }],

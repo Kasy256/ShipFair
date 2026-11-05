@@ -43,6 +43,20 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Prompt 15: advisories are a warning, not a gate (a fix may need an upgrade PR).
+      - name: Dependency audit
+        continue-on-error: true
+        run: |
+          if ! pnpm audit --prod --audit-level moderate; then
+            echo "::warning title=pnpm audit::Advisories found in production dependencies; see the log"
+          fi
+
+      # Every e2e test is @full; @smoke marks the ones run against staging (scripts/e2e-report.ts).
+      - name: E2E tags
+        run: |
+          pnpm --filter @shipfair/e2e exec playwright test --list --reporter=json > e2e-list.json
+          node e2e/scripts/e2e-report.ts tags e2e-list.json
+
       # toktx turns non-palette textures into KTX2 (tools/assets). Pinned and checksum-checked;
       # the asset tests encode with it when it is present.
       - name: Install KTX-Software
@@ -93,8 +107,14 @@ jobs:
           curl -sf http://localhost:1999/dev/ping-web
 
       # The perf project (render budgets) runs in its own job below.
+      # The whole suite (@full). Retries = 1 in CI only; a test that needed it is reported as
+      # flaky in the job summary and as a warning annotation.
       - name: E2E
         run: pnpm --filter @shipfair/e2e exec playwright test --project=chromium --project=mobile
+
+      - name: E2E report
+        if: always()
+        run: node e2e/scripts/e2e-report.ts summary e2e/reports/results.json "E2E @full" || true
 
       # The production build boots, with Rapier's .wasm taken out of its compat build (dev and the
       # e2e above keep the inline copy). Times it on Fast 4G with 4x CPU; the numbers are in the log.
@@ -118,6 +138,7 @@ jobs:
           name: e2e-artifacts
           path: |
             e2e/artifacts
+            e2e/reports
             dev.log
           retention-days: 7
 
@@ -168,6 +189,93 @@ jobs:
             dev.log
           if-no-files-found: ignore
           retention-days: 30
+
+  # Prompt 15: secrets scan over the full history of the branch.
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Prompt 15: a preview version of the web Worker (staging bindings) per PR, URL in a comment.
+  # Skipped for forks and until the staging secrets exist.
+  preview:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ENV: staging
+      VITE_RELEASE: ${{ github.event.pull_request.head.sha }}
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+      VITE_REALTIME_HOST: ${{ vars.REALTIME_HOST }}
+      VITE_MEDIA_HOST: ${{ vars.MEDIA_HOST }}
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+    steps:
+      - name: Staging credentials present
+        id: creds
+        run: echo "ok=${{ secrets.CLOUDFLARE_API_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v5
+        if: steps.creds.outputs.ok == 'true'
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v6
+        if: steps.creds.outputs.ok == 'true'
+
+      - uses: actions/setup-node@v5
+        if: steps.creds.outputs.ok == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Build and upload a preview version
+        if: steps.creds.outputs.ok == 'true'
+        id: upload
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm assets:build --ci
+          pnpm --filter @shipfair/web exec vite build --mode staging
+          cd apps/web
+          pnpm exec wrangler versions upload --preview-alias "pr-${{ github.event.pull_request.number }}" \
+            --var "RELEASE:$VITE_RELEASE" --var "SUPABASE_URL:$VITE_SUPABASE_URL" \
+            --var "SUPABASE_ANON_KEY:$VITE_SUPABASE_ANON_KEY" | tee upload.log
+          url=$(grep -Eo 'https://pr-[0-9]+-[a-z0-9.-]+\.workers\.dev' upload.log | head -1)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Comment the preview URL
+        if: steps.upload.outputs.url != ''
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+        with:
+          script: |
+            const marker = '<!-- shipfair-preview -->';
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+            const body = [
+              marker,
+              `Preview of this PR (${sha}, staging data): ${process.env.PREVIEW_URL}`,
+              '',
+              "It uses staging's database, so a PR with a new migration may not work here until it is merged.",
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const mine = comments.find((c) => c.body?.includes(marker));
+            if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
 
   db:
     runs-on: ubuntu-latest
