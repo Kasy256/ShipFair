@@ -46,7 +46,8 @@ export function contentSecurityPolicy(hosts: SecurityHosts): string {
   const devConnect = hosts.isDev ? ['ws:', 'http://localhost:*', 'http://127.0.0.1:*'] : [];
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
-    // Rapier's compat build instantiates WebAssembly from bytes.
+    // WebAssembly compilation: Rapier (its .wasm is fetched from /assets, see vite.config.ts)
+    // and the Basis transcoder.
     'script-src': ["'self'", "'wasm-unsafe-eval'", TURNSTILE, POSTHOG, ...devScript],
     // React sets dynamic `style` attributes (joystick, progress bar).
     'style-src': ["'self'", "'unsafe-inline'"],

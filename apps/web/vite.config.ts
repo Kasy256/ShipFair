@@ -38,6 +38,43 @@ const staticHeaders = (mode: string): Plugin => {
 
 /** The chunks every city visit needs at once; Rapier is the largest and on the critical path. */
 const BOOT_CHUNK = /^assets\/(rapier|three|src)-[\w-]+\.js$/;
+/** Rapier's WASM, emitted by rapierWasm(). */
+const RAPIER_WASM = /^assets\/rapier-[\w-]+\.wasm$/;
+/** In the compat build, `init()` hands the inlined base64 WASM to wasm-bindgen's loader. */
+const RAPIER_INLINE = /\w+\.toByteArray\("([A-Za-z0-9+/=]{100000,})"\)\.buffer/g;
+const WASM_MAGIC = '0061736d';
+
+/**
+ * Rapier's `-compat` build inlines its WASM as base64 inside the JS (1.6 MB gzipped, decoded on
+ * the main thread). In production builds this takes the bytes out as a hashed
+ * `assets/rapier-<hash>.wasm` (~1.19 MB gzipped, −26 %) and hands wasm-bindgen's loader a promise
+ * of its bytes. Not the URL: with a URL the loader uses `instantiateStreaming`, and in the load
+ * test (4× CPU, SwiftShader) streaming compilation competed with shader compilation for the CPU,
+ * making "Enter" later than the base64 build. Fetched bytes were faster than both (prompt 14:
+ * Fast 4G 5.9 s vs 6.9 s inline, Slow 4G 15.2 s vs 21.2 s, medians of 4). Development keeps the
+ * inline copy. A Rapier upgrade that changes this shape fails the build rather than silently
+ * shipping the base64 again.
+ */
+const rapierWasm = (): Plugin => ({
+  name: 'shipfair:rapier-wasm',
+  apply: 'build',
+  transform(code, id) {
+    if (!/[\\/]@dimforge[\\/]rapier3d-compat[\\/]dist[\\/]rapier\.mjs$/.test(id)) return null;
+    const matches = [...code.matchAll(RAPIER_INLINE)];
+    const base64 = matches[0]?.[1];
+    if (matches.length !== 1 || !base64) {
+      throw new Error(`rapier-wasm: expected one inline WASM in ${id}, found ${matches.length}`);
+    }
+    const bytes = Buffer.from(base64, 'base64');
+    if (bytes.subarray(0, 4).toString('hex') !== WASM_MAGIC) {
+      throw new Error('rapier-wasm: the inline data is not a WASM module');
+    }
+    const ref = this.emitFile({ type: 'asset', name: 'rapier.wasm', source: bytes });
+    // A promise of bytes (wasm-bindgen awaits it), not the URL: see the note above on streaming.
+    const bytesOf = `fetch(import.meta.ROLLUP_FILE_URL_${ref}).then((r) => r.arrayBuffer())`;
+    return { code: code.replace(RAPIER_INLINE, bytesOf), map: null };
+  },
+});
 
 /**
  * Modulepreloads the engine, three and Rapier chunks from index.html (prompt 14), so their
@@ -52,17 +89,33 @@ const preloadBoot = (): Plugin => ({
     order: 'post',
     handler: (_html, ctx) =>
       Object.keys(ctx.bundle ?? {})
-        .filter((file) => BOOT_CHUNK.test(file))
+        .filter((file) => BOOT_CHUNK.test(file) || RAPIER_WASM.test(file))
         .map((file) => ({
           tag: 'link',
-          attrs: { rel: 'modulepreload', crossorigin: '', fetchpriority: 'low', href: `/${file}` },
+          attrs: {
+            // The WASM is a fetch() preload: Rapier's loader fetches it with the same mode.
+            ...(RAPIER_WASM.test(file)
+              ? { rel: 'preload', as: 'fetch', type: 'application/wasm' }
+              : { rel: 'modulepreload' }),
+            crossorigin: '',
+            fetchpriority: 'low',
+            href: `/${file}`,
+          },
           injectTo: 'head' as const,
         })),
   },
 });
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss(), cloudflare(), brandHtml(), staticHeaders(mode), preloadBoot()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    cloudflare(),
+    brandHtml(),
+    staticHeaders(mode),
+    rapierWasm(),
+    preloadBoot(),
+  ],
   environments: {
     client: {
       build: {

@@ -96,6 +96,11 @@ jobs:
       - name: E2E
         run: pnpm --filter @shipfair/e2e exec playwright test --project=chromium --project=mobile
 
+      # The production build boots, with Rapier's .wasm taken out of its compat build (dev and the
+      # e2e above keep the inline copy). Times it on Fast 4G with 4x CPU; the numbers are in the log.
+      - name: Production load (Fast 4G)
+        run: E2E_PERF=1 pnpm --filter @shipfair/e2e exec playwright test tests/perf/load.spec.ts --project=chromium -g "fast 4G"
+
       # Pass or fail, so visual changes can be reviewed from the run (prompt 05 screenshots).
       - name: Upload city screenshots
         if: always()

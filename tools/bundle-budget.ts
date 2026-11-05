@@ -1,8 +1,9 @@
 // `node tools/bundle-budget.ts [dist]`: the JS a first visit to the city downloads before "Enter",
 // per chunk (raw, gzip, brotli), checked against `firstLoadJsGzipKb` in e2e/perf-budgets.json.
 // First load = index.html's entry and everything it imports statically, plus the engine chunk
-// (every world route imports it at boot) and its static imports. The Rapier chunk inlines its
-// WASM and is listed on its own line, outside the budget (TECH_STACK.md). Run after `pnpm build`.
+// (every world route imports it at boot) and its static imports. Rapier's JS loader and its .wasm
+// (taken out of the compat build by vite.config.ts) are listed but stay outside the budget
+// (TECH_STACK.md). Run after `pnpm build`.
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,6 +37,9 @@ for (let file = stack.pop(); file !== undefined; file = stack.pop()) {
   seen.add(file);
   stack.push(...staticImports(file));
 }
+
+// Rapier's WASM (extracted from its compat build by vite.config.ts) is fetched at boot too.
+for (const file of readdirSync(assets)) if (/^rapier-[\w-]+\.wasm$/.test(file)) seen.add(file);
 
 const kb = (bytes: number) => (bytes / 1024).toFixed(1).padStart(8);
 const rows = [...seen]

@@ -43,7 +43,11 @@ for (const [name, profile] of Object.entries(PROFILES)) {
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
       const scripts = new Map<string, { url: string; bytes: number }>();
       cdp.on('Network.responseReceived', (e) => {
-        if (e.type === 'Script') scripts.set(e.requestId, { url: e.response.url, bytes: 0 });
+        // Scripts, plus Rapier's .wasm (a fetch: vite.config.ts takes it out of the compat build).
+        const isWasm = /\/rapier-[\w-]+\.wasm$/.test(e.response.url);
+        if (e.type === 'Script' || isWasm) {
+          scripts.set(e.requestId, { url: e.response.url, bytes: 0 });
+        }
       });
       cdp.on('Network.loadingFinished', (e) => {
         const s = scripts.get(e.requestId);
@@ -83,7 +87,7 @@ for (const [name, profile] of Object.entries(PROFILES)) {
       });
       const all = [...scripts.values()];
       const kb = (list: typeof all) => Math.round(list.reduce((sum, s) => sum + s.bytes, 0) / 1024);
-      const isRapier = (s: { url: string }) => /\/rapier-[\w-]+\.js$/.test(s.url);
+      const isRapier = (s: { url: string }) => /\/rapier-[\w-]+\.(js|wasm)$/.test(s.url);
       report('stagesMs', marks satisfies Marks);
       report('jsKbExclRapier', kb(all.filter((s) => !isRapier(s))));
       report('rapierKb', kb(all.filter(isRapier)));
