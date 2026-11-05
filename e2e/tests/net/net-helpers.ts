@@ -90,7 +90,14 @@ export class RealtimeServer {
         'STATS_INGEST_SECRET:e2e',
         '--show-interactive-dev-session=false',
       ],
-      { cwd: REALTIME_DIR, env: plainEnv(), stdio: ['ignore', 'pipe', 'pipe'] },
+      {
+        cwd: REALTIME_DIR,
+        // Its own dev registry: these workers are named like `pnpm dev`'s (shipfair-realtime,
+        // shipfair-web), and sharing the global registry pointed the real web Worker's REALTIME
+        // binding at this server, and crashed `pnpm dev`'s realtime when this one stopped.
+        env: { ...plainEnv(), WRANGLER_REGISTRY_PATH: join(this.#persist, 'registry') },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
     );
     this.#child = child;
     child.stdout?.resume();
