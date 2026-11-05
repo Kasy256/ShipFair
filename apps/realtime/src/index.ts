@@ -76,9 +76,11 @@ export default {
 
     // Shard list, populations and totals for uptime checks (clients get totals pushed instead).
     if (pathname === '/health') {
-      return Response.json(await (await coordinator(env)).health(), {
-        headers: { 'cache-control': 'no-store' },
-      });
+      const health = await (await coordinator(env)).health();
+      return Response.json(
+        { ...health, release: env.RELEASE ?? 'dev', environment: env.ENVIRONMENT },
+        { headers: { 'cache-control': 'no-store' } },
+      );
     }
 
     // Local proof that realtime → web RPC works through the dev registry. Hidden outside development.

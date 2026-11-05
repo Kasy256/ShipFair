@@ -13,6 +13,10 @@ export interface Env {
   /** World cache version. */
   KV: KVNamespace;
   ENVIRONMENT: 'development' | 'staging' | 'production';
+  /** Git sha of the deploy (`wrangler deploy --var RELEASE:<sha>`); unset locally. Tags Sentry events. */
+  RELEASE?: string;
+  /** Sentry DSN for this Worker (a var; DSNs are public). Unset: Sentry stays off. */
+  SENTRY_DSN?: string;
   /** Validated where used (`WebWorkerEnv`), so a missing value is a clear 503, not a crash. */
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
