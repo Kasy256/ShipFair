@@ -19,6 +19,7 @@ coverage/
 playwright-report/
 test-results/
 e2e/artifacts/
+e2e/reports/
 
 # OS and editor
 .DS_Store

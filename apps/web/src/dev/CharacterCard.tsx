@@ -77,6 +77,7 @@ export function CharacterCard({ viewer, character, clips }: CharacterCardProps) 
     <article
       data-testid="asset-card"
       data-asset={character.id}
+      data-built={built > 0}
       className="col-span-2 rounded-lg bg-ink/80 p-2 ring-1 ring-white/10"
     >
       <div className="grid grid-cols-2 gap-2">
