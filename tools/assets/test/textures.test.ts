@@ -4,6 +4,8 @@ import { encodePng } from '../lib/png.ts';
 import { findToktx, needsKtx2, processTextures, TEXTURE_MAX_PX } from '../lib/textures.ts';
 
 const PALETTE = 'M_Palette';
+/** Two real toktx encodes (ETC1S with mipmaps) of an 1100 px image take ~7 s on a CI runner. */
+const ENCODE_TIMEOUT_MS = 60_000;
 
 /** Width and height from a KTX2 header (pixelWidth and pixelHeight, little-endian u32 at 20, 24). */
 function ktx2Size(bytes: Uint8Array): [number, number] {
@@ -31,24 +33,28 @@ describe('KTX2 textures (prompt 14)', () => {
     expect(needsKtx2(new Document(), PALETTE)).toBe(false);
   });
 
-  it('encodes at most 1024 px, or 512 px for the low tier; without toktx the build fails', () => {
-    for (const [tier, maxPx] of Object.entries(TEXTURE_MAX_PX)) {
-      const doc = texturedDoc('M_Sign', 1100);
-      const errors = processTextures(doc, `sign.${tier}`, PALETTE, maxPx);
-      const texture = doc.getRoot().listTextures()[0];
-      if (!findToktx()) {
-        // Never ship the PNG instead: the error names what to install.
-        expect(errors).toHaveLength(1);
-        expect(errors[0]).toMatch(/sign\.\w+: textures albedo need KTX2; install KTX-Software/);
-        expect(texture?.getMimeType()).toBe('image/png');
-        continue;
+  it(
+    'encodes at most 1024 px, or 512 px for the low tier; without toktx the build fails',
+    () => {
+      for (const [tier, maxPx] of Object.entries(TEXTURE_MAX_PX)) {
+        const doc = texturedDoc('M_Sign', 1100);
+        const errors = processTextures(doc, `sign.${tier}`, PALETTE, maxPx);
+        const texture = doc.getRoot().listTextures()[0];
+        if (!findToktx()) {
+          // Never ship the PNG instead: the error names what to install.
+          expect(errors).toHaveLength(1);
+          expect(errors[0]).toMatch(/sign\.\w+: textures albedo need KTX2; install KTX-Software/);
+          expect(texture?.getMimeType()).toBe('image/png');
+          continue;
+        }
+        expect(errors).toEqual([]);
+        expect(texture?.getMimeType()).toBe('image/ktx2');
+        expect(texture?.getURI()).toBe('albedo.ktx2');
+        const image = texture?.getImage();
+        const [w, h] = image ? ktx2Size(image) : [0, 0];
+        expect(Math.max(w, h)).toBe(maxPx);
       }
-      expect(errors).toEqual([]);
-      expect(texture?.getMimeType()).toBe('image/ktx2');
-      expect(texture?.getURI()).toBe('albedo.ktx2');
-      const image = texture?.getImage();
-      const [w, h] = image ? ktx2Size(image) : [0, 0];
-      expect(Math.max(w, h)).toBe(maxPx);
-    }
-  });
+    },
+    ENCODE_TIMEOUT_MS,
+  );
 });
