@@ -12,8 +12,10 @@ import { serveBuild } from './static-server.ts';
 
 const PROFILES = {
   // DevTools presets; the latency includes their packet-level multiplier.
-  'fast 4G': { latency: 165, down: 9_000_000, up: 1_500_000 },
-  'slow 4G': { latency: 562.5, down: 1_600_000, up: 750_000 },
+  'fast 4G': { latency: 165, down: 9_000_000, up: 1_500_000, isHttp2: false },
+  'slow 4G': { latency: 562.5, down: 1_600_000, up: 750_000, isHttp2: false },
+  // As Cloudflare serves it: one HTTP/2 connection instead of HTTP/1.1's six per host.
+  'fast 4G over HTTP/2': { latency: 165, down: 9_000_000, up: 1_500_000, isHttp2: true },
 } as const;
 
 type Marks = Record<string, number>;
@@ -23,6 +25,8 @@ test.use({
   deviceScaleFactor: 2.625,
   isMobile: true,
   hasTouch: true,
+  // The HTTP/2 server uses a throwaway self-signed certificate.
+  ignoreHTTPSErrors: true,
 });
 
 for (const [name, profile] of Object.entries(PROFILES)) {
@@ -30,7 +34,7 @@ for (const [name, profile] of Object.entries(PROFILES)) {
     test.skip(!process.env.E2E_PERF, 'Set E2E_PERF=1 after `pnpm build` to measure.');
     test.setTimeout(600_000);
     const root = resolve(process.env.E2E_BUILD_DIR ?? '../apps/web/dist/client');
-    const server = await serveBuild(root, fakeWorld(500));
+    const server = await serveBuild(root, fakeWorld(500), { isHttp2: profile.isHttp2 });
     try {
       const cdp = await page.context().newCDPSession(page);
       await cdp.send('Network.enable');
@@ -91,6 +95,17 @@ for (const [name, profile] of Object.entries(PROFILES)) {
       report('stagesMs', marks satisfies Marks);
       report('jsKbExclRapier', kb(all.filter((s) => !isRapier(s))));
       report('rapierKb', kb(all.filter(isRapier)));
+      report(
+        'protocol',
+        await page.evaluate(
+          () =>
+            (
+              performance.getEntriesByType('navigation')[0] as
+                | PerformanceNavigationTiming
+                | undefined
+            )?.nextHopProtocol ?? 'unknown',
+        ),
+      );
       report(
         'scripts',
         all.map((s) => `${new URL(s.url).pathname} ${(s.bytes / 1024).toFixed(0)} KB`).join(', '),
